@@ -1,0 +1,114 @@
+.sidebar{
+    background-color: rgb(7, 13, 36);
+    width: 250px;
+    display: flex;
+    justify-content: center;
+    align-items: start;
+    /* keep sidebar visible while scrolling; sit below header (60px) */
+    position: sticky;
+    top: 60px;
+    height: calc(100vh - 60px);
+}
+
+.sidebar-text{
+    display: flex;
+    justify-content: start;
+    align-items: center;
+    padding: 8px 0 8px 10px;
+    list-style: none;
+    height: 60px;
+}
+.sidebar-text a{
+    text-decoration: none;
+    color: white;
+    font-size: 18px;
+    width: 95%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    text-decoration: none;
+    padding: 0 16px;
+    border-radius: 4px;
+}
+.sidebar-list{
+    margin-top: 30px;
+    width: 100%;
+}
+
+.sidebar-text a:hover{
+    background-color: #3514c9;
+}
+
+.sidebar .sidebar-text a span,
+.sidebar .dropdown-btn .title,
+.sidebar .dropdown-btn .icon {
+    margin-left: 16px;
+}
+
+.dropdown-btn{
+    font-size: 18px;
+    background: transparent;
+    border: none;
+    color: white;
+    width: 95%;
+    text-align: left;
+    padding: 0;
+    height: 44px;
+    display:flex;
+    align-items:center;
+    justify-content:start;
+    cursor:pointer;
+    border-radius:4px;
+}
+
+
+.dropdown-caret{ margin-left:auto; display:flex; align-items:center }
+
+.submenu{
+    list-style:none;
+    padding-left: 16px;
+    margin: 0;
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.18s ease;
+}
+
+.submenu.open{ max-height: 240px; }
+
+.sidebar-subtext{
+    height: 44px;
+    display:flex;
+    align-items:center;
+}
+
+.submenu-link{
+    display:block;
+    width:100%;
+    padding: 10px 16px;
+    color: white;
+    text-decoration:none;
+    border-radius:4px;
+}
+
+.submenu-link:hover{ background: #3514c9; color: white }
+.sidebar-dropdown{
+    display: flex;
+    flex-direction: column;
+    padding: 8px 0 8px 10px;
+    list-style: none;
+    
+}
+.dropdown-btn:hover{
+    background-color: #3514c9;
+}
+
+/* Keep parent dropdown highlighted when hovering submenu items */
+.sidebar-dropdown:hover > .dropdown-btn {
+    background-color: #3514c9;
+}
+
+/* Slight transition for hover states */
+.dropdown-btn, .submenu-link {
+    transition: background-color 120ms ease, color 120ms ease;
+}
+

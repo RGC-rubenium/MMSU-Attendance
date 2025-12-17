@@ -1,0 +1,7 @@
+.admin-dashboard {
+    display: flex;
+    width: 100%;
+    padding: 0;
+    background-color: #f9f9f9;
+    min-height: calc(100vh - 60px);
+}
