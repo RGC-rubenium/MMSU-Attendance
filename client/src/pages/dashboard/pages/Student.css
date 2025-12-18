@@ -1,0 +1,33 @@
+.student-page-wrapper { padding: 18px; height: 100%; box-sizing: border-box; width: 100%; }
+
+.users-content { max-width: 1100px; margin: 0 auto; }
+
+.users-content h2 { margin: 0 0 12px 0; color: #111827; font-size: 1.25rem; }
+
+.user-header { display:flex; align-items:center; gap:16px; justify-content:space-between; background: linear-gradient(90deg,#0b1228 0%, #1b2a64 100%); padding:14px 18px; border-radius:10px; color:#fff; }
+.user-header h1 { margin:0; font-size:1.25rem; font-weight:600; }
+
+.user-searchbar { display:flex; gap:8px; align-items:center; }
+.user-searchbar input[type="text"], .user-searchbar input[type="search"] { padding:8px 12px; border-radius:8px; border:1px solid rgba(255,255,255,0.12); background:rgba(255,255,255,0.06); color:#fff; min-width:220px; }
+.user-searchbar input::placeholder { color: rgba(255,255,255,0.75); }
+.user-searchbar button { padding:8px 12px; border-radius:8px; border:none; background:#6b46c1; color:#fff; cursor:pointer; box-shadow: 0 6px 18px rgba(107,70,193,0.12); }
+
+.users-list { margin-top:18px; }
+
+/* keep grid in sync with UserList's card grid but provide a pleasant gap */
+.user-cards { display:grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap:16px; }
+
+.user-card{display:flex;align-items:center;background:#fff;border:1px solid #e6e9ee;padding:12px;border-radius:10px;box-shadow:0 6px 18px rgba(13,38,77,0.04)}
+.user-avatar{width:56px;height:56px;border-radius:50%;object-fit:cover;margin-right:12px}
+.user-info{display:flex;flex-direction:column}
+.user-name{font-weight:600;color:#0b1228}
+.user-id{font-size:12px;color:#666}
+
+.user-loading{padding:12px;color:#444}
+.user-empty{padding:12px;color:#777;text-align:center}
+
+/* small responsive tweaks */
+@media (max-width: 720px) {
+  .user-searchbar input { min-width: 120px; }
+  .user-header { flex-direction: column; align-items: stretch; gap:10px; }
+}

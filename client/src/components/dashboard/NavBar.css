@@ -1,6 +1,7 @@
 .sidebar{
     background-color: rgb(7, 13, 36);
     width: 250px;
+    min-width: 250px;
     display: flex;
     justify-content: center;
     align-items: start;
@@ -90,16 +91,13 @@
     border-radius:4px;
 }
 
-.submenu-link:hover{ background: #3514c9; color: white }
+.submenu-link:hover{ background: #2f2652; color: white }
 .sidebar-dropdown{
     display: flex;
     flex-direction: column;
     padding: 8px 0 8px 10px;
     list-style: none;
     
-}
-.dropdown-btn:hover{
-    background-color: #3514c9;
 }
 
 /* Keep parent dropdown highlighted when hovering submenu items */
