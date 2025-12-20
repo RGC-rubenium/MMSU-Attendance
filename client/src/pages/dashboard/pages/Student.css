@@ -1,6 +1,14 @@
-.student-page-wrapper { padding: 18px; height: 100%; box-sizing: border-box; width: 100%; }
+.student-page-wrapper { display: flex; padding: 18px; height: 100%; box-sizing: border-box; width: 100%; gap: 16px; }
 
-.users-content { max-width: 1100px; margin: 0 auto; }
+.users-content { margin: 0 auto; flex-grow: 1;}
+
+.user-filter { display: flex; flex-direction: column; align-items: center; justify-content: space-between; 
+  gap: 12px; background: linear-gradient(180deg,#0b1228 0%, #131c44 100%); padding: 14px 18px; border-radius: 10px; color: #fff;
+}
+.user-filter .filter-options { display: flex; flex-direction: column; gap: 12px; }
+.user-filter label { font-size: 14px; }
+.user-filter select { padding: 6px 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.12); background: rgba(255,255,255,0.06); color: #fff; }
+.user-filter select option { background: #fff; color: #000; }
 
 .users-content h2 { margin: 0 0 12px 0; color: #111827; font-size: 1.25rem; }
 
@@ -19,13 +27,19 @@
 
 .user-card{display:flex;align-items:center;background:#fff;border:1px solid #e6e9ee;padding:12px;border-radius:10px;box-shadow:0 6px 18px rgba(13,38,77,0.04)}
 .user-avatar{width:56px;height:56px;border-radius:50%;object-fit:cover;margin-right:12px}
-.user-info{display:flex;flex-direction:column}
+.user-info{display:flex;flex-direction:column; align-items: center; justify-content: center; width: 100%;}
 .user-name{font-weight:600;color:#0b1228}
 .user-id{font-size:12px;color:#666}
 
 .user-loading{padding:12px;color:#444}
 .user-empty{padding:12px;color:#777;text-align:center}
+.user-card-button{text-decoration: none;}
 
+.editMode { display: flex; gap: 8px; }
+.editMode .delete-user{
+  padding: 8px 12px; border-radius: 8px; border: none; background: #e53e3e; color: #fff; cursor: pointer; box-shadow: 0 6px 18px rgba(229,62,62,0.12);
+}
+.editMode .delete-user, .editMode .closeEditMode {animation: forwards 1s ease-in-out;}
 /* small responsive tweaks */
 @media (max-width: 720px) {
   .user-searchbar input { min-width: 120px; }

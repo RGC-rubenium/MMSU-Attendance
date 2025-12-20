@@ -41,5 +41,24 @@ export const SideBarData = [
         Path: '/dashboard/surveillance',
         Icon: <IoIcons.IoEye/>,
         cName: 'sidebar-text'
+    },
+    {
+            title: 'Logs',
+            Path: '/dashboard/logs',
+        Icon: <AiIcons.AiOutlineFileText/>,
+        cName: 'sidebar-dropdown',
+        subNav: [
+            {
+                title: 'Attendance Logs',
+                Path: '/dashboard/logs/attendance',
+                cName: 'sidebar-subtext'
+            }
+        ]
+    },
+    {
+        title: 'Settings',
+        Path: '/dashboard/settings',
+        Icon: <AiIcons.AiOutlineSetting/>,
+        cName: 'sidebar-text'
     }
 ]

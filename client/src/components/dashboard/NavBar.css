@@ -8,7 +8,6 @@
     /* keep sidebar visible while scrolling; sit below header (60px) */
     position: sticky;
     top: 60px;
-    height: calc(100vh - 60px);
 }
 
 .sidebar-text{
@@ -34,6 +33,7 @@
 .sidebar-list{
     margin-top: 30px;
     width: 100%;
+    height: calc(100% - 30px);
 }
 
 .sidebar-text a:hover{
@@ -109,4 +109,16 @@
 .dropdown-btn, .submenu-link {
     transition: background-color 120ms ease, color 120ms ease;
 }
-
+.logout-button{
+    margin-top: auto;
+    margin-bottom: 20px;
+    margin-left: 10px;
+    padding: 10px 16px;
+    width: 95%;
+    background-color: #e53e3e;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
+}
