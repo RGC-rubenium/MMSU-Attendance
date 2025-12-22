@@ -141,7 +141,7 @@ export default function Student() {
                                 <Link 
                                     key={u.id} 
                                     className={`user-card-button ${isSelected ? 'selected' : ''}`} 
-                                    to={'/dashboard/students/profile'}
+                                    to={'/dashboard/students/profile?id=' + u.id}
                                     onClick={(e) => handleCardClick(e, u)}
                                 >
                                     <article className={`user-card ${isSelected ? 'card-active' : ''}`}>

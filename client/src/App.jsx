@@ -5,6 +5,7 @@ import Student from './pages/dashboard/pages/Student'
 import Faculty from './pages/dashboard/pages/Faculty'
 import Surveillance from './pages/dashboard/pages/Surveillance'
 import SchedulePage from './pages/dashboard/pages/Schedule'
+import UserProfile from './pages/dashboard/pages/UserProfile'
 import {BrowserRouter as Router, Routes, Route} from 'react-router-dom'
 import NavBar from './components/dashboard/NavBar'
 import './index.css'
@@ -25,6 +26,7 @@ function App() {
             <Route path="faculty" element={<Faculty />} />
             <Route path="surveillance" element={<Surveillance />} />
             <Route path="schedule" element={<SchedulePage />} />
+            <Route path="students/profile" element={<UserProfile />} />
           </Route>
         </Routes>
       </Router>
