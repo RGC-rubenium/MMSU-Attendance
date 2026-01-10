@@ -116,6 +116,7 @@ export default function Login({ onModeChange }) {
         <button
           className="login-button"
           type="submit"
+          onClick={handleSubmit}
           disabled={loading || !emailValid || !passwordValid}
         >
           {loading ? 'Signing in…' : 'Sign in'}

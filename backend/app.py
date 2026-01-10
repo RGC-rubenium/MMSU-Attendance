@@ -1,7 +1,7 @@
 from flask import Flask, jsonify, request
-
+from flask_cors import CORS
 app = Flask(__name__)
-
+CORS(app)
 SAMPLE_USERS = [
     { "id": 1, "studentId": 'S1001', "fullName": 'Maria Reyes', "avatar": 'https://i.pravatar.cc/150?img=12',"yearlevel": '1', "section": 'A', "department": 'BSCPE' },
     { "id": 2, "studentId": 'S1002', "fullName": 'Juan Dela Cruz', "avatar": 'https://i.pravatar.cc/150?img=32',"yearlevel": '2', "section": 'B', "department": 'HR' },
@@ -13,9 +13,23 @@ SAMPLE_USERS = [
     { "id": 8, "studentId": 'S1008', "fullName": 'James Villanueva', "avatar": 'https://i.pravatar.cc/150?img=15' ,"yearlevel":"2" ,"section":"B", "department":"Finance" },
 ]; 
 
+# Login Endpoint
+@app.route('/api/login', methods=['POST'])
+def login():
+    data = request.get_json()
+    username = data.get('username')
+    password = data.get('password')
 
+    # Simple authentication logic for demonstration
+    if username == 'admin' and password == 'password':
+        return jsonify({"message": "Login successful", "token": "fake-jwt-token"}), 200
+    else:
+        return jsonify({"message": "Invalid credentials"}), 401
+    
+# Student list Dashboard Endpoint
 @app.route('/api/student', methods=['GET'])
 def get_student_dashboard():
+    
     return jsonify(SAMPLE_USERS), 200
 
 if __name__ == '__main__':

@@ -17,6 +17,9 @@ import * as CiIcons from "react-icons/ci";
     { id: 8, studentId: 'S1008', fullName: 'James Villanueva', avatar: 'https://i.pravatar.cc/150?img=15' ,yearlevel:'2' ,section:'B', department:'Finance' },
 ]; 
 
+const departments = ['BSCPE', 'HR', 'Finance', 'IT'];
+const yearLevels = ['1', '2', '3', '4'];
+
 export default function Student() {
     const navigate = useNavigate();
     const [query, setQuery] = useState('');
@@ -78,6 +81,7 @@ export default function Student() {
                     <h2>Students</h2>
                     <div className='filter-options'>
                         <label>Department:
+                            
                             <select onChange={e => onFilterChange('department',e.target.value)}>
                                 <option value="" key="">All</option>
                                 <option value="BSCPE" key="BSCPE">BSCPE</option>

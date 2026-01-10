@@ -1,13 +1,26 @@
 import './UserProfile.css';
-import userHandler from '../../../api/UserHandler';
+import UserHandler from '../../../api/UserHandler.js';
 import React from 'react';
+import { useEffect, useState } from "react";
+
+const handler = new UserHandler();
 
 export default function UserProfile() {
     const queryParams = new URLSearchParams(window.location.search);
     const userId = queryParams.get('id');
+    const [students, setStudents] = useState([]);
 
-    const result = userHandler.fetchStudents();
-    console.log(result);
+    useEffect(() => {
+    // 2. Call the async method
+        const getData = async () => {
+        const data = await handler.fetchStudents();
+        setStudents(data);
+        };
+        getData();
+    },[]);
+
+    console.log(students)
+
     return (
         <div className="user-profile-page">
             <ul>
