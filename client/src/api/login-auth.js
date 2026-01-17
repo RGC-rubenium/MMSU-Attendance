@@ -1,14 +1,22 @@
 // Simple login helper that calls the backend API.
-// Returns parsed JSON on success or throws an Error on failure.
+// Sends `{ username, password }` (username is the email field in the UI),
+// stores returned JWT in localStorage via `AuthToken`, and returns parsed JSON.
+import * as AuthToken from '../Utils/AuthToken'
+
+const API_BASE = 'http://localhost:5000'
+
 export async function login({ email, password }) {
 	if (!email || !password) {
 		throw new Error('Email and password are required')
 	}
 
-	const res = await fetch('/api/login', {
+	const url = `${API_BASE.replace(/\/$/, '')}/api/login`
+
+	const res = await fetch(url, {
 		method: 'POST',
 		headers: { 'Content-Type': 'application/json' },
-		body: JSON.stringify({ email, password }),
+		// backend expects `username` key; UI uses `email` field
+		body: JSON.stringify({ username: email, password }),
 	})
 
 	if (!res.ok) {
@@ -16,5 +24,11 @@ export async function login({ email, password }) {
 		throw new Error(text || res.statusText || 'Login failed')
 	}
 
-	return res.json()
+	const data = await res.json()
+	// store token for future requests if present
+	if (data && data.token) {
+		AuthToken.setToken(data.token)
+	}
+
+	return data
 }

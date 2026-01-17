@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import './Login.css'
 import { login } from '../../../api/login-auth'
+import { useNavigate } from 'react-router-dom'
 
 export default function Login({ onModeChange }) {
   const [email, setEmail] = useState('')
@@ -12,14 +13,15 @@ export default function Login({ onModeChange }) {
   // per-field errors
   const [emailError, setEmailError] = useState('')
   const [passwordError, setPasswordError] = useState('')
+  const navigate = useNavigate()
 
   function validateFields() {
     let valid = true
 
     if (!email) {
-      setEmailError('* Email is required.')
+      setEmailError('* Username or email is required.')
       valid = false
-    } else if (!/\S+@\S+\.\S+/.test(email)) {
+    } else if (email.includes('@') && !/\S+@\S+\.\S+/.test(email)) {
       setEmailError('* Enter a valid email.')
       valid = false
     } else {
@@ -52,6 +54,8 @@ export default function Login({ onModeChange }) {
     try {
       const data = await login({ email, password })
       setSuccess(data?.message || 'Login successful')
+      // redirect to dashboard after successful login
+      navigate('/dashboard')
     } catch (err) {
       setError(err?.message || 'Login failed')
     } finally {
@@ -59,7 +63,8 @@ export default function Login({ onModeChange }) {
     }
   }
 
-  const emailValid = /\S+@\S+\.\S+/.test(email)
+  // Accept either a username (non-empty) or a valid email address
+  const emailValid = email && (email.includes('@') ? /\S+@\S+\.\S+/.test(email) : email.trim().length > 0)
   const passwordValid = password.length >= 6
 
   return (
@@ -80,16 +85,16 @@ export default function Login({ onModeChange }) {
         )}
 
         <label className="login-label">
-          Email
+          Username or Email
           <input
-            type="email"
+            type="text"
             value={email}
             onChange={(e) => {
               setEmail(e.target.value)
               if (emailError) setEmailError('')
             }}
             className="login-input"
-            placeholder="name@example.com"
+            placeholder="name@example.com or username"
             autoComplete="username"
             aria-invalid={!!emailError}
           />
@@ -116,7 +121,6 @@ export default function Login({ onModeChange }) {
         <button
           className="login-button"
           type="submit"
-          onClick={handleSubmit}
           disabled={loading || !emailValid || !passwordValid}
         >
           {loading ? 'Signing in…' : 'Sign in'}

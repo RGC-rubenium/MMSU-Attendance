@@ -1,8 +1,9 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import './Student.css';
 import { Link, useNavigate } from 'react-router-dom'; // Added useNavigate
 import * as MdIcons from "react-icons/md";
 import * as CiIcons from "react-icons/ci";
+import UserHandler from '../../../api/UserHandler';
 
 // ... (SAMPLE_USERS remains the same)
  const SAMPLE_USERS = [
@@ -30,6 +31,33 @@ export default function Student() {
     // NEW: State for selected cards
     const [selectedIds, setSelectedIds] = useState([]);
 
+    // server users + loading/error
+    const [users, setUsers] = useState(SAMPLE_USERS);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState('');
+
+    useEffect(() => {
+        let mounted = true;
+        const handler = new UserHandler();
+
+        async function loadStudents() {
+            setLoading(true);
+            setError('');
+            try {
+                const data = await handler.fetchStudents();
+                if (mounted && Array.isArray(data) && data.length > 0) setUsers(data);
+            } catch (err) {
+                console.error('Failed to load students:', err);
+                if (mounted) setError('Failed to load students from server. Showing sample data.');
+            } finally {
+                if (mounted) setLoading(false);
+            }
+        }
+
+        loadStudents();
+        return () => { mounted = false }
+    }, [])
+
     const onFilterChange = (field, value) => {
         setFilters(prev => ({ ...prev, [field]: value }));
     };
@@ -43,14 +71,14 @@ export default function Student() {
 
     const results = useMemo(() => {
         const q = (query || '').trim().toLowerCase();
-        const base = applyFilters(SAMPLE_USERS);
+        const base = applyFilters(users);
         if (!q) return base;
         return base.filter(u => (
             u.fullName?.toLowerCase().includes(q) ||
             u.studentId?.toLowerCase().includes(q) ||
             u.department?.toLowerCase().includes(q)
         ));
-    }, [query, filters]);
+    }, [query, filters, users]);
 
     // NEW: Toggle Selection Logic
     const toggleSelection = (id) => {
@@ -138,6 +166,8 @@ export default function Student() {
                 </div>
 
                 <div className="users-list">
+                    {loading && <div style={{ padding: 12 }}>Loading students...</div>}
+                    {error && <div style={{ color: 'orange', padding: 8 }}>{error}</div>}
                     <div className="user-cards">
                         {results.map(u => {
                             const isSelected = selectedIds.includes(u.id);

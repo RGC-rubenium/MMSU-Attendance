@@ -1,22 +1,35 @@
+import AuthToken from '../Utils/AuthToken'
+
+const API_BASE = (import.meta && import.meta.env && import.meta.env.VITE_API_BASE) || 'http://localhost:5000'
+
 export default class UserHandler {
-    static API_BASE = 'http://127.0.0.1:5000/api';
+    static getBase() {
+        return API_BASE.replace(/\/$/, '') + '/api'
+    }
 
+    /**
+     * Fetch students from backend `/api/student` (protected)
+     * Returns array of users or throws an Error.
+     */
     async fetchStudents() {
+        const url = `${UserHandler.getBase()}/student`
         try {
-            // Use the class name to access static properties
-            const response = await fetch(`${UserHandler.API_BASE}/student`);
-
-            if (!response.ok) {
-                // This helps you see if it's a 404 or 500 error in the console
-                const errorText = await response.text();
-                console.error("Server Response:", errorText);
-                throw new Error(`HTTP error! status: ${response.status}`);
+            // use fetchWithAuth so Authorization header is automatically attached
+            const res = await AuthToken.fetchWithAuth(url, { headers: { 'Accept': 'application/json' } })
+            if (!res.ok) {
+                const text = await res.text().catch(() => '')
+                if (res.status === 401) {
+                    // token invalid/expired - clear and surface error
+                    AuthToken.clearToken()
+                }
+                throw new Error(text || `Request failed with status ${res.status}`)
             }
 
-            return await response.json();
-        } catch (error) {
-            console.error("Could not fetch students:", error);
-            return []; 
+            const data = await res.json()
+            return data
+        } catch (err) {
+            // bubble up the error for the caller to handle
+            throw err
         }
     }
 }
