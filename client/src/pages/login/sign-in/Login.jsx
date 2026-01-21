@@ -1,7 +1,8 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import './Login.css'
 import { login } from '../../../api/login-auth'
 import { useNavigate } from 'react-router-dom'
+import { useAuth } from '../../../contexts/AuthContext'
 
 export default function Login({ onModeChange }) {
   const [email, setEmail] = useState('')
@@ -14,6 +15,22 @@ export default function Login({ onModeChange }) {
   const [emailError, setEmailError] = useState('')
   const [passwordError, setPasswordError] = useState('')
   const navigate = useNavigate()
+  const auth = useAuth()
+
+  useEffect(() => {
+    if (auth && auth.isAuthenticated) {
+      // user already logged in — redirect based on role
+      if (auth.hasRole && auth.hasRole('admin')) {
+        navigate('/dashboard', { replace: true })
+      } else if (auth.hasRole && auth.hasRole('faculty')) {
+        navigate('/dashboard/faculty', { replace: true })
+      } else if (auth.hasRole && auth.hasRole('student')) {
+        navigate('/dashboard/students', { replace: true })
+      } else {
+        navigate('/dashboard', { replace: true })
+      }
+    }
+  }, [auth, navigate])
 
   function validateFields() {
     let valid = true
@@ -53,9 +70,16 @@ export default function Login({ onModeChange }) {
     setLoading(true)
     try {
       const data = await login({ email, password })
+      // update AuthContext state from stored token
+      if (auth && auth.loginComplete) auth.loginComplete()
       setSuccess(data?.message || 'Login successful')
       // redirect to dashboard after successful login
-      navigate('/dashboard')
+      // prefer admin dashboard if role present
+      const roles = auth?.roles || []
+      if (roles.includes('admin')) navigate('/dashboard', { replace: true })
+      else if (roles.includes('faculty')) navigate('/dashboard/faculty', { replace: true })
+      else if (roles.includes('student')) navigate('/dashboard/students', { replace: true })
+      else navigate('/dashboard', { replace: true })
     } catch (err) {
       setError(err?.message || 'Login failed')
     } finally {

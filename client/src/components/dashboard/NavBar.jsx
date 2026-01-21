@@ -3,6 +3,7 @@ import { SideBarData } from "./SiderBarData";
 import './NavBar.css'
 import { MdKeyboardArrowDown, MdKeyboardArrowUp } from 'react-icons/md'
 import { Link, useLocation } from 'react-router-dom'
+import { useAuth } from '../../contexts/AuthContext'
 
 export default function NavBar() {
     const [openIndex, setOpenIndex] = useState(null)
@@ -29,6 +30,8 @@ export default function NavBar() {
     function toggleIndex(i) {
         setOpenIndex((prev) => (prev === i ? null : i))
     }
+
+    const auth = useAuth()
 
     return (
         <nav className="sidebar" aria-label="Main navigation">
@@ -69,7 +72,7 @@ export default function NavBar() {
                         </li>
                     )
                 })}
-                <button className="logout-button" type="button">Logout</button>
+                <button className="logout-button" type="button" onClick={() => auth && auth.logout ? auth.logout() : null}>Logout</button>
             </ul>
         </nav>
     )

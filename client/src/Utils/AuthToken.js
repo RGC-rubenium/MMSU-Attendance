@@ -31,7 +31,19 @@ export async function fetchWithAuth(url, options = {}) {
 	return fetch(url, Object.assign({}, options, { headers }))
 }
 
-export default { setToken, getToken, clearToken, fetchWithAuth }
+const AuthToken = {
+	setToken,
+	getToken,
+	clearToken,
+	fetchWithAuth,
+	decodeToken,
+	getTokenPayload,
+	getRoles,
+	getExpiry,
+	isTokenExpired,
+}
+
+export default AuthToken
 
 // --- JWT helpers ---
 function base64UrlDecode(str) {
