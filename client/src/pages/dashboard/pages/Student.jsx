@@ -25,7 +25,8 @@ export default function Student() {
     const navigate = useNavigate();
     const [query, setQuery] = useState('');
     const [searching, setSearching] = useState(false);
-    const [filters, setFilters] = useState({ department: '', yearlevel: '' });
+    const [searchTerm, setSearchTerm] = useState('')
+    const [filters, setFilters] = useState({ department: '', yearlevel: '' , section: ''});
     const [mode, setMode] = useState('');
     
     // NEW: State for selected cards
@@ -70,7 +71,7 @@ export default function Student() {
     };
 
     const results = useMemo(() => {
-        const q = (query || '').trim().toLowerCase();
+        const q = (searchTerm || '').trim().toLowerCase();
         const base = applyFilters(users);
         if (!q) return base;
         return base.filter(u => (
@@ -78,7 +79,7 @@ export default function Student() {
             u.studentId?.toLowerCase().includes(q) ||
             u.department?.toLowerCase().includes(q)
         ));
-    }, [query, filters, users]);
+    }, [searchTerm, filters, users]);
 
     // NEW: Toggle Selection Logic
     const toggleSelection = (id) => {
@@ -86,6 +87,14 @@ export default function Student() {
             prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]
         );
     };
+
+    // Trigger search (called from Enter or search button)
+    const handleSearch = () => {
+        setSearching(true)
+        setSearchTerm(query)
+        // small UX delay (optional)
+        setTimeout(() => setSearching(false), 120)
+    }
 
     // NEW: Handle Card Click
     const handleCardClick = (e, user) => {
@@ -127,6 +136,15 @@ export default function Student() {
                                 <option value="4" key="4">4th Year</option>
                             </select>
                         </label>
+                        <label> Section:
+                            <select onChange={e => onFilterChange('section', e.target.value)}>
+                                <option value="" key="">All</option>
+                                <option value="A" key="A">A</option>
+                                <option value="B" key="B">B</option>
+                                <option value="C" key="C">C</option>
+                                <option value="D" key="D">D</option>
+                            </select>
+                        </label>
                     </div>
                     <button className='search-filtered'>Search</button>
                 </div>
@@ -156,12 +174,18 @@ export default function Student() {
                                 </button>
                             </div>
                         )}
-                        <input
-                            type="search"
-                            value={query}
-                            onChange={e => setQuery(e.target.value)}
-                            placeholder="Search students..."
-                        />
+                        <div className="search-input-wrap">
+                            <input
+                                type="search"
+                                value={query}
+                                onChange={e => setQuery(e.target.value)}
+                                onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleSearch() } }}
+                                placeholder="Search students..."
+                            />
+                            <button className="search-btn" type="button" onClick={handleSearch} aria-label="Search">
+                                <MdIcons.MdSearch />
+                            </button>
+                        </div>
                     </div>
                 </div>
 

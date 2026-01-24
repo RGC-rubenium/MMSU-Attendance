@@ -6,9 +6,9 @@ import Student from './pages/dashboard/pages/Student'
 import Faculty from './pages/dashboard/pages/Faculty'
 import Surveillance from './pages/dashboard/pages/Surveillance'
 import SchedulePage from './pages/dashboard/pages/Schedule'
+import Scanner from './pages/user-scanner/Scanner'
 import UserProfile from './pages/dashboard/pages/UserProfile'
 import {BrowserRouter as Router, Routes, Route} from 'react-router-dom'
-import NavBar from './components/dashboard/NavBar'
 import ProtectedRoute from './components/auth/ProtectedRoute'
 import './index.css'
 
@@ -22,6 +22,7 @@ function App() {
       <Router>
         <AuthProvider>
           <Routes>
+            <Route path="/scanner" element={<Scanner />} />
             <Route path="/" element={<Login />} />
             <Route path="/dashboard/*" element={<ProtectedRoute allowedRoles={["admin"]}><AdminDashboard /></ProtectedRoute>}>
               <Route index element={<Dashboard />} />
