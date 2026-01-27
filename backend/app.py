@@ -5,12 +5,18 @@ import config
 from extensions import db, migrate
 from api.auth import auth_bp
 from api.students import students_bp
+from api.students_delete import students_delete_bp
 from api.faculty import faculty_bp
 
 app = Flask(__name__)
 app.config.from_object(config)
 
-CORS(app)
+# Configure CORS to allow DELETE methods
+CORS(app, 
+     origins=["http://localhost:3000", "http://localhost:5173", "http://127.0.0.1:3000", "http://127.0.0.1:5173"],
+     methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+     allow_headers=["Content-Type", "Authorization"],
+     supports_credentials=True)
 
 # initialize extensions
 db.init_app(app)
@@ -19,6 +25,7 @@ migrate.init_app(app, db)
 # Register API blueprints under /api
 app.register_blueprint(auth_bp, url_prefix='/api')
 app.register_blueprint(students_bp, url_prefix='/api')
+app.register_blueprint(students_delete_bp, url_prefix='/api')
 app.register_blueprint(faculty_bp, url_prefix='/api')
 
 
