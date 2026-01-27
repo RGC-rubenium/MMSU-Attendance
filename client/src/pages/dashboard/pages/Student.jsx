@@ -1,175 +1,353 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import './Student.css';
-import { Link, useNavigate } from 'react-router-dom'; // Added useNavigate
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import * as MdIcons from "react-icons/md";
 import * as CiIcons from "react-icons/ci";
-import UserHandler from '../../../api/UserHandler';
+import StudentHandler from '../../../api/StudentHandler';
 
-// ... (SAMPLE_USERS remains the same)
- const SAMPLE_USERS = [
+// Constants
+const DEFAULT_PER_PAGE = 20;
+const MAX_PER_PAGE = 100;
+const FILTER_KEYS = ['department', 'yearlevel', 'section'];
 
-    { id: 1, studentId: 'S1001', fullName: 'Maria Reyes', avatar: 'https://i.pravatar.cc/150?img=12',yearlevel: '1', section: 'A', department: 'BSCPE' },
-    { id: 2, studentId: 'S1002', fullName: 'Juan Dela Cruz', avatar: 'https://i.pravatar.cc/150?img=32',yearlevel: '2', section: 'B', department: 'HR' },
-    { id: 3, studentId: 'S1003', fullName: 'Anne Garcia', avatar: 'https://i.pravatar.cc/150?img=18',yearlevel: '3', section: 'C', department: 'Finance' },
-    { id: 4, studentId: 'S1004', fullName: 'Mark Torres', avatar: 'https://i.pravatar.cc/150?img=24',yearlevel: '4', section: 'D', department:'IT' },
-    { id: 5, studentId: 'S1005', fullName: 'Liza Santos', avatar: 'https://i.pravatar.cc/150?img=8',yearlevel:'5' ,section:'E' ,department:'HR'},
-    { id: 6, studentId: 'S1006', fullName: 'Rico Lopez', avatar: 'https://i.pravatar.cc/150?img=47' ,yearlevel:'6' ,section:'F', department:'Finance' },
-    { id: 7, studentId: 'S1007', fullName: 'Cathy Mendoza', avatar: 'https://i.pravatar.cc/150?img=52' ,yearlevel:'1' ,section:'A', department:'HR' },
-    { id: 8, studentId: 'S1008', fullName: 'James Villanueva', avatar: 'https://i.pravatar.cc/150?img=15' ,yearlevel:'2' ,section:'B', department:'Finance' },
-]; 
+// Filter configurations
+const FILTER_OPTIONS = {
+    department: [
+        { value: '', label: 'All Departments' },
+        { value: 'BSCPE', label: 'BSCPE' },
+        { value: 'HR', label: 'Human Resources' },
+        { value: 'Finance', label: 'Finance' },
+        { value: 'IT', label: 'Information Technology' },
+        { value: 'Engineering', label: 'Engineering' },
+        { value: 'Business', label: 'Business Administration' }
+    ],
+    yearlevel: [
+        { value: '', label: 'All Years' },
+        { value: '1', label: '1st Year' },
+        { value: '2', label: '2nd Year' },
+        { value: '3', label: '3rd Year' },
+        { value: '4', label: '4th Year' },
+        { value: '5', label: '5th Year' }
+    ],
+    section: [
+        { value: '', label: 'All Sections' },
+        { value: 'A', label: 'Section A' },
+        { value: 'B', label: 'Section B' },
+        { value: 'C', label: 'Section C' },
+        { value: 'D', label: 'Section D' },
+        { value: 'E', label: 'Section E' }
+    ]
+};
 
-const departments = ['BSCPE', 'HR', 'Finance', 'IT'];
-const yearLevels = ['1', '2', '3', '4'];
+//To be used for sorting options
+const SORT_OPTIONS = [
+    { value: 'last_name:asc', label: 'Last Name (A-Z)' },
+    { value: 'last_name:desc', label: 'Last Name (Z-A)' },
+    { value: 'first_name:asc', label: 'First Name (A-Z)' },
+    { value: 'first_name:desc', label: 'First Name (Z-A)' },
+    { value: 'department:asc', label: 'Department (A-Z)' },
+    { value: 'year_level:asc', label: 'Year Level (1-5)' }
+];
 
 export default function Student() {
     const navigate = useNavigate();
-    const [query, setQuery] = useState('');
-    const [searching, setSearching] = useState(false);
-    const [searchTerm, setSearchTerm] = useState('')
-    const [filters, setFilters] = useState({ department: '', yearlevel: '' , section: ''});
-    const [mode, setMode] = useState('');
+    const [searchParams, setSearchParams] = useSearchParams();
     
-    // NEW: State for selected cards
-    const [selectedIds, setSelectedIds] = useState([]);
+    // Consolidated state
+    const [state, setState] = useState({
+        query: searchParams.get('q') || '',
+        searching: false,
+        mode: '',
+        selectedIds: [],
+        students: [],
+        loading: false,
+        error: '',
+        meta: { total: 0, page: 1, totalPages: 0, hasNext: false, hasPrev: false }
+    });
 
-    // server users + loading/error
-    const [users, setUsers] = useState(SAMPLE_USERS);
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState('');
+    // Local filter state (not synced to URL until apply)
+    const [localFilters, setLocalFilters] = useState(() => {
+        const filters = {};
+        FILTER_KEYS.forEach(key => {
+            filters[key] = searchParams.get(key) || '';
+        });
+        return filters;
+    });
 
-    useEffect(() => {
-        let mounted = true;
-        const handler = new UserHandler();
+    // Local search query (not synced to URL until search)
+    const [localQuery, setLocalQuery] = useState(searchParams.get('q') || '');
 
-        async function loadStudents() {
-            setLoading(true);
-            setError('');
-            try {
-                const data = await handler.fetchStudents();
-                if (mounted && Array.isArray(data) && data.length > 0) setUsers(data);
-            } catch (err) {
-                console.error('Failed to load students:', err);
-                if (mounted) setError('Failed to load students from server. Showing sample data.');
-            } finally {
-                if (mounted) setLoading(false);
-            }
+    // Memoized current filters from URL
+    const currentFilters = useMemo(() => {
+        const filters = {};
+        FILTER_KEYS.forEach(key => {
+            const value = searchParams.get(key);
+            if (value) filters[key] = value;
+        });
+        return filters;
+    }, [searchParams]);
+
+    // Memoized search params for API
+    const apiParams = useMemo(() => {
+        const params = {
+            page: Math.max(1, parseInt(searchParams.get('page')) || 1),
+            per_page: Math.min(MAX_PER_PAGE, Math.max(1, parseInt(searchParams.get('per_page')) || DEFAULT_PER_PAGE)),
+            sort: searchParams.get('sort') || 'last_name:asc'
+        };
+        
+        const q = searchParams.get('q');
+        if (q && q.trim()) params.q = q.trim();
+        
+        // Add filters
+        Object.entries(currentFilters).forEach(([key, value]) => {
+            if (value) params[key] = value;
+        });
+        
+        return params;
+    }, [searchParams, currentFilters]);
+
+    // Optimized data fetcher with better error handling
+    const fetchStudents = useCallback(async (params) => {
+        setState(prev => ({ ...prev, loading: true, error: '' }));
+        
+        try {
+            const handler = new StudentHandler();
+            const data = await handler.fetchStudents(params);
+            // Transform and validate data
+            const students = data.items.map(u => {
+                // Ensure required fields exist
+                const fullName = u.full_name || 
+                    `${u.first_name || ''} ${u.middle_name || ''} ${u.last_name || ''}`.replace(/\s+/g, ' ').trim() ||
+                    'Unknown Name';
+                
+                return {
+                    id: u.id,
+                    fullName: u.fullName,
+                    avatar: u.profile_path,
+                    department: u.department || 'Unknown',
+                    yearlevel: u.year_level || u.yearlevel || '',
+                    section: u.section || '',
+                    email: u.email || '',
+                    phone: u.phone || ''
+                };
+            });
+            console.log(students);
+            setState(prev => ({
+                ...prev,
+                students,
+                meta: {
+                    total: data.meta.total || 0,
+                    page: data.meta.page || 1,
+                    totalPages: data.meta.totalPages || Math.ceil((data.meta.total || students.length) / params.per_page),
+                    hasNext: data.meta.hasNext || false,
+                    hasPrev: data.meta.hasPrev || false
+                },
+                error: students.length === 0 && !params.q && Object.keys(currentFilters).length === 0 
+                    ? 'No students found in the system.' 
+                    : students.length === 0 
+                    ? 'No students match your search criteria.' 
+                    : '',
+                loading: false
+            }));
+            
+        } catch (err) {
+            console.error('Failed to load students:', err);
+            setState(prev => ({ 
+                ...prev, 
+                students: [],
+                error: err.message || 'Failed to load students from server. Please try again.',
+                loading: false 
+            }));
         }
+    }, [currentFilters]);
 
-        loadStudents();
-        return () => { mounted = false }
-    }, [])
+    // Load data when URL params change
+    useEffect(() => {
+        fetchStudents(apiParams);
+    }, [apiParams, fetchStudents]);
 
-    const onFilterChange = (field, value) => {
-        setFilters(prev => ({ ...prev, [field]: value }));
-    };
+    // Sync local state with URL params when they change (for back/forward navigation)
+    useEffect(() => {
+        const urlQuery = searchParams.get('q') || '';
+        const urlFilters = {};
+        FILTER_KEYS.forEach(key => {
+            urlFilters[key] = searchParams.get(key) || '';
+        });
+        
+        setLocalQuery(urlQuery);
+        setLocalFilters(urlFilters);
+        setState(prev => ({ ...prev, query: urlQuery }));
+    }, [searchParams]);
+    // Optimized URL param updater
+    const updateSearchParams = useCallback((updates, resetPage = true) => {
+        const newParams = new URLSearchParams(searchParams);
+        
+        if (resetPage) {
+            newParams.set('page', '1');
+        }
+        
+        Object.entries(updates).forEach(([key, value]) => {
+            if (value !== null && value !== undefined && value.toString().trim() !== '') {
+                newParams.set(key, value.toString().trim());
+            } else {
+                newParams.delete(key);
+            }
+        });
+        
+        setSearchParams(newParams);
+    }, [searchParams, setSearchParams]);
 
-    const applyFilters = (users) => {
-        return users.filter(u => (
-            (filters.department === '' || u.department === filters.department) &&
-            (filters.yearlevel === '' || u.yearlevel === filters.yearlevel)
-        ));
-    };
+    // Local query change handler (no immediate URL update)
+    const handleQueryChange = useCallback((e) => {
+        const value = e.target.value;
+        setLocalQuery(value);
+        setState(prev => ({ ...prev, query: value }));
+    }, []);
 
-    const results = useMemo(() => {
-        const q = (searchTerm || '').trim().toLowerCase();
-        const base = applyFilters(users);
-        if (!q) return base;
-        return base.filter(u => (
-            u.fullName?.toLowerCase().includes(q) ||
-            u.studentId?.toLowerCase().includes(q) ||
-            u.department?.toLowerCase().includes(q)
-        ));
-    }, [searchTerm, filters, users]);
+    // Manual search trigger - applies local query to URL
+    const handleSearch = useCallback(() => {
+        setState(prev => ({ ...prev, searching: true }));
+        updateSearchParams({ q: localQuery });
+        setTimeout(() => setState(prev => ({ ...prev, searching: false })), 300);
+    }, [localQuery, updateSearchParams]);
 
-    // NEW: Toggle Selection Logic
-    const toggleSelection = (id) => {
-        setSelectedIds(prev => 
-            prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]
-        );
-    };
+    // Filter change handler - updates local filters only
+    const handleFilterChange = useCallback((field, value) => {
+        setLocalFilters(prev => ({ ...prev, [field]: value }));
+    }, []);
 
-    // Trigger search (called from Enter or search button)
-    const handleSearch = () => {
-        setSearching(true)
-        setSearchTerm(query)
-        // small UX delay (optional)
-        setTimeout(() => setSearching(false), 120)
-    }
+    // Apply filters handler - syncs local filters to URL
+    const handleApplyFilters = useCallback(() => {
+        const updates = { ...localFilters };
+        updateSearchParams(updates);
+    }, [localFilters, updateSearchParams]);
 
-    // NEW: Handle Card Click
-    const handleCardClick = (e, user) => {
-        if (mode === 'edit') {
-            e.preventDefault(); // Stop Link navigation
+    // Clear filters handler - resets all local filters
+    const handleClearFilters = useCallback(() => {
+        const clearedFilters = {};
+        FILTER_KEYS.forEach(key => {
+            clearedFilters[key] = '';
+        });
+        setLocalFilters(clearedFilters);
+    }, []);
+
+    // Sort change handler
+    const handleSortChange = useCallback((value) => {
+        updateSearchParams({ sort: value }, false);
+    }, [updateSearchParams]);
+
+    // Selection handlers
+    const toggleSelection = useCallback((id) => {
+        setState(prev => ({
+            ...prev,
+            selectedIds: prev.selectedIds.includes(id)
+                ? prev.selectedIds.filter(selectedId => selectedId !== id)
+                : [...prev.selectedIds, id]
+        }));
+    }, []);
+
+    const selectAll = useCallback(() => {
+        setState(prev => ({
+            ...prev,
+            selectedIds: prev.selectedIds.length === state.students.length 
+                ? [] 
+                : state.students.map(s => s.id)
+        }));
+    }, [state.students]);
+
+    const handleCardClick = useCallback((e, user) => {
+        if (state.mode === 'edit') {
+            e.preventDefault();
             toggleSelection(user.id);
         }
-    };
+    }, [state.mode, toggleSelection]);
 
-    const onClearFilters = () => {
-        // Logic for "Delete" action in edit mode
-        console.log("Deleting IDs:", selectedIds);
-        setSelectedIds([]);
-        setMode('');
-    };
+    const clearSelection = useCallback(() => {
+        console.log("Deleting IDs:", state.selectedIds);
+        setState(prev => ({ ...prev, selectedIds: [], mode: '' }));
+    }, [state.selectedIds]);
 
+    const goToPage = useCallback((page) => {
+        updateSearchParams({ page }, false);
+    }, [updateSearchParams]);
+
+    // Check if local filters differ from URL (has pending changes)
+    const hasFilterChanges = useMemo(() => {
+        return FILTER_KEYS.some(key => {
+            const localValue = localFilters[key] || '';
+            const urlValue = currentFilters[key] || '';
+            return localValue !== urlValue;
+        });
+    }, [localFilters, currentFilters]);
+
+    // Check if local search differs from URL
+    const hasSearchChanges = useMemo(() => {
+        const urlQuery = searchParams.get('q') || '';
+        return localQuery !== urlQuery;
+    }, [localQuery, searchParams]);
     return (
         <div className="student-page-wrapper">
             <div className='user-filter-content'>
                 <div className='user-filter'>
                     <h2>Students</h2>
                     <div className='filter-options'>
-                        <label>Department:
-                            
-                            <select onChange={e => onFilterChange('department',e.target.value)}>
-                                <option value="" key="">All</option>
-                                <option value="BSCPE" key="BSCPE">BSCPE</option>
-                                <option value="HR" key="HR">HR</option>
-                                <option value="Finance" key="Finance">Finance</option>
-                                <option value="IT" key="IT">IT</option>
-                            </select>
-                        </label>
-                        <label>Year Level:
-                            <select onChange={e => onFilterChange('yearlevel', e.target.value)}>
-                                <option value="" key="">All</option>
-                                <option value="1" key="1">1st Year</option>
-                                <option value="2" key="2">2nd Year</option>
-                                <option value="3" key="3">3rd Year</option>
-                                <option value="4" key="4">4th Year</option>
-                            </select>
-                        </label>
-                        <label> Section:
-                            <select onChange={e => onFilterChange('section', e.target.value)}>
-                                <option value="" key="">All</option>
-                                <option value="A" key="A">A</option>
-                                <option value="B" key="B">B</option>
-                                <option value="C" key="C">C</option>
-                                <option value="D" key="D">D</option>
-                            </select>
-                        </label>
+                        {Object.entries(FILTER_OPTIONS).map(([key, options]) => (
+                            <label key={key}>
+                                {key.charAt(0).toUpperCase() + key.slice(1).replace('yearlevel', 'Year Level')}:
+                                <select 
+                                    value={localFilters[key] || ''} 
+                                    onChange={e => handleFilterChange(key, e.target.value)}
+                                >
+                                    {options.map(opt => (
+                                        <option key={opt.value} value={opt.value}>{opt.label}</option>
+                                    ))}
+                                </select>
+                            </label>
+                        ))}
                     </div>
-                    <button className='search-filtered'>Search</button>
+                    <div className="filter-buttons">
+                        <button 
+                            className={`search-filtered ${hasFilterChanges ? 'has-changes' : ''}`} 
+                            onClick={handleApplyFilters}
+                            disabled={state.loading}
+                        >
+                            Apply Filter {hasFilterChanges ? '•' : ''}
+                        </button>
+                        <button 
+                            className="clear-filters"
+                            onClick={handleClearFilters}
+                            disabled={state.loading || Object.values(localFilters).every(val => !val)}
+                            title="Clear all filters"
+                        >
+                            Clear
+                        </button>
+                    </div>
                 </div>
             </div>
 
             <div className="users-content">
                 <div className="user-header">
-                    <h1>Student Management</h1>
+                    <h1>Student Management ({state.meta.total} total)</h1>
                     <div className="user-searchbar">
-                        {mode === '' && (
-                            <button className='setDelMode' onClick={() => setMode('edit')}>
+                        {state.mode === '' && (
+                            <button className='setDelMode' onClick={() => setState(prev => ({ ...prev, mode: 'edit' }))}>
                                 <CiIcons.CiEdit />
                             </button>
                         )}
-                        {mode === 'edit' && (
+                        {state.mode === 'edit' && (
                             <div className='editMode'>
-                                <span>{selectedIds.length} selected</span>
+                                <span>{state.selectedIds.length} selected</span>
                                 <button 
                                     className='delete-user' 
-                                    onClick={onClearFilters}
-                                    disabled={selectedIds.length === 0}
+                                    onClick={clearSelection}
+                                    disabled={state.selectedIds.length === 0}
                                 >
                                     <MdIcons.MdDelete />
                                 </button>
-                                <button className='closeEditMode' onClick={() => {setMode(''); setSelectedIds([]);}}>
+                                <button 
+                                    className='closeEditMode' 
+                                    onClick={() => setState(prev => ({ ...prev, mode: '', selectedIds: [] }))}
+                                >
                                     <MdIcons.MdClose />
                                 </button>
                             </div>
@@ -177,12 +355,18 @@ export default function Student() {
                         <div className="search-input-wrap">
                             <input
                                 type="search"
-                                value={query}
-                                onChange={e => setQuery(e.target.value)}
-                                onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleSearch() } }}
+                                value={localQuery}
+                                onChange={handleQueryChange}
+                                onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), handleSearch())}
                                 placeholder="Search students..."
                             />
-                            <button className="search-btn" type="button" onClick={handleSearch} aria-label="Search">
+                            <button 
+                                className={`search-btn ${hasSearchChanges ? 'has-changes' : ''}`} 
+                                onClick={handleSearch} 
+                                disabled={state.searching || state.loading}
+                                aria-label={hasSearchChanges ? "Search (changes pending)" : "Search"}
+                                title={hasSearchChanges ? "Press to apply search changes" : "Search"}
+                            >
                                 <MdIcons.MdSearch />
                             </button>
                         </div>
@@ -190,36 +374,57 @@ export default function Student() {
                 </div>
 
                 <div className="users-list">
-                    {loading && <div style={{ padding: 12 }}>Loading students...</div>}
-                    {error && <div style={{ color: 'orange', padding: 8 }}>{error}</div>}
+                    {state.loading && <div style={{ padding: 12 }}>Loading students...</div>}
+                    {state.error && <div style={{ color: 'orange', padding: 8 }}>{state.error}</div>}
+                    
                     <div className="user-cards">
-                        {results.map(u => {
-                            const isSelected = selectedIds.includes(u.id);
+                        {state.students.map(u => {
+                            const isSelected = state.selectedIds.includes(u.id);
                             return (
                                 <Link 
                                     key={u.id} 
                                     className={`user-card-button ${isSelected ? 'selected' : ''}`} 
-                                    to={'/dashboard/students/profile?id=' + u.id}
+                                    to={`/dashboard/students/profile?id=${u.id}`}
                                     onClick={(e) => handleCardClick(e, u)}
                                 >
                                     <article className={`user-card ${isSelected ? 'card-active' : ''}`}>
-
-                                        {mode === 'edit' && (
+                                        {state.mode === 'edit' && (
                                             <div className="select-indicator">
                                                 {isSelected ? <MdIcons.MdCheckBox /> : <MdIcons.MdCheckBoxOutlineBlank />}
                                             </div>
                                         )}
-                                        <img className="user-avatar" src={u.avatar} alt={u.fullName} />
+                                        <img className="user-avatar" src={u.avatar} alt={"No Image"} />
                                         <div className="user-info">
                                             <div className="user-name">{u.fullName}</div>
-                                            <div className="user-id">{u.studentId}</div>
-                                            <div className="user-section">{`${u.department} - ${u.yearlevel}${u.section}`}</div>
+                                            <div className="user-id">{u.id}</div>
+                                            <div className="user-section">
+                                                {`${u.department} - ${u.yearlevel || ''}${u.section || ''}`}
+                                            </div>
                                         </div>
                                     </article>
                                 </Link>
                             );
                         })}
                     </div>
+
+                    {/* Pagination */}
+                    {state.meta.totalPages > 1 && (
+                        <div className="pagination">
+                            <button 
+                                disabled={state.meta.page <= 1} 
+                                onClick={() => goToPage(state.meta.page - 1)}
+                            >
+                                Previous
+                            </button>
+                            <span>Page {state.meta.page} of {state.meta.totalPages}</span>
+                            <button 
+                                disabled={state.meta.page >= state.meta.totalPages} 
+                                onClick={() => goToPage(state.meta.page + 1)}
+                            >
+                                Next
+                            </button>
+                        </div>
+                    )}
                 </div>
             </div>
         </div>

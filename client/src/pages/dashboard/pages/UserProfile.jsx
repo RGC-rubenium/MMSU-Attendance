@@ -1,5 +1,5 @@
 import './UserProfile.css';
-import UserHandler from '../../../api/UserHandler.js';
+import UserHandler from '../../../api/StudentHandler.js';
 import React from 'react';
 import { useEffect, useState } from "react";
 

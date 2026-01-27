@@ -1,0 +1,70 @@
+/* Add these styles to your Student.css file to show pending changes */
+
+/* Apply Filter button when it has changes */
+.search-filtered.has-changes {
+    background-color: #f39c12;
+    color: white;
+    font-weight: bold;
+    position: relative;
+    animation: pulse 2s infinite;
+}
+
+.search-filtered.has-changes:hover {
+    background-color: #e67e22;
+}
+
+/* Search button when it has changes */
+.search-btn.has-changes {
+    background-color: #3498db;
+    color: white;
+    position: relative;
+    animation: pulse 2s infinite;
+}
+
+.search-btn.has-changes:hover {
+    background-color: #2980b9;
+}
+
+/* Pulse animation for pending changes */
+@keyframes pulse {
+    0% {
+        box-shadow: 0 0 0 0 rgba(52, 152, 219, 0.7);
+    }
+    70% {
+        box-shadow: 0 0 0 10px rgba(52, 152, 219, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(52, 152, 219, 0);
+    }
+}
+
+/* For filter button, use orange pulse */
+.search-filtered.has-changes {
+    animation: pulse-orange 2s infinite;
+}
+
+@keyframes pulse-orange {
+    0% {
+        box-shadow: 0 0 0 0 rgba(243, 156, 18, 0.7);
+    }
+    70% {
+        box-shadow: 0 0 0 10px rgba(243, 156, 18, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(243, 156, 18, 0);
+    }
+}
+
+/* Optional: Add a small indicator dot */
+.search-filtered.has-changes::after,
+.search-btn.has-changes::after {
+    content: '';
+    position: absolute;
+    top: -2px;
+    right: -2px;
+    width: 8px;
+    height: 8px;
+    background-color: #e74c3c;
+    border-radius: 50%;
+    border: 2px solid white;
+}

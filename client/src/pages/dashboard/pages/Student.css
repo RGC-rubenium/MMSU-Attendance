@@ -1,4 +1,13 @@
-.student-page-wrapper { display: flex; padding: 18px; height: 100%; box-sizing: border-box; width: 100%; gap: 16px; }
+.student-page-wrapper {
+    display: flex;
+    padding: 18px;
+    height: 100%;
+    box-sizing: border-box;
+    width: 100%;
+    gap: 16px;
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%);
+    min-height: 100vh;
+  }
 
 .users-content { margin: 0 auto; flex-grow: 1;}
 
@@ -10,6 +19,61 @@
 .user-filter select { padding: 6px 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.12); background: rgba(255,255,255,0.06); color: #fff; }
 .user-filter select option { background: #fff; color: #000; }
 
+/* Filter buttons container */
+.filter-buttons {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+}
+
+.search-filtered, .clear-filters {
+  flex: 1;
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.search-filtered {
+  background: #6b46c1;
+  color: #fff;
+  box-shadow: 0 6px 18px rgba(107,70,193,0.12);
+}
+
+.search-filtered:hover:not(:disabled) {
+  background: #553c9a;
+  transform: translateY(-1px);
+}
+
+.search-filtered.has-changes {
+  background: #f59e0b;
+  color: white;
+  font-weight: 600;
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+}
+
+.search-filtered.has-changes:hover:not(:disabled) {
+  background: #d97706;
+}
+
+.clear-filters {
+  background: rgba(255,255,255,0.1);
+  color: rgba(255,255,255,0.8);
+  border: 1px solid rgba(255,255,255,0.2);
+}
+
+.clear-filters:hover:not(:disabled) {
+  background: rgba(255,255,255,0.2);
+  color: #fff;
+}
+
+.clear-filters:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .users-content h2 { margin: 0 0 12px 0; color: #111827; font-size: 1.25rem; }
 
 .user-header { display:flex; align-items:center; gap:16px; justify-content:space-between; background: linear-gradient(90deg,#0b1228 0%, #1b2a64 100%); padding:14px 18px; border-radius:10px; color:#fff; }
@@ -18,21 +82,146 @@
 .user-searchbar { display:flex; gap:8px; align-items:center; }
 .user-searchbar input[type="text"], .user-searchbar input[type="search"] { padding:8px 12px; border-radius:8px; border:1px solid rgba(255,255,255,0.12); background:rgba(255,255,255,0.06); color:#fff; min-width:220px; }
 .user-searchbar input::placeholder { color: rgba(255,255,255,0.75); }
-.user-searchbar button { padding:8px 12px; border-radius:8px; border:none; background:#6b46c1; color:#fff; cursor:pointer; box-shadow: 0 6px 18px rgba(107,70,193,0.12); }
+.user-searchbar button { padding:8px 12px; border-radius:8px; border:none; background:#6b46c1; color:#fff; cursor:pointer; box-shadow: 0 6px 18px rgba(107,70,193,0.12); transition: all 0.2s ease; }
+
+.user-searchbar button:hover:not(:disabled) {
+  background: #553c9a;
+  transform: translateY(-1px);
+}
+
+.user-searchbar .search-btn.has-changes {
+  background: #3b82f6;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.user-searchbar .search-btn.has-changes:hover:not(:disabled) {
+  background: #2563eb;
+}
 
 .users-list { margin-top:18px; }
 
 /* keep grid in sync with UserList's card grid but provide a pleasant gap */
-.user-cards { display:grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap:16px; }
+.user-cards { display:grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap:20px; }
 
-.user-card{display:flex;align-items:center;background:#fff;border:1px solid #e6e9ee;padding:12px;border-radius:10px;box-shadow:0 6px 18px rgba(13,38,77,0.04)}
-.user-avatar{width:56px;height:56px;border-radius:50%;object-fit:cover;margin-right:12px}
-.user-info{display:flex;flex-direction:column; align-items: center; justify-content: center; width: 100%;}
-.user-name{font-weight:600;color:#0b1228}
-.user-id{font-size:12px;color:#666}
+.user-card {
+  display: flex;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  padding: 20px;
+  border-radius: 16px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+  transition: all 0.2s ease;
+  position: relative;
+  min-height: 80px;
+}
 
-.user-loading{padding:12px;color:#444}
-.user-empty{padding:12px;color:#777;text-align:center}
+.user-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+  border-color: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.user-card.card-active {
+  background: rgba(107, 70, 193, 0.15);
+  border-color: rgba(107, 70, 193, 0.5);
+  box-shadow: 0 0 0 1px rgba(107, 70, 193, 0.3);
+}
+
+.user-avatar {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  object-fit: cover;
+  margin-right: 18px;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  transition: all 0.2s ease;
+  background: rgba(255, 255, 255, 0.1);
+  flex-shrink: 0;
+}
+
+.user-card:hover .user-avatar {
+  border-color: rgba(255, 255, 255, 0.4);
+  transform: scale(1.02);
+}
+
+.user-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  width: 100%;
+}
+
+.user-name {
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.95);
+  font-size: 17px;
+  margin-bottom: 8px;
+  line-height: 1.4;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.user-id {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.8);
+  margin-bottom: 8px;
+  font-weight: 500;
+  background: rgba(255, 255, 255, 0.1);
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-family: 'Inter', -apple-system, sans-serif;
+  display: inline-block;
+}
+
+.user-section {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.7);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.select-indicator {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  color: rgba(255, 255, 255, 0.9);
+  background: rgba(107, 70, 193, 0.8);
+  border-radius: 50%;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  z-index: 2;
+}
+
+.user-card-button.selected .user-card {
+  background: rgba(107, 70, 193, 0.2);
+  border-color: rgba(107, 70, 193, 0.6);
+  box-shadow: 0 0 0 2px rgba(107, 70, 193, 0.4);
+}
+
+.user-card-button.selected .user-card .user-name {
+  color: rgba(255, 255, 255, 1);
+}
+
+.user-card-button.selected .user-card .user-id {
+  background: rgba(255, 255, 255, 0.2);
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.user-card-button {
+  text-decoration: none;
+  position: relative;
+}
+
+.user-loading{padding:12px;color:rgba(255,255,255,0.7)}
+.user-empty{padding:12px;color:rgba(255,255,255,0.6);text-align:center}
 .user-card-button{text-decoration: none;}
 
 .editMode { display: flex; gap: 8px; }
@@ -40,6 +229,46 @@
   padding: 8px 12px; border-radius: 8px; border: none; background: #e53e3e; color: #fff; cursor: pointer; box-shadow: 0 6px 18px rgba(229,62,62,0.12);
 }
 .editMode .delete-user, .editMode .closeEditMode {animation: forwards 1s ease-in-out;}
+
+/* Pagination */
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  margin-top: 24px;
+  padding: 16px 0;
+}
+
+.pagination button {
+  padding: 8px 16px;
+  border: 1px solid #d1d5db;
+  background: #fff;
+  color: #374151;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.pagination button:hover:not(:disabled) {
+  background: #f9fafb;
+  border-color: #6b46c1;
+  color: #6b46c1;
+}
+
+.pagination button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background: #f9fafb;
+}
+
+.pagination span {
+  color: #6b7280;
+  font-weight: 500;
+  padding: 0 8px;
+}
+
 /* small responsive tweaks */
 @media (max-width: 720px) {
   .user-searchbar input { min-width: 120px; }
