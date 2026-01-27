@@ -91,4 +91,70 @@ export default class StudentHandler {
             throw err
         }
     }
+
+    /**
+     * Delete single student by UID
+     */
+    async deleteStudent(uid) {
+        const url = `${StudentHandler.getBase()}/student/${encodeURIComponent(uid)}`
+        
+        try {
+            const res = await fetch(url, {
+                method: 'DELETE',
+                headers: { 'Accept': 'application/json' }
+            })
+            
+            if (!res.ok) {
+                let errorMessage = `Delete failed with status ${res.status}`
+                try {
+                    const errorData = await res.json()
+                    errorMessage = errorData.message || errorMessage
+                } catch {
+                    const text = await res.text().catch(() => '')
+                    errorMessage = text || errorMessage
+                }
+                
+                throw new Error(errorMessage)
+            }
+            
+            return await res.json()
+        } catch (err) {
+            throw err
+        }
+    }
+
+    /**
+     * Delete multiple students by UIDs
+     */
+    async bulkDeleteStudents(studentIds) {
+        const url = `${StudentHandler.getBase()}/students/bulk-delete`
+        
+        try {
+            const res = await fetch(url, {
+                method: 'DELETE',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json' 
+                },
+                body: JSON.stringify({ student_ids: studentIds })
+            })
+            
+            if (!res.ok) {
+                let errorMessage = `Bulk delete failed with status ${res.status}`
+                try {
+                    const errorData = await res.json()
+                    errorMessage = errorData.message || errorMessage
+                } catch {
+                    const text = await res.text().catch(() => '')
+                    errorMessage = text || errorMessage
+                }
+                
+                throw new Error(errorMessage)
+            }
+            
+            return await res.json()
+        } catch (err) {
+            throw err
+        }
+    }
 }

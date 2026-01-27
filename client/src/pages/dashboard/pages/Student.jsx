@@ -121,7 +121,8 @@ export default function Student() {
                     'Unknown Name';
                 
                 return {
-                    id: u.id,
+                    uid: u.uid, // Primary key for deletion
+                    id: u.id,   // Student ID for display
                     fullName: u.fullName,
                     avatar: u.profile_path,
                     department: u.department || 'Unknown',
@@ -251,21 +252,20 @@ export default function Student() {
             ...prev,
             selectedIds: prev.selectedIds.length === state.students.length 
                 ? [] 
-                : state.students.map(s => s.id)
+                : state.students.map(s => s.uid)
         }));
     }, [state.students]);
 
     const handleCardClick = useCallback((e, user) => {
         if (state.mode === 'edit') {
             e.preventDefault();
-            toggleSelection(user.id);
+            toggleSelection(user.uid);
         }
     }, [state.mode, toggleSelection]);
 
     const clearSelection = useCallback(() => {
-        console.log("Deleting IDs:", state.selectedIds);
         setState(prev => ({ ...prev, selectedIds: [], mode: '' }));
-    }, [state.selectedIds]);
+    }, []);
 
     const goToPage = useCallback((page) => {
         updateSearchParams({ page }, false);
@@ -285,6 +285,49 @@ export default function Student() {
         const urlQuery = searchParams.get('q') || '';
         return localQuery !== urlQuery;
     }, [localQuery, searchParams]);
+
+    // Delete handlers
+    const handleDeleteSelected = useCallback(async () => {
+        if (state.selectedIds.length === 0) return;
+
+        const confirmMessage = `Are you sure you want to delete ${state.selectedIds.length} selected student${state.selectedIds.length !== 1 ? 's' : ''}? This action cannot be undone.`;
+        
+        if (!window.confirm(confirmMessage)) return;
+
+        setState(prev => ({ ...prev, loading: true, error: '' }));
+
+        try {
+            const handler = new StudentHandler();
+            
+            if (state.selectedIds.length === 1) {
+                // Single delete
+                await handler.deleteStudent(state.selectedIds[0]);
+            } else {
+                // Bulk delete
+                await handler.bulkDeleteStudents(state.selectedIds);
+            }
+
+            // Refresh the student list
+            await fetchStudents(apiParams);
+            
+            // Clear selection and exit edit mode
+            setState(prev => ({ 
+                ...prev, 
+                selectedIds: [], 
+                mode: '',
+                loading: false 
+            }));
+
+        } catch (err) {
+            console.error('Failed to delete students:', err);
+            setState(prev => ({ 
+                ...prev, 
+                error: err.message || 'Failed to delete students. Please try again.',
+                loading: false 
+            }));
+        }
+    }, [state.selectedIds, apiParams, fetchStudents]);
+
     return (
         <div className="student-page-wrapper">
             <div className='user-filter-content'>
@@ -339,8 +382,9 @@ export default function Student() {
                                 <span>{state.selectedIds.length} selected</span>
                                 <button 
                                     className='delete-user' 
-                                    onClick={clearSelection}
-                                    disabled={state.selectedIds.length === 0}
+                                    onClick={handleDeleteSelected}
+                                    disabled={state.selectedIds.length === 0 || state.loading}
+                                    title={`Delete ${state.selectedIds.length} selected student${state.selectedIds.length !== 1 ? 's' : ''}`}
                                 >
                                     <MdIcons.MdDelete />
                                 </button>
@@ -379,10 +423,10 @@ export default function Student() {
                     
                     <div className="user-cards">
                         {state.students.map(u => {
-                            const isSelected = state.selectedIds.includes(u.id);
+                            const isSelected = state.selectedIds.includes(u.uid);
                             return (
                                 <Link 
-                                    key={u.id} 
+                                    key={u.uid} 
                                     className={`user-card-button ${isSelected ? 'selected' : ''}`} 
                                     to={`/dashboard/students/profile?id=${u.id}`}
                                     onClick={(e) => handleCardClick(e, u)}
