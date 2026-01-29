@@ -50,6 +50,7 @@ class Student(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     section = db.Column(db.String(20), nullable=True)
+    gender = db.Column(db.String(10), nullable=True)
 
     def full_name(self):
         parts = [self.first_name, self.middle_name, self.last_name]
@@ -64,6 +65,7 @@ class Student(db.Model):
             'yearlevel': str(self.year_level) if self.year_level is not None else None,
             'section': self.section,
             'avatar': self.profile_path,
+            'gender': self.gender,  
         }
 
 

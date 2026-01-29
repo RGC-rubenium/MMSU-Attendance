@@ -61,6 +61,7 @@ def list_students():
         ])
         yearlevel = get_string_arg('yearlevel', allowed_values=['1', '2', '3', '4', '5'])
         section = get_string_arg('section', allowed_values=['A', 'B', 'C', 'D', 'E'])
+        gender = get_string_arg('gender', allowed_values=['MALE', 'FEMALE'])
 
         # Sort params
         sort_param = get_string_arg('sort', 'last_name:asc')
@@ -136,7 +137,7 @@ def list_students():
                 
             query = query.filter(search_filters)
 
-        # Apply individual filters
+        # Define Filter conditions
         filter_conditions = []
         if department:
             filter_conditions.append(Student.department == department)
@@ -149,7 +150,8 @@ def list_students():
         if section:
             if hasattr(Student, 'section') and Student.section is not None:
                 filter_conditions.append(Student.section == section)
-
+        if gender:
+                filter_conditions.append(Student.gender == gender)
         if filter_conditions:
             query = query.filter(and_(*filter_conditions))
 
@@ -243,6 +245,7 @@ def list_students():
                 'department': department,
                 'yearlevel': yearlevel,
                 'section': section,
+                'gewnder': gender,
                 'sort': sort_param
             },
             'available_filters': {

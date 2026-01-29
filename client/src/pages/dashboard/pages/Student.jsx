@@ -36,6 +36,12 @@ const FILTER_OPTIONS = {
         { value: 'C', label: 'Section C' },
         { value: 'D', label: 'Section D' },
         { value: 'E', label: 'Section E' }
+    ],
+    gender: [
+        { value: '', label: 'All Genders' },
+        { value: 'MALE', label: 'Male' },
+        { value: 'FEMALE', label: 'Female' },
+        { value: 'OTHER', label: 'Other' }
     ]
 };
 
@@ -246,7 +252,7 @@ export default function Student() {
                 : [...prev.selectedIds, id]
         }));
     }, []);
-
+    //Use to select or deselect all students -- tobe used in edit mode
     const selectAll = useCallback(() => {
         setState(prev => ({
             ...prev,
@@ -262,7 +268,7 @@ export default function Student() {
             toggleSelection(user.uid);
         }
     }, [state.mode, toggleSelection]);
-
+    //Use to clear all selections --tobe used after deletions
     const clearSelection = useCallback(() => {
         setState(prev => ({ ...prev, selectedIds: [], mode: '' }));
     }, []);
