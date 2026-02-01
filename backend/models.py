@@ -51,6 +51,7 @@ class Student(db.Model):
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     section = db.Column(db.String(20), nullable=True)
     gender = db.Column(db.String(10), nullable=True)
+    schedule = db.Column(db.JSON, nullable=True)
 
     def full_name(self):
         parts = [self.first_name, self.middle_name, self.last_name]
@@ -83,7 +84,7 @@ class Faculty(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     profile_path = db.Column(db.Text, nullable=True)
-
+    gender = db.Column(db.String(10), nullable=True)
     def full_name(self):
         parts = [self.first_name, self.middle_name, self.last_name]
         return ' '.join(p for p in parts if p)
@@ -95,4 +96,25 @@ class Faculty(db.Model):
             'fullName': self.full_name(),
             'department': self.department,
             'avatar': self.profile_path,
+            'gender': self.gender,
+        }
+
+class event_schedule():
+    __tablename__ = "event_schedule"
+    __table_args__ = {'schema': 'attendance'}
+
+    id = db.Column(db.Integer, primary_key=True)
+    event_name = db.Column(db.String(100), nullable=False)
+    start_time = db.Column(db.DateTime, nullable=False)
+    end_time = db.Column(db.DateTime, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'event_name': self.event_name,
+            'start_time': self.start_time.isoformat() if self.start_time else None,
+            'end_time': self.end_time.isoformat() if self.end_time else None,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'updated_at': self.updated_at.isoformat() if self.updated_at else None,
         }

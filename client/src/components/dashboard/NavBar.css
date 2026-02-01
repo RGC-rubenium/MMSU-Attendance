@@ -82,6 +82,13 @@
     align-items:center;
 }
 
+.sidebar-adduser{
+    height: 44px;
+    display:flex;
+    align-items:center;
+    background-color: blue;
+}
+
 .submenu-link{
     display:block;
     width:100%;

@@ -7,6 +7,7 @@ from api.auth import auth_bp
 from api.students import students_bp
 from api.students_delete import students_delete_bp
 from api.faculty import faculty_bp
+from api.faculty_delete import faculty_delete_bp
 
 app = Flask(__name__)
 app.config.from_object(config)
@@ -27,6 +28,7 @@ app.register_blueprint(auth_bp, url_prefix='/api')
 app.register_blueprint(students_bp, url_prefix='/api')
 app.register_blueprint(students_delete_bp, url_prefix='/api')
 app.register_blueprint(faculty_bp, url_prefix='/api')
+app.register_blueprint(faculty_delete_bp, url_prefix='/api')
 
 
 if __name__ == '__main__':

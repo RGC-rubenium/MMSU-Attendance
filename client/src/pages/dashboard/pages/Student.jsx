@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import './Student.css';
+import './Member.css';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import * as MdIcons from "react-icons/md";
 import * as CiIcons from "react-icons/ci";
@@ -8,7 +8,7 @@ import StudentHandler from '../../../api/StudentHandler';
 // Constants
 const DEFAULT_PER_PAGE = 20;
 const MAX_PER_PAGE = 100;
-const FILTER_KEYS = ['department', 'yearlevel', 'section'];
+const FILTER_KEYS = ['department', 'yearlevel', 'section','gender']; // Define filter keys here
 
 // Filter configurations
 const FILTER_OPTIONS = {
@@ -41,7 +41,6 @@ const FILTER_OPTIONS = {
         { value: '', label: 'All Genders' },
         { value: 'MALE', label: 'Male' },
         { value: 'FEMALE', label: 'Female' },
-        { value: 'OTHER', label: 'Other' }
     ]
 };
 
@@ -71,7 +70,6 @@ export default function Student() {
         meta: { total: 0, page: 1, totalPages: 0, hasNext: false, hasPrev: false }
     });
 
-    // Local filter state (not synced to URL until apply)
     const [localFilters, setLocalFilters] = useState(() => {
         const filters = {};
         FILTER_KEYS.forEach(key => {
@@ -80,7 +78,6 @@ export default function Student() {
         return filters;
     });
 
-    // Local search query (not synced to URL until search)
     const [localQuery, setLocalQuery] = useState(searchParams.get('q') || '');
 
     // Memoized current filters from URL
@@ -127,15 +124,14 @@ export default function Student() {
                     'Unknown Name';
                 
                 return {
-                    uid: u.uid, // Primary key for deletion
-                    id: u.id,   // Student ID for display
+                    id: u.id,
                     fullName: u.fullName,
                     avatar: u.profile_path,
                     department: u.department || 'Unknown',
                     yearlevel: u.year_level || u.yearlevel || '',
                     section: u.section || '',
-                    email: u.email || '',
-                    phone: u.phone || ''
+                    gender: u.gender || '',
+                    // Add other fields as needed
                 };
             });
             console.log(students);
@@ -258,14 +254,14 @@ export default function Student() {
             ...prev,
             selectedIds: prev.selectedIds.length === state.students.length 
                 ? [] 
-                : state.students.map(s => s.uid)
+                : state.students.map(s => s.id)
         }));
     }, [state.students]);
 
     const handleCardClick = useCallback((e, user) => {
         if (state.mode === 'edit') {
             e.preventDefault();
-            toggleSelection(user.uid);
+            toggleSelection(user.id);
         }
     }, [state.mode, toggleSelection]);
     //Use to clear all selections --tobe used after deletions
@@ -335,7 +331,7 @@ export default function Student() {
     }, [state.selectedIds, apiParams, fetchStudents]);
 
     return (
-        <div className="student-page-wrapper">
+        <div className="user-page-wrapper">
             <div className='user-filter-content'>
                 <div className='user-filter'>
                     <h2>Students</h2>
@@ -429,10 +425,10 @@ export default function Student() {
                     
                     <div className="user-cards">
                         {state.students.map(u => {
-                            const isSelected = state.selectedIds.includes(u.uid);
+                            const isSelected = state.selectedIds.includes(u.id);
                             return (
                                 <Link 
-                                    key={u.uid} 
+                                    key={u.id} 
                                     className={`user-card-button ${isSelected ? 'selected' : ''}`} 
                                     to={`/dashboard/students/profile?id=${u.id}`}
                                     onClick={(e) => handleCardClick(e, u)}

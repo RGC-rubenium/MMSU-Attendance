@@ -13,7 +13,7 @@ def delete_student(student_id):
     """
     try:
         # Find the student
-        student = Student.query.filter_by(uid=student_id).first()
+        student = Student.query.filter_by(id=student_id).first()
         if not student:
             return jsonify({
                 'success': False,
@@ -61,7 +61,7 @@ def bulk_delete_students():
             }), 400
         
         # Find all students to be deleted
-        students_to_delete = Student.query.filter(Student.uid.in_(student_ids)).all()
+        students_to_delete = Student.query.filter(Student.id.in_(student_ids)).all()
         
         if not students_to_delete:
             return jsonify({

@@ -2,13 +2,13 @@ import AuthToken from '../Utils/AuthToken'
 
 const API_BASE = (import.meta && import.meta.env && import.meta.env.VITE_API_BASE) || 'http://localhost:5000'
 
-export default class StudentHandler {
+export default class FacultyHandler {
     static getBase() {
         return API_BASE.replace(/\/$/, '') + '/api'
     }
 
-    async fetchStudents(params = {}) {
-        const baseUrl = `${StudentHandler.getBase()}/student`
+    async fetchFaculties(params = {}) {
+        const baseUrl = `${FacultyHandler.getBase()}/faculty`
         const usp = new URLSearchParams()
 
         // Add all valid params to query string
@@ -65,10 +65,10 @@ export default class StudentHandler {
     }
 
     /**
-     * Fetch single student by UID
+     * Fetch single faculty by UID
      */
-    async fetchStudent(id) {
-        const url = `${StudentHandler.getBase()}/student/${encodeURIComponent(id)}`
+    async fetchFaculty(uid) {
+        const url = `${FacultyHandler.getBase()}/faculty/${encodeURIComponent(uid)}`
         
         try {
             const res = await AuthToken.fetchWithAuth(url, { 
@@ -77,13 +77,13 @@ export default class StudentHandler {
             
             if (!res.ok) {
                 if (res.status === 404) {
-                    throw new Error('Student not found')
+                    throw new Error('Faculty not found')
                 }
                 if (res.status === 401) {
                     AuthToken.clearToken()
                     throw new Error('Authentication required')
                 }
-                throw new Error(`Failed to fetch student: ${res.status}`)
+                throw new Error(`Failed to fetch faculty: ${res.status}`)
             }
             
             return await res.json()
@@ -93,10 +93,10 @@ export default class StudentHandler {
     }
 
     /**
-     * Delete single student by UID
+     * Delete single faculty by UID
      */
-    async deleteStudent(id) {
-        const url = `${StudentHandler.getBase()}/student/${encodeURIComponent(id)}`
+    async deleteFaculty(uid) {
+        const url = `${FacultyHandler.getBase()}/faculty/${encodeURIComponent(uid)}`
         
         try {
             const res = await fetch(url, {
@@ -124,10 +124,10 @@ export default class StudentHandler {
     }
 
     /**
-     * Delete multiple students by UIDs
+     * Delete multiple faculties     by UIDs
      */
-    async bulkDeleteStudents(studentIds) {
-        const url = `${StudentHandler.getBase()}/students/bulk-delete`
+    async bulkDeleteFaculty(facultyIds) {
+        const url = `${FacultyHandler.getBase()}/faculty/bulk-delete`
         
         try {
             const res = await fetch(url, {
@@ -136,7 +136,7 @@ export default class StudentHandler {
                     'Content-Type': 'application/json',
                     'Accept': 'application/json' 
                 },
-                body: JSON.stringify({ student_ids: studentIds })
+                body: JSON.stringify({ faculty_ids: facultyIds })
             })
             
             if (!res.ok) {
