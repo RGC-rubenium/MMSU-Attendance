@@ -39,7 +39,19 @@ export const SideBarData = [
         title: 'Schedule',
         Path: '/dashboard/schedule',
         Icon: <RiIcons.RiCalendarScheduleLine/>,
-        cName: 'sidebar-text'
+        cName: 'sidebar-dropdown',
+        subNav: [
+            {
+                title: 'Student Scheduler',
+                Path: '/dashboard/schedule/classes',
+                cName: 'sidebar-subtext'
+            },
+            {
+                title: 'Event Scheduler',
+                Path: '/dashboard/schedule/events',
+                cName: 'sidebar-subtext'
+            }
+        ]
     },
     {
         title: 'Surveillance',
