@@ -8,6 +8,8 @@ from api.students import students_bp
 from api.students_delete import students_delete_bp
 from api.faculty import faculty_bp
 from api.faculty_delete import faculty_delete_bp
+from api.add_schedule import event_schedule_bp
+
 
 app = Flask(__name__)
 app.config.from_object(config)
@@ -29,6 +31,7 @@ app.register_blueprint(students_bp, url_prefix='/api')
 app.register_blueprint(students_delete_bp, url_prefix='/api')
 app.register_blueprint(faculty_bp, url_prefix='/api')
 app.register_blueprint(faculty_delete_bp, url_prefix='/api')
+app.register_blueprint(event_schedule_bp, url_prefix='/api')
 
 
 if __name__ == '__main__':

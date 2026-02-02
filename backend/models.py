@@ -99,15 +99,16 @@ class Faculty(db.Model):
             'gender': self.gender,
         }
 
-class event_schedule():
+class EventSchedule(db.Model):
     __tablename__ = "event_schedule"
     __table_args__ = {'schema': 'attendance'}
 
     id = db.Column(db.Integer, primary_key=True)
     event_name = db.Column(db.String(100), nullable=False)
-    event_date = db.Column(db.DateTime, nullable=False)
+    event_date = db.Column(db.Date, nullable=False)
     schedule = db.Column(db.JSON, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     def to_dict(self):
         return {
