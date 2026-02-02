@@ -119,3 +119,35 @@ class EventSchedule(db.Model):
             'created_at': self.created_at.isoformat() if self.created_at else None,
             'updated_at': self.updated_at.isoformat() if self.updated_at else None,
         }
+
+
+class ClassSchedule(db.Model):
+    __tablename__ = "class_schedule"
+    __table_args__ = {'schema': 'attendance'}
+
+    id = db.Column(db.Integer, primary_key=True)
+    schedule_name = db.Column(db.String(100), nullable=False)
+    department = db.Column(db.String(50), nullable=True)
+    year_level = db.Column(db.Integer, nullable=True)
+    section = db.Column(db.String(20), nullable=True)
+    schedule_data = db.Column(db.JSON, nullable=False)  # Weekly schedule with days and time slots
+    description = db.Column(db.Text, nullable=True)
+    is_active = db.Column(db.Boolean, default=True)
+    created_by = db.Column(db.String(50), nullable=True)  # Faculty/Admin who created
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'schedule_name': self.schedule_name,
+            'department': self.department,
+            'year_level': self.year_level,
+            'section': self.section,
+            'schedule_data': self.schedule_data,
+            'description': self.description,
+            'is_active': self.is_active,
+            'created_by': self.created_by,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'updated_at': self.updated_at.isoformat() if self.updated_at else None,
+        }

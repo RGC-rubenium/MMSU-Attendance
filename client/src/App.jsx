@@ -11,6 +11,7 @@ import UserProfile from './pages/dashboard/pages/UserProfile'
 import {BrowserRouter as Router, Routes, Route} from 'react-router-dom'
 import ProtectedRoute from './components/auth/ProtectedRoute'
 import Event_scheduler from './pages/dashboard/pages/Event_scheduler'
+import ClassSchedule from './pages/dashboard/pages/ClassSchedule'
 import './index.css'
 
 
@@ -20,7 +21,7 @@ import './index.css'
 function App() {
   return (
     <>
-      <Router>
+      <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <AuthProvider>
           <Routes>
             <Route path="/scanner" element={<Scanner />} />
@@ -33,6 +34,7 @@ function App() {
               <Route path="schedule" element={<SchedulePage />} />
               <Route path="students/profile" element={<UserProfile />} />
               <Route path="schedule/events" element={<Event_scheduler />} />
+              <Route path="schedule/class-schedule" element={<ClassSchedule />} />
             </Route>
           </Routes>
         </AuthProvider>

@@ -43,7 +43,7 @@ export const SideBarData = [
         subNav: [
             {
                 title: 'Student Scheduler',
-                Path: '/dashboard/schedule/classes',
+                Path: '/dashboard/schedule/class-schedule',
                 cName: 'sidebar-subtext'
             },
             {

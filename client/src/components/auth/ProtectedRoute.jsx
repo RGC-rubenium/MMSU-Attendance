@@ -8,8 +8,10 @@ export default function ProtectedRoute({ allowedRoles = ['admin'], children }) {
 
   useEffect(() => {
     if (!auth) return
+    
+    // Redirect unauthenticated users to login without calling auth.logout()
     if (!auth.isAuthenticated) {
-      auth.logout()
+      navigate('/', { replace: true })
       return
     }
 
@@ -24,7 +26,12 @@ export default function ProtectedRoute({ allowedRoles = ['admin'], children }) {
         navigate('/', { replace: true })
       }
     }
-  }, [auth, navigate, allowedRoles])
+  }, [auth?.isAuthenticated, auth?.roles, navigate, allowedRoles])
+
+  // Don't render children if not authenticated
+  if (!auth || !auth.isAuthenticated) {
+    return null
+  }
 
   return React.Children.only(children)
 }

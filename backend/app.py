@@ -9,6 +9,7 @@ from api.students_delete import students_delete_bp
 from api.faculty import faculty_bp
 from api.faculty_delete import faculty_delete_bp
 from api.add_schedule import event_schedule_bp
+from api.add_class_schedule import class_schedule_bp
 
 
 app = Flask(__name__)
@@ -16,9 +17,9 @@ app.config.from_object(config)
 
 # Configure CORS to allow DELETE methods
 CORS(app, 
-     origins=["http://localhost:3000", "http://localhost:5173", "http://127.0.0.1:3000", "http://127.0.0.1:5173"],
+     origins=["http://localhost:3000", "http://localhost:5173", "http://localhost:5174", "http://127.0.0.1:3000", "http://127.0.0.1:5173", "http://127.0.0.1:5174"],
      methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-     allow_headers=["Content-Type", "Authorization"],
+     allow_headers=["Content-Type", "Authorization", "Access-Control-Allow-Origin"],
      supports_credentials=True)
 
 # initialize extensions
@@ -32,6 +33,7 @@ app.register_blueprint(students_delete_bp, url_prefix='/api')
 app.register_blueprint(faculty_bp, url_prefix='/api')
 app.register_blueprint(faculty_delete_bp, url_prefix='/api')
 app.register_blueprint(event_schedule_bp, url_prefix='/api')
+app.register_blueprint(class_schedule_bp, url_prefix='/api')
 
 
 if __name__ == '__main__':
