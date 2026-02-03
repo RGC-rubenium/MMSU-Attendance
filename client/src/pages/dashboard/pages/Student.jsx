@@ -3,7 +3,9 @@ import './Member.css';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import * as MdIcons from "react-icons/md";
 import * as CiIcons from "react-icons/ci";
+import * as IoIcons from "react-icons/io5";
 import StudentHandler from '../../../api/StudentHandler';
+import AddStudent from '../../../components/dashboard/AddStudent';
 
 // Constants
 const DEFAULT_PER_PAGE = 20;
@@ -67,6 +69,7 @@ export default function Student() {
         students: [],
         loading: false,
         error: '',
+        showAddStudent: false,
         meta: { total: 0, page: 1, totalPages: 0, hasNext: false, hasPrev: false }
     });
 
@@ -330,9 +333,24 @@ export default function Student() {
         }
     }, [state.selectedIds, apiParams, fetchStudents]);
 
+    // AddStudent modal handlers
+    const handleAddStudent = useCallback(() => {
+        setState(prev => ({ ...prev, showAddStudent: true }));
+    }, []);
+    
+    const handleCloseAddStudent = useCallback(() => {
+        setState(prev => ({ ...prev, showAddStudent: false }));
+    }, []);
+    
+    const handleStudentAdded = useCallback(async (newStudent) => {
+        // Refresh the student list to include the new student
+        await fetchStudents(apiParams);
+    }, [apiParams, fetchStudents]);
+
     return (
-        <div className="user-page-wrapper">
-            <div className='user-filter-content'>
+        <>
+            <div className="user-page-wrapper">
+                <div className='user-filter-content'>
                 <div className='user-filter'>
                     <h2>Students</h2>
                     <div className='filter-options'>
@@ -375,9 +393,19 @@ export default function Student() {
                     <h1>Student Management ({state.meta.total} total)</h1>
                     <div className="user-searchbar">
                         {state.mode === '' && (
-                            <button className='setDelMode' onClick={() => setState(prev => ({ ...prev, mode: 'edit' }))}>
-                                <CiIcons.CiEdit />
-                            </button>
+                            <>
+                                <button 
+                                    className='add-student-btn' 
+                                    onClick={handleAddStudent}
+                                    title="Add New Student"
+                                >
+                                    <IoIcons.IoPersonAdd />
+                                    Add Student
+                                </button>
+                                <button className='setDelMode' onClick={() => setState(prev => ({ ...prev, mode: 'edit' }))}>
+                                    <CiIcons.CiEdit />
+                                </button>
+                            </>
                         )}
                         {state.mode === 'edit' && (
                             <div className='editMode'>
@@ -473,6 +501,14 @@ export default function Student() {
                     )}
                 </div>
             </div>
-        </div>
+            </div>
+            
+            {/* Add Student Modal */}
+            <AddStudent 
+                isOpen={state.showAddStudent}
+                onClose={handleCloseAddStudent}
+                onSuccess={handleStudentAdded}
+            />
+        </>
     );
 }

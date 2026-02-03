@@ -38,19 +38,19 @@ class Student(db.Model):
     __tablename__ = "students"
     __table_args__ = {'schema': 'attendance'}
 
-    uid = db.Column(db.String(20), primary_key=True)
+    uid = db.Column(db.String(36), primary_key=True)  # Full UUID length
     id = db.Column(db.String(50), unique=True, nullable=True)
-    first_name = db.Column(db.String(50))
-    middle_name = db.Column(db.String(50), nullable=True)
-    last_name = db.Column(db.String(50))
-    department = db.Column(db.String(50))
+    first_name = db.Column(db.String(100))  # Increased for longer names
+    middle_name = db.Column(db.String(100), nullable=True)
+    last_name = db.Column(db.String(100))
+    department = db.Column(db.String(100))  # Increased for longer department names
     year_level = db.Column(db.Integer)
     schedule = db.Column(db.JSON, nullable=True)
     profile_path = db.Column(db.Text, nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     section = db.Column(db.String(20), nullable=True)
-    gender = db.Column(db.String(10), nullable=True)
+    gender = db.Column(db.String(20), nullable=True)  # Increased from 10 to handle longer values
     schedule = db.Column(db.JSON, nullable=True)
 
     def full_name(self):

@@ -1,0 +1,382 @@
+/* AddStudent.css - Dark theme styles for adding students */
+
+.add-student-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: 20px;
+}
+
+.add-student-content {
+    background-color: #1e1e1e;
+    border-radius: 12px;
+    width: 100%;
+    max-width: 600px;
+    max-height: 90vh;
+    overflow-y: auto;
+    position: relative;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+}
+
+.add-student-header {
+    padding: 24px 24px 0 24px;
+    border-bottom: 1px solid #333;
+    margin-bottom: 24px;
+}
+
+.add-student-title {
+    color: #fff;
+    font-size: 24px;
+    font-weight: 600;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.add-student-title .icon {
+    color: #0d8abc;
+    font-size: 28px;
+}
+
+.add-student-close {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    background: none;
+    border: none;
+    color: #ccc;
+    font-size: 24px;
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 50%;
+    transition: all 0.2s ease;
+}
+
+.add-student-close:hover {
+    background-color: #333;
+    color: #fff;
+}
+
+.add-student-form {
+    padding: 0 24px 24px 24px;
+}
+
+.form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin-bottom: 24px;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.form-group.full-width {
+    grid-column: 1 / -1;
+}
+
+.form-label {
+    color: #e0e0e0;
+    font-weight: 500;
+    margin-bottom: 8px;
+    font-size: 14px;
+}
+
+.form-label.required::after {
+    content: ' *';
+    color: #ff6b6b;
+}
+
+.form-input, .form-select {
+    background-color: #2a2a2a;
+    border: 1px solid #404040;
+    color: #fff;
+    padding: 12px 16px;
+    border-radius: 8px;
+    font-size: 14px;
+    transition: all 0.2s ease;
+}
+
+.form-input:focus, .form-select:focus {
+    outline: none;
+    border-color: #0d8abc;
+    box-shadow: 0 0 0 3px rgba(13, 138, 188, 0.1);
+}
+
+.form-input.error, .form-select.error {
+    border-color: #ff6b6b;
+}
+
+.form-error {
+    color: #ff6b6b;
+    font-size: 12px;
+    margin-top: 4px;
+}
+
+/* Profile Image Upload Section */
+.profile-image-section {
+    grid-column: 1 / -1;
+    background-color: #252525;
+    border-radius: 12px;
+    padding: 24px;
+    border: 2px dashed #404040;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.profile-image-section:hover {
+    border-color: #0d8abc;
+    background-color: #2a2a2a;
+}
+
+.profile-image-section.drag-over {
+    border-color: #0d8abc;
+    background-color: #1a2332;
+    transform: scale(1.02);
+    box-shadow: 0 8px 25px rgba(13, 138, 188, 0.2);
+}
+
+.profile-image-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.profile-image-header .icon {
+    color: #0d8abc;
+    font-size: 20px;
+}
+
+.profile-image-header h3 {
+    color: #fff;
+    margin: 0;
+    font-size: 16px;
+    font-weight: 500;
+}
+
+.profile-image-upload {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+}
+
+.image-preview {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 3px solid #0d8abc;
+    margin-bottom: 12px;
+}
+
+.image-placeholder {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    background-color: #333;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    border: 2px dashed #555;
+    margin-bottom: 12px;
+    transition: all 0.3s ease;
+    text-align: center;
+    gap: 8px;
+}
+
+.image-placeholder.drag-over {
+    border-color: #0d8abc;
+    background-color: #1a2332;
+    color: #0d8abc;
+}
+
+.image-placeholder .icon {
+    color: #777;
+    font-size: 40px;
+    transition: color 0.3s ease;
+}
+
+.image-placeholder.drag-over .icon {
+    color: #0d8abc;
+    font-size: 50px;
+}
+
+.image-placeholder span {
+    color: #999;
+    font-size: 12px;
+    font-weight: 500;
+    margin-top: 4px;
+}
+
+.file-input-wrapper {
+    position: relative;
+    overflow: hidden;
+    display: inline-block;
+}
+
+.file-input {
+    position: absolute;
+    left: -9999px;
+}
+
+.file-input-button {
+    background-color: #0d8abc;
+    color: white;
+    padding: 10px 20px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 14px;
+    font-weight: 500;
+    border: none;
+}
+
+.file-input-button:hover {
+    background-color: #0b7aa3;
+}
+
+.file-info {
+    text-align: center;
+    color: #aaa;
+    font-size: 12px;
+    margin-top: 8px;
+}
+
+.remove-image-btn {
+    background-color: #ff6b6b;
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    transition: all 0.2s ease;
+}
+
+.remove-image-btn:hover {
+    background-color: #ff5252;
+}
+
+/* Form Actions */
+.form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    padding-top: 24px;
+    border-top: 1px solid #333;
+    margin-top: 24px;
+}
+
+.btn-cancel {
+    background-color: transparent;
+    color: #ccc;
+    border: 1px solid #555;
+    padding: 12px 24px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.btn-cancel:hover {
+    background-color: #333;
+    color: #fff;
+}
+
+.btn-submit {
+    background-color: #0d8abc;
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    min-width: 120px;
+}
+
+.btn-submit:hover:not(:disabled) {
+    background-color: #0b7aa3;
+}
+
+.btn-submit:disabled {
+    background-color: #555;
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+/* Success/Error Messages */
+.message {
+    padding: 12px 16px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    font-size: 14px;
+}
+
+.message.success {
+    background-color: #2d5a2d;
+    color: #90ee90;
+    border: 1px solid #4a7c4a;
+}
+
+.message.error {
+    background-color: #5a2d2d;
+    color: #ff9999;
+    border: 1px solid #7c4a4a;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .add-student-modal {
+        padding: 10px;
+    }
+    
+    .add-student-content {
+        max-height: 95vh;
+    }
+    
+    .form-grid {
+        grid-template-columns: 1fr;
+        gap: 16px;
+    }
+    
+    .add-student-header {
+        padding: 20px 20px 0 20px;
+    }
+    
+    .add-student-form {
+        padding: 0 20px 20px 20px;
+    }
+    
+    .add-student-title {
+        font-size: 20px;
+    }
+    
+    .profile-image-section {
+        padding: 20px;
+    }
+    
+    .form-actions {
+        flex-direction: column;
+    }
+    
+    .btn-cancel,
+    .btn-submit {
+        width: 100%;
+    }
+}

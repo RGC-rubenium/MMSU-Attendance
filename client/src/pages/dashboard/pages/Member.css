@@ -89,6 +89,20 @@
   transform: translateY(-1px);
 }
 
+.user-searchbar .add-student-btn {
+  background: #059669;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 500;
+  box-shadow: 0 6px 18px rgba(5, 150, 105, 0.12);
+}
+
+.user-searchbar .add-student-btn:hover:not(:disabled) {
+  background: #047857;
+  transform: translateY(-1px);
+}
+
 .user-searchbar .search-btn.has-changes {
   background: #3b82f6;
   box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
