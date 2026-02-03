@@ -68,6 +68,7 @@ export default function Student() {
         searching: false,
         mode: '',
         selectedIds: [],
+        allStudentIds: [], // Store all student IDs for global select all
         students: [],
         loading: false,
         error: '',
@@ -114,6 +115,29 @@ export default function Student() {
         
         return params;
     }, [searchParams, currentFilters]);
+
+    // Fetch all student IDs for global select all
+    const fetchAllStudentIds = useCallback(async () => {
+        try {
+            const handler = new StudentHandler();
+            // Fetch with same filters but get all pages and only IDs
+            const allParams = {
+                ...currentFilters,
+                q: state.query,
+                per_page: 1000, // Large number to get all
+                page: 1
+            };
+            
+            const data = await handler.fetchStudents(allParams);
+            const allIds = data.items ? data.items.map(s => s.id) : [];
+            
+            setState(prev => ({ ...prev, allStudentIds: allIds }));
+            return allIds;
+        } catch (err) {
+            console.error('Failed to fetch all student IDs:', err);
+            return [];
+        }
+    }, [currentFilters, state.query]);
 
     // Optimized data fetcher with better error handling
     const fetchStudents = useCallback(async (params) => {
@@ -254,15 +278,25 @@ export default function Student() {
                 : [...prev.selectedIds, id]
         }));
     }, []);
-    //Use to select or deselect all students -- tobe used in edit mode
-    const selectAll = useCallback(() => {
-        setState(prev => ({
-            ...prev,
-            selectedIds: prev.selectedIds.length === state.students.length 
-                ? [] 
-                : state.students.map(s => s.id)
-        }));
-    }, [state.students]);
+    //Use to select or deselect all students -- select ALL across all pages with current filters
+    const selectAll = useCallback(async () => {
+        setState(prev => ({ ...prev, loading: true }));
+        
+        try {
+            // If all available students are selected, deselect all
+            const allIds = state.allStudentIds.length > 0 ? state.allStudentIds : await fetchAllStudentIds();
+            const areAllSelected = allIds.length > 0 && allIds.every(id => state.selectedIds.includes(id));
+            
+            setState(prev => ({
+                ...prev,
+                selectedIds: areAllSelected ? [] : allIds,
+                loading: false
+            }));
+        } catch (err) {
+            console.error('Failed to select all students:', err);
+            setState(prev => ({ ...prev, loading: false }));
+        }
+    }, [state.selectedIds, state.allStudentIds, fetchAllStudentIds]);
 
     const handleCardClick = useCallback((e, user) => {
         if (state.mode === 'edit') {
@@ -298,9 +332,19 @@ export default function Student() {
     const handleDeleteSelected = useCallback(async () => {
         if (state.selectedIds.length === 0) return;
 
-        const confirmMessage = `Are you sure you want to delete ${state.selectedIds.length} selected student${state.selectedIds.length !== 1 ? 's' : ''}? This action cannot be undone.`;
+        const isDeleteAll = state.allStudentIds.length > 0 && state.allStudentIds.every(id => state.selectedIds.includes(id));
         
-        if (!window.confirm(confirmMessage)) return;
+        let confirmMessage;
+        if (isDeleteAll) {
+            confirmMessage = `⚠️ DELETE ALL STUDENTS\n\nYou are about to delete ALL ${state.meta.total} students matching current filters.\n\nThis action CANNOT be undone!\n\nType "DELETE ALL" to confirm:`;
+            const userInput = window.prompt(confirmMessage);
+            if (userInput !== "DELETE ALL") {
+                return; // User cancelled or didn't type the exact phrase
+            }
+        } else {
+            confirmMessage = `Are you sure you want to delete ${state.selectedIds.length} selected student${state.selectedIds.length !== 1 ? 's' : ''}?\n\nThis action cannot be undone.`;
+            if (!window.confirm(confirmMessage)) return;
+        }
 
         setState(prev => ({ ...prev, loading: true, error: '' }));
 
@@ -334,7 +378,7 @@ export default function Student() {
                 loading: false 
             }));
         }
-    }, [state.selectedIds, apiParams, fetchStudents]);
+    }, [state.selectedIds, state.allStudentIds, state.meta.total, apiParams, fetchStudents]);
 
     // AddStudent modal handlers
     const handleAddStudent = useCallback(() => {
@@ -427,25 +471,54 @@ export default function Student() {
                                     <IoIcons.IoPersonAdd />
                                     Add Student
                                 </button>
-                                <button className='setDelMode' onClick={() => setState(prev => ({ ...prev, mode: 'edit' }))}>
+                                <button className='setDelMode' onClick={async () => {
+                                    setState(prev => ({ ...prev, mode: 'edit' }));
+                                    // Fetch all student IDs when entering edit mode
+                                    await fetchAllStudentIds();
+                                }}>
                                     <CiIcons.CiEdit />
                                 </button>
                             </>
                         )}
                         {state.mode === 'edit' && (
                             <div className='editMode'>
-                                <span>{state.selectedIds.length} selected</span>
+                                <div className="select-all-section">
+                                    <label className="select-all-label">
+                                        <input
+                                            type="checkbox"
+                                            checked={state.allStudentIds.length > 0 && state.allStudentIds.every(id => state.selectedIds.includes(id))}
+                                            onChange={selectAll}
+                                            className="select-all-checkbox"
+                                            disabled={state.loading}
+                                        />
+                                        Select All ({state.meta.total} total)
+                                    </label>
+                                </div>
+                                <span className="selected-count">
+                                    {state.selectedIds.length} selected
+                                    {state.selectedIds.length > state.students.length && (
+                                        <span className="cross-page-indicator"> (across pages)</span>
+                                    )}
+                                </span>
                                 <button 
-                                    className='delete-user' 
+                                    className={`delete-user ${state.allStudentIds.length > 0 && state.allStudentIds.every(id => state.selectedIds.includes(id)) ? 'delete-all' : ''}`}
                                     onClick={handleDeleteSelected}
                                     disabled={state.selectedIds.length === 0 || state.loading}
-                                    title={`Delete ${state.selectedIds.length} selected student${state.selectedIds.length !== 1 ? 's' : ''}`}
+                                    title={state.allStudentIds.length > 0 && state.allStudentIds.every(id => state.selectedIds.includes(id))
+                                        ? `DELETE ALL ${state.meta.total} students (requires confirmation)` 
+                                        : `Delete ${state.selectedIds.length} selected student${state.selectedIds.length !== 1 ? 's' : ''}`}
                                 >
                                     <MdIcons.MdDelete />
+                                    {state.allStudentIds.length > 0 && state.allStudentIds.every(id => state.selectedIds.includes(id))
+                                        ? `DELETE ALL (${state.meta.total})` 
+                                        : state.selectedIds.length > 0 
+                                        ? `Delete ${state.selectedIds.length}` 
+                                        : 'Delete'}
                                 </button>
                                 <button 
                                     className='closeEditMode' 
                                     onClick={() => setState(prev => ({ ...prev, mode: '', selectedIds: [] }))}
+                                    title="Exit edit mode"
                                 >
                                     <MdIcons.MdClose />
                                 </button>

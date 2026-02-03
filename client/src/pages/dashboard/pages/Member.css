@@ -255,11 +255,94 @@
 .user-empty{padding:12px;color:rgba(255,255,255,0.6);text-align:center}
 .user-card-button{text-decoration: none;}
 
-.editMode { display: flex; gap: 8px; }
+.editMode { display: flex; align-items: center; gap: 12px; }
 .editMode .delete-user{
   padding: 8px 12px; border-radius: 8px; border: none; background: #e53e3e; color: #fff; cursor: pointer; box-shadow: 0 6px 18px rgba(229,62,62,0.12);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.editMode .delete-user:hover:not(:disabled) {
+  background: #dc2626;
+  transform: translateY(-1px);
+}
+
+.editMode .delete-user.delete-all {
+  background: #991b1b;
+  color: #fff;
+  border: 2px solid #fca5a5;
+  box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.2), 0 6px 18px rgba(153, 27, 27, 0.3);
+  animation: deleteAllPulse 2s infinite;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.editMode .delete-user.delete-all:hover:not(:disabled) {
+  background: #7f1d1d;
+  border-color: #f87171;
+  transform: translateY(-1px) scale(1.02);
+}
+
+@keyframes deleteAllPulse {
+  0%, 100% { box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.2), 0 6px 18px rgba(153, 27, 27, 0.3); }
+  50% { box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.4), 0 6px 18px rgba(153, 27, 27, 0.4); }
 }
 .editMode .delete-user, .editMode .closeEditMode {animation: forwards 1s ease-in-out;}
+
+/* Select All functionality */
+.select-all-section {
+  display: flex;
+  align-items: center;
+}
+
+.select-all-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  user-select: none;
+}
+
+.select-all-checkbox {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  accent-color: #6b46c1;
+}
+
+.selected-count {
+  color: #fff;
+  font-size: 14px;
+  font-weight: 500;
+  padding: 6px 12px;
+  background: rgba(107, 70, 193, 0.2);
+  border-radius: 6px;
+  border: 1px solid rgba(107, 70, 193, 0.4);
+}
+
+.cross-page-indicator {
+  color: #fbbf24;
+  font-weight: 600;
+  font-size: 12px;
+}
+
+.editMode .closeEditMode {
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: none;
+  background: #64748b;
+  color: #fff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
 
 /* Pagination */
 .pagination {
