@@ -182,3 +182,83 @@ class AddStudentHandler {
 }
 
 export default new AddStudentHandler();
+
+// Add bulk import methods
+AddStudentHandler.prototype.bulkImportStudents = async function(excelFile) {
+    try {
+        const formData = new FormData();
+        formData.append('excel_file', excelFile);
+        
+        const response = await fetch(`${API_BASE}/api/students/bulk-import`, {
+            method: 'POST',
+            body: formData,
+            // Don't set Content-Type header, let the browser set it with boundary
+        });
+        
+        const data = await response.json();
+        
+        if (!response.ok) {
+            throw new Error(data.message || 'Failed to import students');
+        }
+        
+        return data;
+    } catch (error) {
+        console.error('Bulk import error:', error);
+        throw error;
+    }
+};
+
+AddStudentHandler.prototype.downloadTemplate = function() {
+    const headers = [
+        'uid',
+        'id', 
+        'first_name',
+        'middle_name',
+        'last_name',
+        'department',
+        'year_level',
+        'section',
+        'gender'
+    ];
+    
+    const sampleData = [
+        [
+            'SAMPLE001',
+            '2024-1001',
+            'John',
+            'Middle',
+            'Doe',
+            'BSCPE',
+            '1',
+            'A',
+            'MALE'
+        ],
+        [
+            'SAMPLE002',
+            '2024-1002',
+            'Jane',
+            '',
+            'Smith',
+            'IT',
+            '2',
+            'B',
+            'FEMALE'
+        ]
+    ];
+    
+    // Create CSV content
+    const csvContent = [headers, ...sampleData]
+        .map(row => row.map(cell => `"${cell}"`).join(','))
+        .join('\n');
+    
+    // Create and download file
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'student_import_template.csv';
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(a);
+};

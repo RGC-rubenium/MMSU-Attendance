@@ -380,3 +380,187 @@
         width: 100%;
     }
 }
+
+/* Bulk Import Specific Styles */
+.template-section {
+    background-color: #1a2332;
+    border-radius: 8px;
+    padding: 20px;
+    border: 1px solid #0d8abc;
+    margin-bottom: 20px;
+}
+
+.template-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.template-header .icon {
+    color: #0d8abc;
+    font-size: 20px;
+}
+
+.template-header h3 {
+    color: #fff;
+    margin: 0;
+    font-size: 16px;
+    font-weight: 500;
+}
+
+.template-section p {
+    color: #ccc;
+    margin: 0 0 16px 0;
+    font-size: 14px;
+}
+
+.template-download-btn {
+    background-color: #0d8abc;
+    color: white;
+    border: none;
+    padding: 12px 20px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.2s ease;
+}
+
+.template-download-btn:hover {
+    background-color: #0b7aa3;
+    transform: translateY(-1px);
+}
+
+.excel-upload-section {
+    border: 2px dashed #f59e0b;
+}
+
+.excel-upload-section:hover {
+    border-color: #d97706;
+}
+
+.excel-upload-section.drag-over {
+    border-color: #f59e0b;
+    background-color: #2a1f0a;
+}
+
+.excel-placeholder {
+    background-color: #2a2a2a;
+    border: 2px dashed #f59e0b;
+    width: 200px;
+    height: 120px;
+    border-radius: 8px;
+}
+
+.excel-placeholder .icon {
+    color: #f59e0b;
+    font-size: 50px;
+}
+
+.excel-placeholder.drag-over {
+    border-color: #f59e0b;
+    background-color: #2a1f0a;
+    color: #f59e0b;
+}
+
+.file-selected {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 16px;
+    background-color: #1a2f1a;
+    border-radius: 8px;
+    border: 1px solid #059669;
+}
+
+.file-selected .file-icon {
+    color: #059669;
+    font-size: 40px;
+}
+
+.file-selected .file-info {
+    flex: 1;
+}
+
+.file-selected .file-name {
+    color: #fff;
+    font-weight: 500;
+    margin-bottom: 4px;
+}
+
+.file-selected .file-size {
+    color: #ccc;
+    font-size: 12px;
+}
+
+.import-results {
+    background-color: #1a2332;
+    border-radius: 8px;
+    padding: 20px;
+    margin-top: 20px;
+    border: 1px solid #0d8abc;
+}
+
+.import-results h4 {
+    color: #fff;
+    margin: 0 0 16px 0;
+    font-size: 16px;
+}
+
+.results-summary {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.success-count {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #059669;
+    font-weight: 500;
+}
+
+.success-count .icon {
+    font-size: 20px;
+}
+
+.error-count {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #ff6b6b;
+    font-weight: 500;
+}
+
+.error-count .icon {
+    font-size: 20px;
+}
+
+.errors-list {
+    margin-top: 16px;
+}
+
+.errors-list h5 {
+    color: #ff6b6b;
+    margin: 0 0 8px 0;
+    font-size: 14px;
+}
+
+.errors-list ul {
+    margin: 0;
+    padding-left: 20px;
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.errors-list li {
+    color: #ff9999;
+    font-size: 12px;
+    margin-bottom: 4px;
+}

@@ -100,6 +100,23 @@
 
 .user-searchbar .add-student-btn:hover:not(:disabled) {
   background: #047857;
+}
+
+.user-searchbar .bulk-import-btn {
+  background: #f59e0b;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 500;
+  box-shadow: 0 6px 18px rgba(245, 158, 11, 0.12);
+}
+
+.user-searchbar .bulk-import-btn:hover:not(:disabled) {
+  background: #d97706;
+}
+
+.user-searchbar .add-student-btn:hover:not(:disabled) {
+  background: #047857;
   transform: translateY(-1px);
 }
 

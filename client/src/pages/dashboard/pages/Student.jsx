@@ -4,8 +4,10 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import * as MdIcons from "react-icons/md";
 import * as CiIcons from "react-icons/ci";
 import * as IoIcons from "react-icons/io5";
+import * as FaIcons from "react-icons/fa";
 import StudentHandler from '../../../api/StudentHandler';
 import AddStudent from '../../../components/dashboard/AddStudent';
+import BulkImportStudents from '../../../components/dashboard/BulkImportStudents';
 
 // Constants
 const DEFAULT_PER_PAGE = 20;
@@ -70,6 +72,7 @@ export default function Student() {
         loading: false,
         error: '',
         showAddStudent: false,
+        showBulkImport: false,
         meta: { total: 0, page: 1, totalPages: 0, hasNext: false, hasPrev: false }
     });
 
@@ -346,6 +349,20 @@ export default function Student() {
         // Refresh the student list to include the new student
         await fetchStudents(apiParams);
     }, [apiParams, fetchStudents]);
+    
+    // Bulk import modal handlers
+    const handleBulkImport = useCallback(() => {
+        setState(prev => ({ ...prev, showBulkImport: true }));
+    }, []);
+    
+    const handleCloseBulkImport = useCallback(() => {
+        setState(prev => ({ ...prev, showBulkImport: false }));
+    }, []);
+    
+    const handleBulkImportSuccess = useCallback(async (result) => {
+        // Refresh the student list to include imported students
+        await fetchStudents(apiParams);
+    }, [apiParams, fetchStudents]);
 
     return (
         <>
@@ -394,6 +411,14 @@ export default function Student() {
                     <div className="user-searchbar">
                         {state.mode === '' && (
                             <>
+                                <button 
+                                    className='bulk-import-btn' 
+                                    onClick={handleBulkImport}
+                                    title="Bulk Import Students"
+                                >
+                                    <FaIcons.FaFileExcel />
+                                    Bulk Import
+                                </button>
                                 <button 
                                     className='add-student-btn' 
                                     onClick={handleAddStudent}
@@ -508,6 +533,13 @@ export default function Student() {
                 isOpen={state.showAddStudent}
                 onClose={handleCloseAddStudent}
                 onSuccess={handleStudentAdded}
+            />
+            
+            {/* Bulk Import Modal */}
+            <BulkImportStudents 
+                isOpen={state.showBulkImport}
+                onClose={handleCloseBulkImport}
+                onSuccess={handleBulkImportSuccess}
             />
         </>
     );
