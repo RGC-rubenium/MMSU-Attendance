@@ -4,6 +4,8 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import * as MdIcons from "react-icons/md";
 import * as CiIcons from "react-icons/ci";
 import FacultyHandler from '../../../api/FacultyHandler';
+import AddFaculty from '../../../components/dashboard/AddFaculty';
+import BulkImportFaculty from '../../../components/dashboard/BulkImportFaculty';
 
 // Constants
 const DEFAULT_PER_PAGE = 20;
@@ -48,9 +50,12 @@ export default function Faculty() {
         searching: false,
         mode: '',
         selectedIds: [],
+        allFacultyIds: [], // Store all faculty IDs for global select all
         faculty: [],
         loading: false,
         error: '',
+        showAddFaculty: false,
+        showBulkImport: false,
         meta: { total: 0, page: 1, totalPages: 0, hasNext: false, hasPrev: false }
     });
 
@@ -93,6 +98,29 @@ export default function Faculty() {
         return params;
     }, [searchParams, currentFilters]);
 
+    // Fetch all faculty IDs for global select all
+    const fetchAllFacultyIds = useCallback(async () => {
+        try {
+            const handler = new FacultyHandler();
+            // Use current API params but with large per_page to get all results
+            const allParams = {
+                ...apiParams,
+                per_page: 1000, // Large number to get all
+                page: 1
+            };
+            
+            const data = await handler.fetchFaculties(allParams);
+            // Filter out null/undefined IDs
+            const allIds = data.items ? data.items.map(f => f.id).filter(id => id != null && id !== undefined && id !== '') : [];
+            
+            setState(prev => ({ ...prev, allFacultyIds: allIds }));
+            return allIds;
+        } catch (err) {
+            console.error('Failed to fetch all faculty IDs:', err);
+            return [];
+        }
+    }, [apiParams]);
+
     // Optimized data fetcher with better error handling
     const fetchFaculty = useCallback(async (params) => {
         setState(prev => ({ ...prev, loading: true, error: '' }));
@@ -108,7 +136,7 @@ export default function Faculty() {
                     'Unknown Name';
                 
                 return {
-                    id: u.facultyId,
+                    id: u.id,
                     fullName: u.fullName,
                     avatar: u.profile_path,
                     department: u.department || 'Unknown',
@@ -152,6 +180,15 @@ export default function Faculty() {
     useEffect(() => {
         fetchFaculty(apiParams);
     }, [apiParams, fetchFaculty]);
+
+    // Clear allFacultyIds when filters or query change so it refetches with new criteria
+    useEffect(() => {
+        setState(prev => ({ 
+            ...prev, 
+            allFacultyIds: [],
+            selectedIds: [] // Also clear selections when filters change
+        }));
+    }, [apiParams]);
 
     // Sync local state with URL params when they change (for back/forward navigation)
     useEffect(() => {
@@ -232,15 +269,25 @@ export default function Faculty() {
                 : [...prev.selectedIds, id]
         }));
     }, []);
-    //Use to select or deselect all faculty -- tobe used in edit mode
-    const selectAll = useCallback(() => {
-        setState(prev => ({
-            ...prev,
-            selectedIds: prev.selectedIds.length === state.faculty.length 
-                ? [] 
-                : state.faculty.map(s => s.id)
-        }));
-    }, [state.faculty]);
+    //Use to select or deselect all faculty -- select ALL across all pages with current filters
+    const selectAll = useCallback(async () => {
+        setState(prev => ({ ...prev, loading: true }));
+        
+        try {
+            // If all available faculty are selected, deselect all
+            const allIds = state.allFacultyIds.length > 0 ? state.allFacultyIds : await fetchAllFacultyIds();
+            const areAllSelected = allIds.length > 0 && allIds.every(id => state.selectedIds.includes(id));
+            
+            setState(prev => ({
+                ...prev,
+                selectedIds: areAllSelected ? [] : allIds,
+                loading: false
+            }));
+        } catch (err) {
+            console.error('Failed to select all faculty:', err);
+            setState(prev => ({ ...prev, loading: false }));
+        }
+    }, [state.selectedIds, state.allFacultyIds, fetchAllFacultyIds]);
 
     const handleCardClick = useCallback((e, user) => {
         if (state.mode === 'edit') {
@@ -276,9 +323,19 @@ export default function Faculty() {
     const handleDeleteSelected = useCallback(async () => {
         if (state.selectedIds.length === 0) return;
 
-        const confirmMessage = `Are you sure you want to delete ${state.selectedIds.length} selected faculty member${state.selectedIds.length !== 1 ? 's' : ''}? This action cannot be undone.`;
+        const isDeleteAll = state.allFacultyIds.length > 0 && state.allFacultyIds.every(id => state.selectedIds.includes(id));
         
-        if (!window.confirm(confirmMessage)) return;
+        let confirmMessage;
+        if (isDeleteAll) {
+            confirmMessage = `⚠️ DELETE ALL FACULTY MEMBERS\n\nYou are about to delete ALL ${state.meta.total} faculty members matching current filters.\n\nThis action CANNOT be undone!\n\nType "DELETE ALL" to confirm:`;
+            const userInput = window.prompt(confirmMessage);
+            if (userInput !== "DELETE ALL") {
+                return; // User cancelled or didn't type the exact phrase
+            }
+        } else {
+            confirmMessage = `Are you sure you want to delete ${state.selectedIds.length} selected faculty member${state.selectedIds.length !== 1 ? 's' : ''}?\n\nThis action cannot be undone.`;
+            if (!window.confirm(confirmMessage)) return;
+        }
 
         setState(prev => ({ ...prev, loading: true, error: '' }));
 
@@ -296,10 +353,11 @@ export default function Faculty() {
             // Refresh the faculty list
             await fetchFaculty(apiParams);
             
-            // Clear selection and exit edit mode
+            // Clear selection, allFacultyIds, and exit edit mode
             setState(prev => ({ 
                 ...prev, 
                 selectedIds: [], 
+                allFacultyIds: [], // Clear this so Select All recalculates
                 mode: '',
                 loading: false 
             }));
@@ -312,7 +370,35 @@ export default function Faculty() {
                 loading: false 
             }));
         }
-    }, [state.selectedIds, apiParams, fetchFaculty]);
+    }, [state.selectedIds, state.allFacultyIds, state.meta.total, apiParams, fetchFaculty]);
+
+    // AddFaculty modal handlers
+    const handleAddFaculty = useCallback(() => {
+        setState(prev => ({ ...prev, showAddFaculty: true }));
+    }, []);
+    
+    const handleCloseAddFaculty = useCallback(() => {
+        setState(prev => ({ ...prev, showAddFaculty: false }));
+    }, []);
+    
+    const handleFacultyAdded = useCallback(async (newFaculty) => {
+        setState(prev => ({ ...prev, showAddFaculty: false }));
+        await fetchFaculty(apiParams);
+    }, [apiParams, fetchFaculty]);
+    
+    // Bulk import modal handlers
+    const handleBulkImport = useCallback(() => {
+        setState(prev => ({ ...prev, showBulkImport: true }));
+    }, []);
+    
+    const handleCloseBulkImport = useCallback(() => {
+        setState(prev => ({ ...prev, showBulkImport: false }));
+    }, []);
+    
+    const handleBulkImportSuccess = useCallback(async (result) => {
+        setState(prev => ({ ...prev, showBulkImport: false }));
+        await fetchFaculty(apiParams);
+    }, [apiParams, fetchFaculty]);
 
     return (
         <div className="user-page-wrapper">
@@ -359,20 +445,58 @@ export default function Faculty() {
                     <h1>Faculty Management ({state.meta.total} total)</h1>
                     <div className="user-searchbar">
                         {state.mode === '' && (
-                            <button className='setDelMode' onClick={() => setState(prev => ({ ...prev, mode: 'edit' }))}>
-                                <CiIcons.CiEdit />
-                            </button>
+                            <>
+                                <button 
+                                    className='bulk-import-btn' 
+                                    onClick={handleBulkImport}
+                                    disabled={state.loading}
+                                    title="Bulk import faculty from Excel"
+                                >
+                                    <MdIcons.MdUploadFile />
+                                    Bulk Import
+                                </button>
+                                <button 
+                                    className='add-student-btn' 
+                                    onClick={handleAddFaculty}
+                                    disabled={state.loading}
+                                    title="Add new faculty member"
+                                >
+                                    <MdIcons.MdPersonAdd />
+                                    Add Faculty
+                                </button>
+                                <button className='setDelMode' onClick={() => setState(prev => ({ ...prev, mode: 'edit' }))}>
+                                    <CiIcons.CiEdit />
+                                </button>
+                            </>
                         )}
                         {state.mode === 'edit' && (
                             <div className='editMode'>
-                                <span>{state.selectedIds.length} selected</span>
+                                <div className="select-all-section">
+                                    <label className="select-all-label">
+                                        <input
+                                            type="checkbox"
+                                            checked={state.allFacultyIds.length > 0 && state.allFacultyIds.every(id => state.selectedIds.includes(id))}
+                                            onChange={selectAll}
+                                            className="select-all-checkbox"
+                                            disabled={state.loading}
+                                        />
+                                        Select All ({state.meta.total} total)
+                                    </label>
+                                </div>
+                                <span className="selected-count">
+                                    {state.selectedIds.length} selected
+                                    {state.selectedIds.length > state.faculty.length && (
+                                        <span className="cross-page-indicator"> (across pages)</span>
+                                    )}
+                                </span>
                                 <button 
-                                    className='delete-user' 
+                                    className={`delete-user ${state.allFacultyIds.length > 0 && state.allFacultyIds.every(id => state.selectedIds.includes(id)) ? 'delete-all' : ''}`}
                                     onClick={handleDeleteSelected}
                                     disabled={state.selectedIds.length === 0 || state.loading}
                                     title={`Delete ${state.selectedIds.length} selected faculty member${state.selectedIds.length !== 1 ? 's' : ''}`}
                                 >
                                     <MdIcons.MdDelete />
+                                    {state.allFacultyIds.length > 0 && state.allFacultyIds.every(id => state.selectedIds.includes(id)) ? 'DELETE ALL' : 'Delete'}
                                 </button>
                                 <button 
                                     className='closeEditMode' 
@@ -457,6 +581,18 @@ export default function Faculty() {
                     )}
                 </div>
             </div>
+            
+            {/* Modals */}
+            <AddFaculty 
+                isOpen={state.showAddFaculty}
+                onClose={handleCloseAddFaculty}
+                onSuccess={handleFacultyAdded}
+            />
+            <BulkImportFaculty 
+                isOpen={state.showBulkImport}
+                onClose={handleCloseBulkImport}
+                onSuccess={handleBulkImportSuccess}
+            />
         </div>
     );
 }

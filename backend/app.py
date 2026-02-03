@@ -9,6 +9,7 @@ from api.students_delete import students_delete_bp
 from api.add_student import add_student_bp
 from api.faculty import faculty_bp
 from api.faculty_delete import faculty_delete_bp
+from api.add_faculty import add_faculty_bp
 from api.add_schedule import event_schedule_bp
 from api.add_class_schedule import class_schedule_bp
 
@@ -34,6 +35,7 @@ app.register_blueprint(students_delete_bp, url_prefix='/api')
 app.register_blueprint(add_student_bp)
 app.register_blueprint(faculty_bp, url_prefix='/api')
 app.register_blueprint(faculty_delete_bp, url_prefix='/api')
+app.register_blueprint(add_faculty_bp)
 app.register_blueprint(event_schedule_bp, url_prefix='/api')
 app.register_blueprint(class_schedule_bp, url_prefix='/api')
 

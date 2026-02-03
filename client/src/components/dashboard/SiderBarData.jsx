@@ -27,11 +27,6 @@ export const SideBarData = [
                 title: 'Faculty',
                 Path: '/dashboard/faculty',
                 cName: 'sidebar-subtext'
-            },
-            {
-                title: 'ADD USERS',
-                Path: '/dashboard/add-users',
-                cName: 'sidebar-adduser'
             }
         ]
     },

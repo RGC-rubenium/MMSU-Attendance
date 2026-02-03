@@ -92,7 +92,7 @@ class Faculty(db.Model):
     def to_dict(self):
         return {
             'uid': self.uid,
-            'facultyId': self.id,
+            'id': self.id,  # Changed back to 'id' to match Student pattern
             'fullName': self.full_name(),
             'department': self.department,
             'avatar': self.profile_path,
