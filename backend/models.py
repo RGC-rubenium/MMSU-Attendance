@@ -83,7 +83,6 @@ class Faculty(db.Model):
     profile_path = db.Column(db.Text, nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    profile_path = db.Column(db.Text, nullable=True)
     gender = db.Column(db.String(10), nullable=True)
     def full_name(self):
         parts = [self.first_name, self.middle_name, self.last_name]
@@ -148,6 +147,46 @@ class ClassSchedule(db.Model):
             'description': self.description,
             'is_active': self.is_active,
             'created_by': self.created_by,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'updated_at': self.updated_at.isoformat() if self.updated_at else None,
+        }
+
+
+class AttendanceLog(db.Model):
+    __tablename__ = "attendance_logs"
+    __table_args__ = {'schema': 'attendance'}
+
+    id = db.Column(db.Integer, primary_key=True)
+    uid = db.Column(db.String(36), nullable=False)  # UID from RFID
+    user_type = db.Column(db.String(20), nullable=False)  # 'student' or 'faculty'
+    user_id = db.Column(db.String(50), nullable=True)  # Student/Faculty ID
+    full_name = db.Column(db.String(200), nullable=False)
+    department = db.Column(db.String(100), nullable=True)
+    schedule_type = db.Column(db.String(20), nullable=False)  # 'default', 'event', 'student'
+    schedule_name = db.Column(db.String(100), nullable=True)
+    time_in = db.Column(db.DateTime, nullable=False)
+    time_out = db.Column(db.DateTime, nullable=True)
+    status = db.Column(db.String(20), default='present')  # 'present', 'late', 'absent'
+    subjects_attended = db.Column(db.JSON, nullable=True)  # List of subjects attended during time-in to time-out
+    notes = db.Column(db.Text, nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'uid': self.uid,
+            'user_type': self.user_type,
+            'user_id': self.user_id,
+            'full_name': self.full_name,
+            'department': self.department,
+            'schedule_type': self.schedule_type,
+            'schedule_name': self.schedule_name,
+            'time_in': self.time_in.isoformat() if self.time_in else None,
+            'time_out': self.time_out.isoformat() if self.time_out else None,
+            'status': self.status,
+            'subjects_attended': self.subjects_attended,
+            'notes': self.notes,
             'created_at': self.created_at.isoformat() if self.created_at else None,
             'updated_at': self.updated_at.isoformat() if self.updated_at else None,
         }
