@@ -183,8 +183,41 @@ def list_faculty():
         for faculty in pagination.items:
             try:
                 faculty_dict = faculty.to_dict() if hasattr(faculty, 'to_dict') else {
-                    'Error': 'No to_dict method available'
+                    'uid': getattr(faculty, 'uid', ''),
+                    'id': getattr(faculty, 'id', ''),
+                    'first_name': getattr(faculty, 'first_name', ''),
+                    'middle_name': getattr(faculty, 'middle_name', ''),
+                    'last_name': getattr(faculty, 'last_name', ''),
+                    'department': getattr(faculty, 'department', ''),
+                    'profile_path': getattr(faculty, 'profile_path', None),
+                    'created_at': getattr(faculty, 'created_at', None),
+                    'updated_at': getattr(faculty, 'updated_at', None)
                 }
+                
+                # Add computed full_name if not present
+                if 'full_name' not in faculty_dict:
+                    parts = [
+                        faculty_dict.get('first_name', ''),
+                        faculty_dict.get('middle_name', ''),
+                        faculty_dict.get('last_name', '')
+                    ]
+                    faculty_dict['full_name'] = ' '.join(p for p in parts if p).strip()
+                
+                # Convert profile_path to full URL if it exists
+                profile_path = faculty_dict.get('profile_path')
+                if profile_path and profile_path.strip():
+                    # Clean the path and construct the full URL
+                    clean_path = profile_path.strip()
+                    if not clean_path.startswith('http'):
+                        # Remove leading slash if present to avoid double slashes
+                        if clean_path.startswith('/'):
+                            clean_path = clean_path[1:]
+                        faculty_dict['avatar'] = f"{request.url_root}images/{clean_path}"
+                    else:
+                        faculty_dict['avatar'] = clean_path
+                else:
+                    faculty_dict['avatar'] = None
+                
                 faculty_members.append(faculty_dict)
                 
             except Exception as e:

@@ -6,6 +6,7 @@ import * as CiIcons from "react-icons/ci";
 import FacultyHandler from '../../../api/FacultyHandler';
 import AddFaculty from '../../../components/dashboard/AddFaculty';
 import BulkImportFaculty from '../../../components/dashboard/BulkImportFaculty';
+import UserAvatar from '../../../components/UserAvatar';
 
 // Constants
 const DEFAULT_PER_PAGE = 20;
@@ -131,14 +132,14 @@ export default function Faculty() {
             // Transform and validate data
             const faculty = data.items.map(u => {
                 // Ensure required fields exist
-                const fullName = u.full_name || 
+                const fullName = u.full_name || u.fullName ||
                     `${u.first_name || ''} ${u.middle_name || ''} ${u.last_name || ''}`.replace(/\s+/g, ' ').trim() ||
                     'Unknown Name';
                 
                 return {
                     id: u.id,
-                    fullName: u.fullName,
-                    avatar: u.profile_path,
+                    fullName: fullName,
+                    avatar: u.avatar || u.profile_path, // Use avatar field from API
                     department: u.department || 'Unknown',
                     yearlevel: u.year_level || u.yearlevel || '',
                     section: u.section || '',
@@ -146,7 +147,7 @@ export default function Faculty() {
                     // Add other fields as needed
                 };
             });
-            console.log(faculty);
+            console.log('Transformed faculty:', faculty);
             setState(prev => ({
                 ...prev,
                 faculty,
@@ -547,7 +548,12 @@ export default function Faculty() {
                                                 {isSelected ? <MdIcons.MdCheckBox /> : <MdIcons.MdCheckBoxOutlineBlank />}
                                             </div>
                                         )}
-                                        <img className="user-avatar" src={u.avatar} alt={"No Image"} />
+                                        <UserAvatar 
+                                            src={u.avatar} 
+                                            alt={`${u.fullName} avatar`} 
+                                            fullName={u.fullName}
+                                            className="user-avatar" 
+                                        />
                                         <div className="user-info">
                                             <div className="user-name">{u.fullName}</div>
                                             <div className="user-id">{u.id}</div>

@@ -61,12 +61,16 @@ class Student(db.Model):
         return {
             'uid': self.uid,
             'id': self.id,
+            'first_name': self.first_name,
+            'middle_name': self.middle_name,
+            'last_name': self.last_name,
             'fullName': self.full_name(),
             'department': self.department,
             'yearlevel': str(self.year_level) if self.year_level is not None else None,
             'section': self.section,
             'avatar': self.profile_path,
-            'gender': self.gender,  
+            'gender': self.gender,
+            'profile_path': self.profile_path
         }
 
 
@@ -91,11 +95,15 @@ class Faculty(db.Model):
     def to_dict(self):
         return {
             'uid': self.uid,
-            'id': self.id,  # Changed back to 'id' to match Student pattern
+            'id': self.id,
+            'first_name': self.first_name,
+            'middle_name': self.middle_name,
+            'last_name': self.last_name,
             'fullName': self.full_name(),
             'department': self.department,
             'avatar': self.profile_path,
             'gender': self.gender,
+            'profile_path': self.profile_path
         }
 
 class EventSchedule(db.Model):

@@ -1,7 +1,8 @@
 # backend/app.py
-from flask import Flask
+from flask import Flask, send_from_directory
 from flask_cors import CORS
 import config
+import os
 from extensions import db, migrate
 from api.auth import auth_bp
 from api.students import students_bp
@@ -40,6 +41,13 @@ app.register_blueprint(add_faculty_bp)
 app.register_blueprint(event_schedule_bp, url_prefix='/api')
 app.register_blueprint(class_schedule_bp, url_prefix='/api')
 app.register_blueprint(rfid_scanner_bp)
+
+# Static file route for serving images
+@app.route('/images/<path:filename>')
+def serve_images(filename):
+    """Serve images from the images directory"""
+    images_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'images')
+    return send_from_directory(images_dir, filename)
 
 
 if __name__ == '__main__':

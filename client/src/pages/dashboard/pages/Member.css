@@ -178,6 +178,76 @@
   transform: scale(1.02);
 }
 
+/* Avatar placeholder and loading styles */
+.avatar-placeholder {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  margin-right: 18px;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  transition: all 0.2s ease;
+  background: linear-gradient(135deg, #6b46c1, #8b5cf6);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.avatar-initials {
+  color: white;
+  font-weight: 600;
+  font-size: 20px;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.avatar-container {
+  position: relative;
+  display: inline-block;
+  width: 60px;
+  height: 60px;
+  margin-right: 18px;
+  flex-shrink: 0;
+}
+
+.avatar-container .user-avatar {
+  margin-right: 0;
+}
+
+.avatar-loading {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 50%;
+}
+
+.loading-spinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top: 2px solid rgba(255, 255, 255, 0.8);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Hover effects for placeholder */
+.user-card:hover .avatar-placeholder {
+  border-color: rgba(255, 255, 255, 0.4);
+  transform: scale(1.02);
+  background: linear-gradient(135deg, #7c3aed, #a855f7);
+}
+
 .user-info {
   display: flex;
   flex-direction: column;

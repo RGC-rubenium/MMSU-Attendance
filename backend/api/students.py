@@ -210,6 +210,21 @@ def list_students():
                     ]
                     student_dict['full_name'] = ' '.join(p for p in parts if p).strip()
                 
+                # Convert profile_path to full URL if it exists
+                profile_path = student_dict.get('profile_path')
+                if profile_path and profile_path.strip():
+                    # Clean the path and construct the full URL
+                    clean_path = profile_path.strip()
+                    if not clean_path.startswith('http'):
+                        # Remove leading slash if present to avoid double slashes
+                        if clean_path.startswith('/'):
+                            clean_path = clean_path[1:]
+                        student_dict['avatar'] = f"{request.url_root}images/{clean_path}"
+                    else:
+                        student_dict['avatar'] = clean_path
+                else:
+                    student_dict['avatar'] = None
+                
                 students.append(student_dict)
                 
             except Exception as e:
