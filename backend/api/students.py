@@ -219,7 +219,11 @@ def list_students():
                         # Remove leading slash if present to avoid double slashes
                         if clean_path.startswith('/'):
                             clean_path = clean_path[1:]
-                        student_dict['avatar'] = f"{request.url_root}images/{clean_path}"
+                        # Check if path already starts with 'images/' to avoid duplication
+                        if clean_path.startswith('images/'):
+                            student_dict['avatar'] = f"{request.url_root}{clean_path}"
+                        else:
+                            student_dict['avatar'] = f"{request.url_root}images/{clean_path}"
                     else:
                         student_dict['avatar'] = clean_path
                 else:

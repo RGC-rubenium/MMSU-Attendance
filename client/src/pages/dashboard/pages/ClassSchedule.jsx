@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import './ClassSchedule.css';
 import ClassScheduleHandler from '../../../api/ClassScheduleHandler';
 import * as MdIcons from "react-icons/md";
@@ -58,7 +58,7 @@ const ClassSchedule = () => {
         }
     });
 
-    const handler = new ClassScheduleHandler();
+    const handler = useMemo(() => new ClassScheduleHandler(), []);
     const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
     // Initialize schedule data structure
@@ -69,11 +69,6 @@ const ClassSchedule = () => {
                 schedule_data: handler.createScheduleData()
             }));
         }
-    }, []);
-
-    // Fetch schedules on component mount
-    useEffect(() => {
-        fetchSchedules();
     }, []);
 
     const fetchSchedules = useCallback(async (searchQuery = '') => {
@@ -101,6 +96,11 @@ const ClassSchedule = () => {
             }));
         }
     }, [handler]);
+
+    // Fetch schedules on component mount
+    useEffect(() => {
+        fetchSchedules();
+    }, [fetchSchedules]);
 
     const handleSearch = useCallback((e) => {
         const query = e.target.value;
@@ -395,8 +395,14 @@ const ClassSchedule = () => {
 
             {state.loading && (
                 <div className="loading-spinner">
-                    <BiIcons.BiLoaderAlt className="spin" />
-                    Loading schedules...
+                    <div className="loading-content">
+                        <div className="loading-dots">
+                            <div className="loading-dot"></div>
+                            <div className="loading-dot"></div>
+                            <div className="loading-dot"></div>
+                        </div>
+                        <div className="loading-text">Loading schedules...</div>
+                    </div>
                 </div>
             )}
 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import './Event_scheduler.css';
 import EventScheduleHandler from '../../../api/EventScheduleHandler';
 import * as MdIcons from "react-icons/md";
@@ -26,16 +26,13 @@ const Event_scheduler = () => {
         }
     });
 
-    // Fetch events on component mount
-    useEffect(() => {
-        fetchEvents();
-    }, []);
+    // Memoize handler to prevent recreation on every render
+    const handler = useMemo(() => new EventScheduleHandler(), []);
 
     const fetchEvents = useCallback(async (searchQuery = '') => {
         setState(prev => ({ ...prev, loading: true, error: '' }));
         
         try {
-            const handler = new EventScheduleHandler();
             const params = {};
             
             if (searchQuery.trim()) {
@@ -57,7 +54,12 @@ const Event_scheduler = () => {
                 loading: false
             }));
         }
-    }, []);
+    }, [handler]);
+
+    // Fetch events on component mount
+    useEffect(() => {
+        fetchEvents();
+    }, [fetchEvents]);
 
     const handleSearch = useCallback((e) => {
         const query = e.target.value;
@@ -151,8 +153,6 @@ const Event_scheduler = () => {
         setState(prev => ({ ...prev, loading: true, error: '' }));
         
         try {
-            const handler = new EventScheduleHandler();
-            
             if (state.editingEvent) {
                 // Update existing event
                 await handler.updateEventSchedule(state.editingEvent.id, formData);
@@ -186,7 +186,6 @@ const Event_scheduler = () => {
         setState(prev => ({ ...prev, loading: true, error: '' }));
         
         try {
-            const handler = new EventScheduleHandler();
             await handler.deleteEventSchedule(eventId);
             
             // Refresh events list
@@ -259,8 +258,14 @@ const Event_scheduler = () => {
 
             {state.loading && (
                 <div className="loading-spinner">
-                    <BiIcons.BiLoaderAlt className="spin" />
-                    Loading events...
+                    <div className="loading-content">
+                        <div className="loading-dots">
+                            <div className="loading-dot"></div>
+                            <div className="loading-dot"></div>
+                            <div className="loading-dot"></div>
+                        </div>
+                        <div className="loading-text">Loading events...</div>
+                    </div>
                 </div>
             )}
 

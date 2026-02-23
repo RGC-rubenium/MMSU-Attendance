@@ -10,7 +10,7 @@ faculty_bp = Blueprint('faculty', __name__)
 
 
 @faculty_bp.route('/faculty', methods=['GET'])
-@jwt_utils.token_required  # Uncomment this line to require authentication
+#@jwt_utils.token_required  # Uncomment this line to require authentication
 def list_faculty():
     """
     Get list of faculty members with optional search, sort, and pagination
@@ -212,7 +212,11 @@ def list_faculty():
                         # Remove leading slash if present to avoid double slashes
                         if clean_path.startswith('/'):
                             clean_path = clean_path[1:]
-                        faculty_dict['avatar'] = f"{request.url_root}images/{clean_path}"
+                        # Check if path already starts with 'images/' to avoid duplication
+                        if clean_path.startswith('images/'):
+                            faculty_dict['avatar'] = f"{request.url_root}{clean_path}"
+                        else:
+                            faculty_dict['avatar'] = f"{request.url_root}images/{clean_path}"
                     else:
                         faculty_dict['avatar'] = clean_path
                 else:

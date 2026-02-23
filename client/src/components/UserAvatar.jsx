@@ -1,18 +1,21 @@
 import React, { useState, useEffect } from 'react';
 
 const UserAvatar = ({ src, alt, fullName, className = "user-avatar" }) => {
-    const [imageState, setImageState] = useState('loading'); // 'loading', 'loaded', 'error'
+    const [imageLoaded, setImageLoaded] = useState(false);
+    const [imageError, setImageError] = useState(false);
     
-    console.log('UserAvatar render:', { src, fullName, imageState });
+    console.log('UserAvatar render:', { src, fullName, imageLoaded, imageError });
 
-    // Reset state when src changes
+    // Reset states when src changes
     useEffect(() => {
         if (src) {
-            console.log('UserAvatar: Starting to load image:', src);
-            setImageState('loading');
+            console.log('UserAvatar: Resetting states for new src:', src);
+            setImageLoaded(false);
+            setImageError(false);
         } else {
             console.log('UserAvatar: No src provided for:', fullName);
-            setImageState('error');
+            setImageLoaded(false);
+            setImageError(true);
         }
     }, [src, fullName]);
 
@@ -27,18 +30,20 @@ const UserAvatar = ({ src, alt, fullName, className = "user-avatar" }) => {
     };
 
     const handleImageError = (e) => {
-        console.error('UserAvatar: Image failed to load:', src, e);
-        setImageState('error');
+        console.error('UserAvatar: Image failed to load:', src, e.type, e);
+        setImageError(true);
+        setImageLoaded(false);
     };
 
-    const handleImageLoad = () => {
-        console.log('UserAvatar: Image loaded successfully:', src);
-        setImageState('loaded');
+    const handleImageLoad = (e) => {
+        console.log('UserAvatar: Image loaded successfully:', src, e.type);
+        setImageLoaded(true);
+        setImageError(false);
     };
 
-    // Always show placeholder if no src
-    if (!src) {
-        console.log('UserAvatar: Showing placeholder - no src');
+    // Show placeholder if no src or image error
+    if (!src || imageError) {
+        console.log('UserAvatar: Showing placeholder - no src or error');
         return (
             <div className={`${className} avatar-placeholder`} title={alt || fullName}>
                 <span className="avatar-initials">
@@ -48,38 +53,31 @@ const UserAvatar = ({ src, alt, fullName, className = "user-avatar" }) => {
         );
     }
 
-    // Show image if loaded, placeholder if error or loading
-    if (imageState === 'loaded') {
-        console.log('UserAvatar: Showing loaded image');
-        return (
+    // Show image if loaded, placeholder with hidden loader if still loading
+    return (
+        <div className="avatar-container" style={{ position: 'relative' }}>
+            {!imageLoaded && (
+                <div className={`${className} avatar-placeholder`} title={alt || fullName}>
+                    <span className="avatar-initials">
+                        {getInitials(fullName)}
+                    </span>
+                </div>
+            )}
             <img 
                 className={className}
                 src={src}
                 alt={alt || "User avatar"}
                 onError={handleImageError}
                 onLoad={handleImageLoad}
+                style={{ 
+                    display: imageLoaded ? 'block' : 'none',
+                    position: imageLoaded ? 'static' : 'absolute',
+                    top: 0,
+                    left: 0
+                }}
             />
-        );
-    } else {
-        console.log('UserAvatar: Showing placeholder - state:', imageState);
-        return (
-            <>
-                <div className={`${className} avatar-placeholder`} title={alt || fullName}>
-                    <span className="avatar-initials">
-                        {getInitials(fullName)}
-                    </span>
-                </div>
-                {/* Hidden img to trigger loading */}
-                <img 
-                    src={src}
-                    alt={alt || "User avatar"}
-                    onError={handleImageError}
-                    onLoad={handleImageLoad}
-                    style={{ display: 'none' }}
-                />
-            </>
-        );
-    }
+        </div>
+    );
 };
 
 export default UserAvatar;
