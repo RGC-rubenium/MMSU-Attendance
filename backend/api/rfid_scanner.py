@@ -365,10 +365,20 @@ def handle_rfid_scan():
         # Schedule conflict checking is now handled in the schedule detection itself
         schedule_conflict = None
         
-        # Check for existing attendance log today
+        # Check for existing attendance log today (regardless of schedule type for once-per-day restriction)
         today_start = datetime.combine(current_date, datetime_time.min)
         today_end = datetime.combine(current_date, datetime_time.max)
         
+        # First, check if user has ANY attendance log today (once-per-day enforcement)
+        any_existing_log = AttendanceLog.query.filter(
+            and_(
+                AttendanceLog.uid == uid,
+                AttendanceLog.created_at >= today_start,
+                AttendanceLog.created_at <= today_end
+            )
+        ).first()
+        
+        # Then check for existing log with current schedule type
         existing_log = AttendanceLog.query.filter(
             and_(
                 AttendanceLog.uid == uid,
@@ -378,38 +388,76 @@ def handle_rfid_scan():
             )
         ).first()
         
-        # Determine if this is time-in or time-out
-        if existing_log and not existing_log.time_out:
-            # This is a time-out - calculate subjects attended
-            existing_log.time_out = now
-            existing_log.updated_at = now
-            
-            # Calculate attendance details based on user type
-            if user_type == 'student':
-                subjects_attended = calculate_subjects_attended(user, existing_log.time_in, now)
-                existing_log.subjects_attended = subjects_attended
+        # Check if user has already scanned today (once per day restriction)
+        if any_existing_log and any_existing_log.time_out:
+            # User has already completed their attendance for today
+            return jsonify({
+                'success': False,
+                'message': 'You have already scanned today. Only one scan per day is allowed.',
+                'user': {
+                    'uid': user.uid,
+                    'id': user.id,
+                    'name': user.full_name(),
+                    'type': user_type,
+                    'department': user.department
+                },
+                'attendance': {
+                    'time_in': any_existing_log.time_in.isoformat(),
+                    'time_out': any_existing_log.time_out.isoformat(),
+                    'schedule_type': any_existing_log.schedule_type,
+                    'schedule_name': any_existing_log.schedule_name
+                }
+            }), 400
+        elif existing_log and not existing_log.time_out:
+            # This is a time-out for an existing time-in with the same schedule type
+                # This is a time-out for an existing time-in
+                existing_log.time_out = now
+                existing_log.updated_at = now
                 
-                # Update notes with subject summary
-                if subjects_attended:
-                    subject_names = [s['subject'] for s in subjects_attended]
-                    existing_log.notes = f"Attended: {', '.join(subject_names)}"
-                else:
-                    existing_log.notes = "No subjects during attendance period"
-            
-            elif user_type == 'faculty':
-                # Faculty attendance - calculate work hours
-                work_duration = now - existing_log.time_in
-                hours = work_duration.total_seconds() / 3600
-                existing_log.notes = f"Work duration: {hours:.1f} hours"
-                # Faculty don't need subjects_attended, but set empty array for consistency
-                existing_log.subjects_attended = []
-            
-            db.session.commit()
-            
-            action = 'time_out'
-            log_data = existing_log
+                # Calculate attendance details based on user type
+                if user_type == 'student':
+                    subjects_attended = calculate_subjects_attended(user, existing_log.time_in, now)
+                    existing_log.subjects_attended = subjects_attended
+                    
+                    # Update notes with subject summary
+                    if subjects_attended:
+                        subject_names = [s['subject'] for s in subjects_attended]
+                        existing_log.notes = f"Attended: {', '.join(subject_names)}"
+                    else:
+                        existing_log.notes = "No subjects during attendance period"
+                
+                elif user_type == 'faculty':
+                    # Faculty attendance - calculate work hours
+                    work_duration = now - existing_log.time_in
+                    hours = work_duration.total_seconds() / 3600
+                    existing_log.notes = f"Work duration: {hours:.1f} hours"
+                    # Faculty don't need subjects_attended, but set empty array for consistency
+                    existing_log.subjects_attended = []
+                
+                db.session.commit()
+                
+                action = 'time_out'
+                log_data = existing_log
+        elif any_existing_log and not any_existing_log.time_out:
+            # User has a time-in from a different schedule type but hasn't timed out yet
+            return jsonify({
+                'success': False,
+                'message': f'You still have an active attendance session from {any_existing_log.schedule_name}. Please time out first.',
+                'user': {
+                    'uid': user.uid,
+                    'id': user.id,
+                    'name': user.full_name(),
+                    'type': user_type,
+                    'department': user.department
+                },
+                'attendance': {
+                    'time_in': any_existing_log.time_in.isoformat(),
+                    'schedule_type': any_existing_log.schedule_type,
+                    'schedule_name': any_existing_log.schedule_name
+                }
+            }), 400
         else:
-            # This is a time-in (or new entry)
+            # This is a time-in (new entry for the day)
             attendance_log = AttendanceLog(
                 uid=uid,
                 user_type=user_type,

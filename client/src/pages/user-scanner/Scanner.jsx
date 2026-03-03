@@ -151,7 +151,9 @@ const Scanner = () => {
             }
         } catch (error) {
             console.error('Scan error:', error);
-            setMessage('Network error. Please try again.');
+            // Display the actual error message instead of generic "Network error"
+            const errorMessage = error.message || 'Network error. Please try again.';
+            setMessage(errorMessage);
             setMessageType('error');
             playSound('error');
         } finally {
