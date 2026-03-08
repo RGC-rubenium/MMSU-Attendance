@@ -1,103 +1,62 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { 
     MdRadar, 
-    MdSchedule, 
     MdPerson, 
     MdSchool,
     MdAccessTime,
     MdCheckCircle,
     MdError,
-    MdWarning,
-    MdRefresh,
     MdLogin,
-    MdLogout,
-    MdInfo
+    MdLogout
 } from 'react-icons/md';
 import ScannerAPI from '../../api/ScannerAPI';
 import './Scanner.css';
 
 const Scanner = () => {
-    const [isScanning, setIsScanning] = useState(false);
     const [scanInput, setScanInput] = useState('');
     const [lastScanResult, setLastScanResult] = useState(null);
-    const [currentSchedule, setCurrentSchedule] = useState(null);
-    const [recentLogs, setRecentLogs] = useState([]);
-    const [message, setMessage] = useState('');
-    const [messageType, setMessageType] = useState('');
-    const [scanHistory, setScanHistory] = useState([]);
+    const [currentTime, setCurrentTime] = useState(new Date());
     const [isLoading, setIsLoading] = useState(false);
+    const [networkStatus, setNetworkStatus] = useState('online'); // online, offline, error
     
     const scanInputRef = useRef(null);
     const scanTimeoutRef = useRef(null);
 
-    // Focus input for RFID scanning
+    // Live clock update
     useEffect(() => {
-        if (scanInputRef.current && isScanning) {
-            scanInputRef.current.focus();
-        }
-    }, [isScanning]);
+        const timer = setInterval(() => {
+            setCurrentTime(new Date());
+        }, 1000);
+        
+        return () => clearInterval(timer);
+    }, []);
 
-    // Auto-focus input when component mounts
+    // Auto-focus input when component mounts and keep it focused
     useEffect(() => {
         if (scanInputRef.current) {
             scanInputRef.current.focus();
         }
+        
+        // Keep input focused at all times
+        const focusInterval = setInterval(() => {
+            if (scanInputRef.current && document.activeElement !== scanInputRef.current) {
+                scanInputRef.current.focus();
+            }
+        }, 100);
+        
+        return () => clearInterval(focusInterval);
     }, []);
 
     // Keep input focused
     const handleInputBlur = useCallback(() => {
-        if (isScanning && scanInputRef.current) {
-            setTimeout(() => {
-                if (scanInputRef.current) {
-                    scanInputRef.current.focus();
-                }
-            }, 10);
-        }
-    }, [isScanning]);
-
-    // Get current schedule on component mount
-    useEffect(() => {
-        fetchCurrentSchedule();
-        fetchRecentLogs();
-        
-        // Auto-refresh every 30 seconds
-        const interval = setInterval(() => {
-            fetchCurrentSchedule();
-        }, 30000);
-        
-        return () => clearInterval(interval);
+        setTimeout(() => {
+            if (scanInputRef.current) {
+                scanInputRef.current.focus();
+            }
+        }, 10);
     }, []);
 
-    const fetchCurrentSchedule = async () => {
-        try {
-            const data = await ScannerAPI.getCurrentSchedule();
-            
-            if (data.success) {
-                setCurrentSchedule(data.schedule);
-            } else {
-                setCurrentSchedule(null);
-            }
-        } catch (error) {
-            console.error('Error fetching current schedule:', error);
-            setCurrentSchedule(null);
-        }
-    };
 
-    const fetchRecentLogs = async () => {
-        try {
-            const today = new Date().toISOString().split('T')[0];
-            const data = await ScannerAPI.getAttendanceLogs({
-                date: today,
-                limit: 10
-            });
-            
-            if (data.success) {
-                setRecentLogs(data.logs);
-            }
-        } catch (error) {
-            console.error('Error fetching recent logs:', error);
-        }
-    };
 
     const handleScan = async (uid) => {
         if (!uid || uid.trim() === '') return;
@@ -105,63 +64,79 @@ const Scanner = () => {
         // Validate and format UID
         const formattedUID = ScannerAPI.formatUID(uid);
         if (!ScannerAPI.isValidUID(formattedUID)) {
-            setMessage('Invalid RFID format');
-            setMessageType('error');
+            setLastScanResult({
+                error: 'Invalid RFID card format. Please try scanning again.',
+                timestamp: new Date().toISOString()
+            });
+            playSound('error');
+            
+            setTimeout(() => {
+                setLastScanResult(null);
+            }, 5000);
             return;
         }
         
         setIsLoading(true);
-        setMessage('Processing RFID scan...');
-        setMessageType('info');
 
         try {
             const data = await ScannerAPI.scanRFID(formattedUID);
 
             if (data.success) {
-                setLastScanResult(data);
-                setMessage(`${data.action === 'time_in' ? 'Time In' : 'Time Out'} successful for ${data.user.name}`);
-                setMessageType('success');
-                
-                // Add to scan history
-                setScanHistory(prev => [{
+                setLastScanResult({
                     ...data,
                     timestamp: new Date().toISOString()
-                }, ...prev.slice(0, 4)]);
+                });
                 
-                // Refresh recent logs
-                fetchRecentLogs();
-                
-                // Play success sound (optional)
+                // Play success sound
                 playSound('success');
                 
-                // Show result for 3 seconds
+                // Show result for 5 seconds
                 setTimeout(() => {
                     setLastScanResult(null);
-                }, 3000);
+                }, 5000);
                 
             } else {
-                setMessage(data.message || 'Scan failed');
-                setMessageType('error');
-                setLastScanResult({ error: data.message, user: data.user });
+                // Display detailed error message from backend
+                const errorMessage = data.message || 'Scan failed. Please try again.';
+                setLastScanResult({ 
+                    error: errorMessage,
+                    user: data.user || null,
+                    details: data.details || null,
+                    timestamp: new Date().toISOString()
+                });
                 playSound('error');
                 
                 setTimeout(() => {
                     setLastScanResult(null);
-                }, 3000);
+                }, 7000); // Show error longer for reading
             }
         } catch (error) {
             console.error('Scan error:', error);
-            // Display the actual error message instead of generic "Network error"
-            const errorMessage = error.message || 'Network error. Please try again.';
-            setMessage(errorMessage);
-            setMessageType('error');
+            
+            // Handle different types of network errors
+            let errorMessage = 'Connection error. Please check your network and try again.';
+            
+            if (error.name === 'TypeError' && error.message.includes('fetch')) {
+                errorMessage = 'Unable to connect to server. Please check your internet connection.';
+            } else if (error.status === 500) {
+                errorMessage = 'Server error. Please contact system administrator.';
+            } else if (error.status === 404) {
+                errorMessage = 'Service not found. Please contact system administrator.';
+            } else if (error.message) {
+                errorMessage = `Network error: ${error.message}`;
+            }
+            
+            setLastScanResult({
+                error: errorMessage,
+                timestamp: new Date().toISOString()
+            });
             playSound('error');
+            
+            setTimeout(() => {
+                setLastScanResult(null);
+            }, 7000); // Show error longer for reading
         } finally {
             setIsLoading(false);
-            setTimeout(() => {
-                setMessage('');
-                setMessageType('');
-            }, 5000);
         }
     };
 
@@ -206,24 +181,6 @@ const Scanner = () => {
         }
     };
 
-    const handleManualScan = () => {
-        if (scanInput.trim()) {
-            handleScan(scanInput.trim());
-            setScanInput('');
-        }
-    };
-
-    const toggleScanning = () => {
-        setIsScanning(!isScanning);
-        if (!isScanning) {
-            setTimeout(() => {
-                if (scanInputRef.current) {
-                    scanInputRef.current.focus();
-                }
-            }, 100);
-        }
-    };
-
     const formatTime = (timestamp) => {
         if (!timestamp) return '--:--';
         return new Date(timestamp).toLocaleTimeString('en-US', {
@@ -233,218 +190,166 @@ const Scanner = () => {
         });
     };
 
-    const formatDate = (timestamp) => {
-        if (!timestamp) return '';
-        return new Date(timestamp).toLocaleDateString();
+    const formatClock = () => {
+        return currentTime.toLocaleTimeString('en-US', {
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            hour12: true
+        });
+    };
+
+    const formatDate = () => {
+        return currentTime.toLocaleDateString('en-US', {
+            weekday: 'long',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+        });
     };
 
     return (
         <div className="scanner-container">
+            {/* Header with School Name and Live Clock */}
             <div className="scanner-header">
-                <h1>
-                    <MdRadar className="icon" />
-                    RFID Attendance Scanner
-                </h1>
-                <div className="scanner-status">
-                    <span className={`status-indicator ${isScanning ? 'active' : 'inactive'}`}>
-                        {isScanning ? 'Scanner Active' : 'Scanner Inactive'}
-                    </span>
-                    <button 
-                        className={`toggle-btn ${isScanning ? 'stop' : 'start'}`}
-                        onClick={toggleScanning}
-                    >
-                        {isScanning ? 'Stop Scanner' : 'Start Scanner'}
-                    </button>
+                <div className="school-info">
+                    <h1>Mariano Marcos State University</h1>
+                    <p>Attendance Scanner System</p>
+                </div>
+                
+                <div className="live-clock">
+                    <div className="time-display">
+                        <MdAccessTime className="clock-icon" />
+                        {formatClock()}
+                    </div>
+                    <div className="date-display">
+                        {formatDate()}
+                    </div>
                 </div>
             </div>
 
-            {/* Current Schedule Display */}
-            <div className="current-schedule">
-                <h3>
-                    <MdSchedule className="icon" />
-                    Current Schedule
-                    <button 
-                        className="refresh-btn"
-                        onClick={fetchCurrentSchedule}
-                        title="Refresh Schedule"
-                    >
-                        <MdRefresh />
-                    </button>
-                </h3>
-                {currentSchedule ? (
-                    <div className="schedule-info">
-                        <div className="schedule-details">
-                            <span className={`schedule-type ${currentSchedule.type}`}>
-                                {currentSchedule.type.toUpperCase()}
-                            </span>
-                            <span className="schedule-name">{currentSchedule.name}</span>
-                            <span className="schedule-time">
-                                <MdAccessTime />
-                                {currentSchedule.current_slot?.start_time} - {currentSchedule.current_slot?.end_time}
-                            </span>
-                        </div>
-                        {currentSchedule.current_slot?.description && (
-                            <div className="schedule-description">
-                                {currentSchedule.current_slot.description}
-                            </div>
-                        )}
-                    </div>
-                ) : (
-                    <div className="no-schedule">
-                        <MdInfo />
-                        No active schedule found for current time
-                    </div>
-                )}
-            </div>
-
-            {/* Scanner Input Area */}
-            <div className="scanner-input-area">
-                <div className="scan-input-container">
-                    <input
-                        ref={scanInputRef}
-                        type="text"
-                        value={scanInput}
-                        onChange={handleInputChange}
-                        onBlur={handleInputBlur}
-                        placeholder="Tap RFID card or enter UID manually"
-                        className={`scan-input ${isScanning ? 'active' : ''}`}
-                        disabled={!isScanning || isLoading}
-                        autoComplete="off"
-                        autoFocus
-                    />
-                    <button 
-                        className="manual-scan-btn"
-                        onClick={handleManualScan}
-                        disabled={!isScanning || !scanInput.trim() || isLoading}
-                    >
-                        {isLoading ? 'Processing...' : 'Manual Scan'}
-                    </button>
+            {/* Scanner Status */}
+            <div className="scanner-status">
+                <div className="status-indicator active">
+                    <MdRadar className="radar-icon" />
+                    <span>Scanner Active - Ready to Scan</span>
                 </div>
-
-                {message && (
-                    <div className={`scan-message ${messageType}`}>
-                        {messageType === 'success' && <MdCheckCircle />}
-                        {messageType === 'error' && <MdError />}
-                        {messageType === 'warning' && <MdWarning />}
-                        {messageType === 'info' && <MdInfo />}
-                        {message}
-                    </div>
-                )}
             </div>
+
+            {/* Hidden Input for RFID Detection */}
+            <input
+                ref={scanInputRef}
+                type="text"
+                value={scanInput}
+                onChange={handleInputChange}
+                onBlur={handleInputBlur}
+                className="hidden-input"
+                autoComplete="off"
+                autoFocus
+            />
 
             {/* Last Scan Result */}
             {lastScanResult && (
-                <div className={`last-scan-result ${lastScanResult.error ? 'error' : 'success'}`}>
-                    <div className="scan-result-header">
-                        {lastScanResult.error ? (
-                            <>
-                                <MdError className="result-icon error" />
-                                <span>Scan Failed</span>
-                            </>
-                        ) : (
-                            <>
-                                {lastScanResult.action === 'time_in' ? 
-                                    <MdLogin className="result-icon time-in" /> : 
-                                    <MdLogout className="result-icon time-out" />
-                                }
-                                <span>{lastScanResult.action === 'time_in' ? 'Time In' : 'Time Out'}</span>
-                            </>
-                        )}
-                    </div>
-                    
-                    {lastScanResult.user && (
-                        <div className="user-info">
-                            <div className="user-avatar">
-                                {lastScanResult.user.avatar ? (
-                                    <img src={lastScanResult.user.avatar} alt="Profile" />
-                                ) : (
-                                    <div className="avatar-placeholder">
-                                        {lastScanResult.user.type === 'student' ? <MdSchool /> : <MdPerson />}
+                <div className={`scan-result ${lastScanResult.error ? 'error' : 'success'}`}>
+                    {lastScanResult.error ? (
+                        <div className="scan-result-content">
+                            <MdError className="result-icon error-icon" />
+                            <div className="result-info">
+                                <h2>⚠️ Scan Failed</h2>
+                                <div className="error-message">
+                                    <div className="main-error-container">
+                                        <p className="main-error">{lastScanResult.error}</p>
+                                    </div>
+                                    {lastScanResult.details && (
+                                        <div className="error-details">
+                                            <h4>📋 Additional Information:</h4>
+                                            <p>{lastScanResult.details}</p>
+                                        </div>
+                                    )}
+                                </div>
+                                {lastScanResult.user && (
+                                    <div className="user-brief">
+                                        <h4>👤 Card Information:</h4>
+                                        <div className="user-info-brief">
+                                            <div className="user-avatar-small">
+                                                {lastScanResult.user.avatar ? (
+                                                    <img src={lastScanResult.user.avatar} alt="Profile" />
+                                                ) : (
+                                                    <div className="avatar-placeholder">
+                                                        {lastScanResult.user.type === 'student' ? <MdSchool /> : <MdPerson />}
+                                                    </div>
+                                                )}
+                                            </div>
+                                            <div className="user-details-brief">
+                                                <p className="user-name">📛 {lastScanResult.user.name}</p>
+                                                <p className="user-type">🏫 {lastScanResult.user.type?.toUpperCase()}</p>
+                                                <p className="user-id">🆔 {lastScanResult.user.id}</p>
+                                                {lastScanResult.user.department && (
+                                                    <p className="user-department">🏢 {lastScanResult.user.department}</p>
+                                                )}
+                                            </div>
+                                        </div>
                                     </div>
                                 )}
-                            </div>
-                            <div className="user-details">
-                                <h4>{lastScanResult.user.name}</h4>
-                                <p>{lastScanResult.user.type?.toUpperCase()} | {lastScanResult.user.department}</p>
-                                <p>ID: {lastScanResult.user.id}</p>
+                                <div className="scan-timestamp">
+                                    <MdAccessTime />
+                                    <span>⏰ Scan attempted at: {formatTime(lastScanResult.timestamp)}</span>
+                                </div>
                             </div>
                         </div>
-                    )}
-                    
-                    {lastScanResult.attendance && (
-                        <div className="attendance-info">
-                            <p><strong>Time:</strong> {formatTime(lastScanResult.attendance.time_in)}</p>
-                            <p><strong>Schedule:</strong> {lastScanResult.schedule?.name}</p>
-                        </div>
-                    )}
-                    
-                    {lastScanResult.warning && (
-                        <div className="warning-message">
-                            <MdWarning />
-                            {lastScanResult.warning}
+                    ) : (
+                        <div className="scan-result-content">
+                            <div className="result-icon">
+                                {lastScanResult.action === 'time_in' ? 
+                                    <MdLogin className="time-in-icon" /> : 
+                                    <MdLogout className="time-out-icon" />
+                                }
+                            </div>
+                            <div className="result-info">
+                                <h2>{lastScanResult.action === 'time_in' ? 'TIME IN' : 'TIME OUT'}</h2>
+                                <div className="user-profile">
+                                    <div className="user-avatar">
+                                        {lastScanResult.user.avatar ? (
+                                            <img src={lastScanResult.user.avatar} alt="Profile" />
+                                        ) : (
+                                            <div className="avatar-placeholder">
+                                                {lastScanResult.user.type === 'student' ? <MdSchool /> : <MdPerson />}
+                                            </div>
+                                        )}
+                                    </div>
+                                    <div className="user-details">
+                                        <h3>{lastScanResult.user.name}</h3>
+                                        <p>{lastScanResult.user.type?.toUpperCase()}</p>
+                                        <p>ID: {lastScanResult.user.id}</p>
+                                    </div>
+                                </div>
+                                <div className="scan-time">
+                                    <MdAccessTime />
+                                    <span>{formatTime(lastScanResult.timestamp)}</span>
+                                </div>
+                            </div>
                         </div>
                     )}
                 </div>
             )}
 
-            {/* Scan History */}
-            <div className="scan-history">
-                <h3>Recent Scans</h3>
-                {scanHistory.length > 0 ? (
-                    <div className="history-list">
-                        {scanHistory.map((scan, index) => (
-                            <div key={index} className={`history-item ${scan.error ? 'error' : 'success'}`}>
-                                <div className="history-user">
-                                    {scan.user?.type === 'student' ? <MdSchool /> : <MdPerson />}
-                                    <span>{scan.user?.name || 'Unknown User'}</span>
-                                </div>
-                                <div className="history-details">
-                                    <span className="history-time">{formatTime(scan.timestamp)}</span>
-                                    <span className={`history-action ${scan.action || 'failed'}`}>
-                                        {scan.action === 'time_in' ? 'IN' : scan.action === 'time_out' ? 'OUT' : 'FAILED'}
-                                    </span>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                ) : (
-                    <p className="no-history">No recent scans</p>
-                )}
-            </div>
+            {/* Default Message */}
+            {!lastScanResult && !isLoading && (
+                <div className="default-message">
+                    <MdRadar className="scanning-icon" />
+                    <h2>Ready to Scan</h2>
+                    <p>Tap your RFID card or ID to record attendance</p>
+                </div>
+            )}
 
-            {/* Today's Attendance Summary */}
-            <div className="attendance-summary">
-                <h3>Today's Attendance ({formatDate(new Date())})</h3>
-                {recentLogs.length > 0 ? (
-                    <div className="logs-list">
-                        {recentLogs.map((log) => (
-                            <div key={log.id} className="log-item">
-                                <div className="log-user">
-                                    {log.user_type === 'student' ? <MdSchool /> : <MdPerson />}
-                                    <div>
-                                        <strong>{log.full_name}</strong>
-                                        <small>{log.user_type?.toUpperCase()} | {log.department}</small>
-                                    </div>
-                                </div>
-                                <div className="log-times">
-                                    <span className="time-in">
-                                        <MdLogin />
-                                        {formatTime(log.time_in)}
-                                    </span>
-                                    {log.time_out && (
-                                        <span className="time-out">
-                                            <MdLogout />
-                                            {formatTime(log.time_out)}
-                                        </span>
-                                    )}
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                ) : (
-                    <p className="no-logs">No attendance records today</p>
-                )}
-            </div>
+            {/* Loading State */}
+            {isLoading && (
+                <div className="loading-state">
+                    <div className="loading-spinner"></div>
+                    <h2>Processing...</h2>
+                    <p>Please wait while we process your attendance</p>
+                </div>
+            )}
         </div>
     );
 };

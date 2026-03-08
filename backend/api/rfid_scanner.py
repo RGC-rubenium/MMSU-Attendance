@@ -176,20 +176,17 @@ def find_active_schedule_for_faculty(faculty=None):
     else:
         hours = faculty_config['weekends']
     
-    # Faculty work hours (configurable)
-    if check_time_in_range(current_time, hours['start_time'], hours['end_time']):
-        return {
-            'type': 'faculty_work',
-            'schedule': None,
-            'current_slot': {
-                'start_time': hours['start_time'], 
-                'end_time': hours['end_time'], 
-                'description': f"Faculty {('Work' if current_day in ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'] else 'Weekend')} Hours"
-            },
-            'name': f"Faculty {'Work' if current_day in ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'] else 'Weekend'} Schedule"
-        }
-    
-    return None
+    # Faculty work hours (configurable) - ALWAYS available as fallback
+    return {
+        'type': 'faculty_work',
+        'schedule': None,
+        'current_slot': {
+            'start_time': hours['start_time'], 
+            'end_time': hours['end_time'], 
+            'description': f"Faculty {('Work' if current_day in ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'] else 'Weekend')} Hours"
+        },
+        'name': f"Faculty {'Work' if current_day in ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'] else 'Weekend'} Schedule"
+    }
 
 def find_active_schedule_for_student(student=None):
     """Find the currently active schedule with correct priority: Event > Student Personal > Default"""
@@ -238,21 +235,19 @@ def find_active_schedule_for_student(student=None):
                 'name': f'{student.full_name()} Schedule'
             }
     
-    # Priority 3: Default Schedule (configurable hours)
+    # Priority 3: Default Schedule (configurable hours) - ALWAYS available as fallback
     default_config = get_default_schedule_config(current_day)
-    if check_time_in_range(current_time, default_config['start_time'], default_config['end_time']):
-        return {
-            'type': 'default',
-            'schedule': None,
-            'current_slot': {
-                'start_time': default_config['start_time'], 
-                'end_time': default_config['end_time'], 
-                'description': default_config['description']
-            },
-            'name': 'Default Schedule'
-        }
-    
-    return None
+    # Always return default schedule as fallback - no time restrictions for basic attendance
+    return {
+        'type': 'default',
+        'schedule': None,
+        'current_slot': {
+            'start_time': default_config['start_time'], 
+            'end_time': default_config['end_time'], 
+            'description': default_config['description']
+        },
+        'name': 'Default Schedule'
+    }
 
 def find_active_schedule():
     """Legacy function for backward compatibility - finds general active schedule"""
@@ -312,11 +307,114 @@ def handle_rfid_scan():
                 'uid': uid
             }), 404
         
-        # Check if scanner is available for this user type at current time
+        # ===== CRITICAL: CHECK FOR EXISTING INCOMPLETE LOG FIRST =====
+        today_start = datetime.combine(current_date, datetime_time.min)
+        today_end = datetime.combine(current_date, datetime_time.max)
+        
+        print(f"🔍 Debug - Checking for incomplete logs for UID: {uid}")
+        
+        # Look for ANY incomplete log today - this is the most important check
+        # Use time_in field instead of created_at to handle timezone issues
+        incomplete_log = AttendanceLog.query.filter(
+            and_(
+                AttendanceLog.uid == uid,
+                AttendanceLog.time_in >= today_start,
+                AttendanceLog.time_in <= today_end,
+                AttendanceLog.time_out.is_(None)
+            )
+        ).order_by(AttendanceLog.time_in.desc()).first()
+        
+        print(f"🔍 Debug - Incomplete log found: {incomplete_log is not None}")
+        if incomplete_log:
+            print(f"🔍 Debug - Incomplete log details: ID={incomplete_log.id}, time_in={incomplete_log.time_in}")
+        
+        # ===== IF INCOMPLETE LOG EXISTS: THIS IS DEFINITELY A TIMEOUT =====
+        if incomplete_log:
+            print(f"🔍 Debug - PROCESSING TIMEOUT (bypassing all other checks)")
+            
+            # Set timeout immediately
+            incomplete_log.time_out = now
+            incomplete_log.updated_at = now
+            
+            # Calculate attendance details based on user type
+            if user_type == 'student':
+                subjects_attended = calculate_subjects_attended(user, incomplete_log.time_in, now)
+                incomplete_log.subjects_attended = subjects_attended
+                
+                # Update notes with subject summary
+                if subjects_attended:
+                    subject_names = [s['subject'] for s in subjects_attended]
+                    incomplete_log.notes = f"Attended: {', '.join(subject_names)}"
+                else:
+                    incomplete_log.notes = "No subjects during attendance period"
+            
+            elif user_type == 'faculty':
+                # Faculty attendance - calculate work hours
+                work_duration = now - incomplete_log.time_in
+                hours = work_duration.total_seconds() / 3600
+                incomplete_log.notes = f"Work duration: {hours:.1f} hours"
+                incomplete_log.subjects_attended = []
+            
+            # Commit the timeout
+            db.session.commit()
+            print(f"🔍 Debug - TIMEOUT COMPLETED successfully")
+            
+            return jsonify({
+                'success': True,
+                'action': 'time_out',
+                'user': {
+                    'uid': user.uid,
+                    'id': user.id,
+                    'name': user.full_name(),
+                    'type': user_type,
+                    'department': user.department,
+                    'avatar': getattr(user, 'profile_path', None)
+                },
+                'schedule': {
+                    'type': incomplete_log.schedule_type,
+                    'name': incomplete_log.schedule_name,
+                    'current_slot': {}
+                },
+                'attendance': incomplete_log.to_dict()
+            }), 200
+        
+        # ===== NO INCOMPLETE LOG: CHECK FOR COMPLETED LOGS =====
+        completed_log = AttendanceLog.query.filter(
+            and_(
+                AttendanceLog.uid == uid,
+                AttendanceLog.time_in >= today_start,
+                AttendanceLog.time_in <= today_end,
+                AttendanceLog.time_out.is_not(None)
+            )
+        ).first()
+        
+        if completed_log:
+            print(f"🔍 Debug - User already completed attendance today")
+            return jsonify({
+                'success': False,
+                'message': 'You have already completed your attendance for today. Only one attendance session per day is allowed.',
+                'user': {
+                    'uid': user.uid,
+                    'id': user.id,
+                    'name': user.full_name(),
+                    'type': user_type,
+                    'department': user.department
+                },
+                'attendance': {
+                    'time_in': completed_log.time_in.isoformat(),
+                    'time_out': completed_log.time_out.isoformat(),
+                    'schedule_type': completed_log.schedule_type,
+                    'schedule_name': completed_log.schedule_name
+                }
+            }), 400
+        
+        # ===== THIS IS A NEW TIME-IN OPERATION =====
+        print(f"🔍 Debug - Processing NEW TIME-IN operation")
+        
+        # Check scanner availability for new time-in
         if not is_scanner_available(user_type):
             # Get the allowed hours for this user type
             config = SCANNER_CONFIG[f'{user_type}_scanner_hours']
-            current_day, current_time, current_date, now = get_current_day_time()
             
             if current_day in ['monday', 'tuesday', 'wednesday', 'thursday', 'friday']:
                 allowed_hours = config['weekdays']
@@ -342,7 +440,7 @@ def handle_rfid_scan():
                 }
             }), 403
         
-        # Find active schedule based on user type
+        # Find active schedule for time-in operations
         if user_type == 'student':
             active_schedule = find_active_schedule_for_student(user)
         elif user_type == 'faculty':
@@ -362,125 +460,29 @@ def handle_rfid_scan():
                 }
             }), 400
         
-        # Schedule conflict checking is now handled in the schedule detection itself
-        schedule_conflict = None
+        # Create new time-in entry
+        attendance_log = AttendanceLog(
+            uid=uid,
+            user_type=user_type,
+            user_id=user.id,
+            full_name=user.full_name(),
+            department=user.department,
+            schedule_type=active_schedule['type'],
+            schedule_name=active_schedule['name'],
+            time_in=now,
+            status='present',
+            subjects_attended=None,  # Will be calculated on time-out
+            notes=None
+        )
         
-        # Check for existing attendance log today (regardless of schedule type for once-per-day restriction)
-        today_start = datetime.combine(current_date, datetime_time.min)
-        today_end = datetime.combine(current_date, datetime_time.max)
+        db.session.add(attendance_log)
+        db.session.commit()
         
-        # First, check if user has ANY attendance log today (once-per-day enforcement)
-        any_existing_log = AttendanceLog.query.filter(
-            and_(
-                AttendanceLog.uid == uid,
-                AttendanceLog.created_at >= today_start,
-                AttendanceLog.created_at <= today_end
-            )
-        ).first()
-        
-        # Then check for existing log with current schedule type
-        existing_log = AttendanceLog.query.filter(
-            and_(
-                AttendanceLog.uid == uid,
-                AttendanceLog.created_at >= today_start,
-                AttendanceLog.created_at <= today_end,
-                AttendanceLog.schedule_type == active_schedule['type']
-            )
-        ).first()
-        
-        # Check if user has already scanned today (once per day restriction)
-        if any_existing_log and any_existing_log.time_out:
-            # User has already completed their attendance for today
-            return jsonify({
-                'success': False,
-                'message': 'You have already scanned today. Only one scan per day is allowed.',
-                'user': {
-                    'uid': user.uid,
-                    'id': user.id,
-                    'name': user.full_name(),
-                    'type': user_type,
-                    'department': user.department
-                },
-                'attendance': {
-                    'time_in': any_existing_log.time_in.isoformat(),
-                    'time_out': any_existing_log.time_out.isoformat(),
-                    'schedule_type': any_existing_log.schedule_type,
-                    'schedule_name': any_existing_log.schedule_name
-                }
-            }), 400
-        elif existing_log and not existing_log.time_out:
-            # This is a time-out for an existing time-in with the same schedule type
-                # This is a time-out for an existing time-in
-                existing_log.time_out = now
-                existing_log.updated_at = now
-                
-                # Calculate attendance details based on user type
-                if user_type == 'student':
-                    subjects_attended = calculate_subjects_attended(user, existing_log.time_in, now)
-                    existing_log.subjects_attended = subjects_attended
-                    
-                    # Update notes with subject summary
-                    if subjects_attended:
-                        subject_names = [s['subject'] for s in subjects_attended]
-                        existing_log.notes = f"Attended: {', '.join(subject_names)}"
-                    else:
-                        existing_log.notes = "No subjects during attendance period"
-                
-                elif user_type == 'faculty':
-                    # Faculty attendance - calculate work hours
-                    work_duration = now - existing_log.time_in
-                    hours = work_duration.total_seconds() / 3600
-                    existing_log.notes = f"Work duration: {hours:.1f} hours"
-                    # Faculty don't need subjects_attended, but set empty array for consistency
-                    existing_log.subjects_attended = []
-                
-                db.session.commit()
-                
-                action = 'time_out'
-                log_data = existing_log
-        elif any_existing_log and not any_existing_log.time_out:
-            # User has a time-in from a different schedule type but hasn't timed out yet
-            return jsonify({
-                'success': False,
-                'message': f'You still have an active attendance session from {any_existing_log.schedule_name}. Please time out first.',
-                'user': {
-                    'uid': user.uid,
-                    'id': user.id,
-                    'name': user.full_name(),
-                    'type': user_type,
-                    'department': user.department
-                },
-                'attendance': {
-                    'time_in': any_existing_log.time_in.isoformat(),
-                    'schedule_type': any_existing_log.schedule_type,
-                    'schedule_name': any_existing_log.schedule_name
-                }
-            }), 400
-        else:
-            # This is a time-in (new entry for the day)
-            attendance_log = AttendanceLog(
-                uid=uid,
-                user_type=user_type,
-                user_id=user.id,
-                full_name=user.full_name(),
-                department=user.department,
-                schedule_type=active_schedule['type'],
-                schedule_name=active_schedule['name'],
-                time_in=now,
-                status='present',
-                subjects_attended=None,  # Will be calculated on time-out
-                notes=schedule_conflict
-            )
-            
-            db.session.add(attendance_log)
-            db.session.commit()
-            
-            action = 'time_in'
-            log_data = attendance_log
+        print(f"🔍 Debug - NEW TIME-IN created: ID={attendance_log.id}")
         
         return jsonify({
             'success': True,
-            'action': action,
+            'action': 'time_in',
             'user': {
                 'uid': user.uid,
                 'id': user.id,
@@ -494,8 +496,7 @@ def handle_rfid_scan():
                 'name': active_schedule['name'],
                 'current_slot': active_schedule.get('current_slot') or {}
             },
-            'attendance': log_data.to_dict(),
-            'warning': schedule_conflict
+            'attendance': attendance_log.to_dict()
         }), 200
         
     except Exception as e:
@@ -533,20 +534,20 @@ def get_current_schedule():
         # Priority 2: Check if it's within work/class hours (general fallback)
         if not active_schedule:
             if current_day in ['monday', 'tuesday', 'wednesday', 'thursday', 'friday']:
-                if check_time_in_range(current_time, '06:00', '21:00'):  # Extended hours
+                if check_time_in_range(current_time, '06:00', '22:00'):  # Extended hours
                     active_schedule = {
                         'type': 'work_hours',
                         'schedule': None,
-                        'current_slot': {'start_time': '06:00', 'end_time': '21:00', 'description': 'Work Hours'},
+                        'current_slot': {'start_time': '06:00', 'end_time': '22:00', 'description': 'Work Hours'},
                         'name': 'Work Hours'
                     }
             else:
                 # Weekend
-                if check_time_in_range(current_time, '08:00', '17:00'):
+                if check_time_in_range(current_time, '06:00', '20:00'):
                     active_schedule = {
                         'type': 'weekend_hours',
                         'schedule': None,
-                        'current_slot': {'start_time': '08:00', 'end_time': '17:00', 'description': 'Weekend Hours'},
+                        'current_slot': {'start_time': '06:00', 'end_time': '20:00', 'description': 'Weekend Hours'},
                         'name': 'Weekend Hours'
                     }
         

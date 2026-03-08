@@ -29,8 +29,8 @@ def complete_timeout_manually():
         subjects_data = [
             {
                 'subject': 'Data Structures',
-                'start_time': '08:00',
-                'end_time': '09:30',
+                'start_time': '07:00',
+                'end_time': '06:30',
                 'room': 'Lab 1',
                 'schedule_name': 'Computer Science Regular Schedule',
                 'type': 'class_schedule'
