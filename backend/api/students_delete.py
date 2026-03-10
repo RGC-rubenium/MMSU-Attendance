@@ -2,6 +2,28 @@ from flask import Blueprint, jsonify, request
 from models import Student
 from extensions import db
 import utils.jwt_utils as jwt_utils
+import os
+
+# Project root (parent of backend/), profile_path is stored as /images/members/...
+PROJECT_ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.dirname(__file__)), '..'))
+
+def _delete_profile_image(profile_path):
+    """Delete the profile image file if it exists.
+    profile_path is stored as e.g. /images/members/student/photo.jpg
+    """
+    if profile_path and profile_path.strip():
+        # Strip leading slash so os.path.join works correctly
+        relative = profile_path.strip().lstrip('/')
+        full_path = os.path.normpath(os.path.join(PROJECT_ROOT, relative))
+        print(f"Attempting to delete image: {full_path}")
+        if os.path.isfile(full_path):
+            try:
+                os.remove(full_path)
+                print(f"Deleted image: {full_path}")
+            except Exception as e:
+                print(f"Warning: Could not delete image {full_path}: {e}")
+        else:
+            print(f"Image file not found (skipping): {full_path}")
 
 students_delete_bp = Blueprint('students_delete', __name__)
 
@@ -20,6 +42,9 @@ def delete_student(student_id):
                 'message': 'Student not found'
             }), 404
         
+        # Delete the student's profile image if it exists
+        _delete_profile_image(student.profile_path)
+
         # Delete the student
         db.session.delete(student)
         db.session.commit()
@@ -72,8 +97,9 @@ def bulk_delete_students():
         deleted_count = len(students_to_delete)
         deleted_names = [student.full_name() for student in students_to_delete]
         
-        # Delete all students
+        # Delete all students and their profile images
         for student in students_to_delete:
+            _delete_profile_image(student.profile_path)
             db.session.delete(student)
         
         db.session.commit()

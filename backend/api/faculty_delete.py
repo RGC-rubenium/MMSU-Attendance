@@ -1,6 +1,28 @@
 from flask import Blueprint, jsonify, request
 from models import Faculty
 from extensions import db
+import os
+
+# Project root (parent of backend/), profile_path is stored as /images/members/...
+PROJECT_ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.dirname(__file__)), '..'))
+
+def _delete_profile_image(profile_path):
+    """Delete the profile image file if it exists.
+    profile_path is stored as e.g. /images/members/faculty/photo.jpg
+    """
+    if profile_path and profile_path.strip():
+        # Strip leading slash so os.path.join works correctly
+        relative = profile_path.strip().lstrip('/')
+        full_path = os.path.normpath(os.path.join(PROJECT_ROOT, relative))
+        print(f"Attempting to delete image: {full_path}")
+        if os.path.isfile(full_path):
+            try:
+                os.remove(full_path)
+                print(f"Deleted image: {full_path}")
+            except Exception as e:
+                print(f"Warning: Could not delete image {full_path}: {e}")
+        else:
+            print(f"Image file not found (skipping): {full_path}")
 
 faculty_delete_bp = Blueprint('faculty_delete', __name__)
 
@@ -31,9 +53,10 @@ def bulk_delete_faculty():
         if not faculty_members:
             return jsonify({'error': 'No faculty members found with provided IDs'}), 404
         
-        # Delete all found faculty members
+        # Delete all found faculty members and their profile images
         deleted_count = len(faculty_members)
         for faculty in faculty_members:
+            _delete_profile_image(faculty.profile_path)
             db.session.delete(faculty)
         
         db.session.commit()
@@ -62,6 +85,9 @@ def delete_faculty(faculty_id):
         if not faculty:
             return jsonify({'error': 'Faculty member not found'}), 404
         
+        # Delete the faculty member's profile image if it exists
+        _delete_profile_image(faculty.profile_path)
+
         # Delete the faculty member
         db.session.delete(faculty)
         db.session.commit()
