@@ -23,6 +23,7 @@ export default class FacultyHandler {
         try {
             const res = await AuthToken.fetchWithAuth(url, { 
                 headers: { 'Accept': 'application/json' },
+                cache: 'no-store',
                 timeout: 10000 // 10 second timeout
             })
             
@@ -72,7 +73,8 @@ export default class FacultyHandler {
         
         try {
             const res = await AuthToken.fetchWithAuth(url, { 
-                headers: { 'Accept': 'application/json' } 
+                headers: { 'Accept': 'application/json' },
+                cache: 'no-store'
             })
             
             if (!res.ok) {

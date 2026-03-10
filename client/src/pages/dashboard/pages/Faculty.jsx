@@ -156,9 +156,9 @@ export default function Faculty() {
                 meta: {
                     total: data.meta.total || 0,
                     page: data.meta.page || 1,
-                    totalPages: data.meta.totalPages || Math.ceil((data.meta.total || faculty.length) / params.per_page),
-                    hasNext: data.meta.hasNext || false,
-                    hasPrev: data.meta.hasPrev || false
+                    totalPages: data.meta.total_pages || data.meta.totalPages || Math.ceil((data.meta.total || faculty.length) / params.per_page),
+                    hasNext: data.meta.has_next ?? data.meta.hasNext ?? false,
+                    hasPrev: data.meta.has_prev ?? data.meta.hasPrev ?? false
                 },
                 error: faculty.length === 0 && !params.q && Object.keys(currentFilters).length === 0 
                     ? 'No faculty members found in the system.' 
