@@ -57,7 +57,7 @@ def list_students():
         # Search/filter params
         q = (request.args.get('q') or '').strip()
         department = get_string_arg('department', allowed_values=[
-            'BSCPE', 'HR', 'Finance', 'IT', 'Engineering', 'Business'
+            'BSCpE', 'BSME', 'BSEE', 'BSECE', 'BSCE', 'BSChE', 'BSCerE', 'BSABE'
         ])
         yearlevel = get_string_arg('yearlevel', allowed_values=['1', '2', '3', '4', '5'])
         section = get_string_arg('section', allowed_values=['A', 'B', 'C', 'D', 'E'])
@@ -268,7 +268,7 @@ def list_students():
                 'sort': sort_param
             },
             'available_filters': {
-                'departments': ['BSCPE', 'HR', 'Finance', 'IT', 'Engineering', 'Business'],
+                'departments': ['BSCpE', 'BSME', 'BSEE', 'BSECE', 'BSCE', 'BSChE', 'BSCerE', 'BSABE'],
                 'yearlevels': ['1', '2', '3', '4', '5'],
                 'sections': ['A', 'B', 'C', 'D', 'E']
             }

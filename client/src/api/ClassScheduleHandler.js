@@ -252,7 +252,7 @@ class ClassScheduleHandler {
 
     // Helper method to get available departments
     getAvailableDepartments() {
-        return ['BSCPE', 'HR', 'Finance', 'IT', 'Engineering', 'Business'];
+        return ['BSCpE', 'BSME', 'BSEE', 'BSECE', 'BSCE', 'BSChE', 'BSCerE', 'BSABE'];
     }
 
     // Helper method to get available year levels

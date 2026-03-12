@@ -132,12 +132,14 @@ class AddStudentHandler {
      */
     getDepartmentOptions() {
         return [
-            { value: 'BSCPE', label: 'BSCPE' },
-            { value: 'HR', label: 'Human Resources' },
-            { value: 'Finance', label: 'Finance' },
-            { value: 'IT', label: 'Information Technology' },
-            { value: 'Engineering', label: 'Engineering' },
-            { value: 'Business', label: 'Business Administration' }
+            { value: 'BSCpE', label: 'BSCpE' },
+            { value: 'BSME', label: 'BSME' },
+            { value: 'BSEE', label: 'BSEE' },
+            { value: 'BSECE', label: 'BSECE' },
+            { value: 'BSCE', label: 'BSCE' },
+            { value: 'BSChE', label: 'BSChE' },
+            { value: 'BSCerE', label: 'BSCerE' },
+            { value: 'BSABE', label: 'BSABE' }
         ];
     }
     

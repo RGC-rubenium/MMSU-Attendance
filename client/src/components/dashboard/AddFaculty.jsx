@@ -429,12 +429,14 @@ const AddFaculty = ({ isOpen, onClose, onSuccess }) => {
                                 className={`form-select ${errors.department ? 'error' : ''}`}
                             >
                                 <option value="">Select Department</option>
-                                <option value="BSCPE">BSCPE</option>
-                                <option value="HR">Human Resources</option>
-                                <option value="Finance">Finance</option>
-                                <option value="IT">Information Technology</option>
-                                <option value="Engineering">Engineering</option>
-                                <option value="Business">Business Administration</option>
+                                <option value="BSCpE">BSCpE</option>
+                                <option value="BSME">BSME</option>
+                                <option value="BSEE">BSEE</option>
+                                <option value="BSECE">BSECE</option>
+                                <option value="BSCE">BSCE</option>
+                                <option value="BSChE">BSChE</option>
+                                <option value="BSCerE">BSCerE</option>
+                                <option value="BSABE">BSABE</option>
                             </select>
                             {errors.department && <div className="form-error">{errors.department}</div>}
                         </div>

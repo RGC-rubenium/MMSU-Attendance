@@ -74,6 +74,10 @@ def calculate_subjects_attended(student, time_in, time_out):
     if not student or not time_in or not time_out:
         return []
     
+    # Additional safety check for required attributes
+    if not hasattr(student, 'schedule') or not hasattr(student, 'department') or not hasattr(student, 'year_level') or not hasattr(student, 'section'):
+        return []
+    
     subjects_attended = []
     current_day = time_in.strftime('%A').lower()
     
@@ -140,28 +144,6 @@ def calculate_subjects_attended(student, time_in, time_out):
                                         'schedule_name': class_schedule.schedule_name,
                                         'type': 'class_schedule'
                                     })
-        if current_day in student.schedule:
-            day_schedule = student.schedule.get(current_day)
-        elif current_day.capitalize() in student.schedule:
-            day_schedule = student.schedule.get(current_day.capitalize())
-            
-        if day_schedule and isinstance(day_schedule, list):
-            for time_slot in day_schedule:
-                start_time = time_slot.get('start_time')
-                end_time = time_slot.get('end_time')
-                subject = time_slot.get('subject')
-                
-                if start_time and end_time and subject:
-                    # Check if student was present during this subject time
-                    if time_overlaps(time_in.time(), time_out.time(), start_time, end_time):
-                        subjects_attended.append({
-                            'subject': subject,
-                            'start_time': start_time,
-                            'end_time': end_time,
-                            'room': time_slot.get('room', ''),
-                            'schedule_name': f'{student.full_name()} Schedule',
-                            'type': 'student_schedule'
-                        })
     
     return subjects_attended
 
@@ -338,15 +320,20 @@ def handle_rfid_scan():
             
             # Calculate attendance details based on user type
             if user_type == 'student':
-                subjects_attended = calculate_subjects_attended(user, incomplete_log.time_in, now)
-                incomplete_log.subjects_attended = subjects_attended
-                
-                # Update notes with subject summary
-                if subjects_attended:
-                    subject_names = [s['subject'] for s in subjects_attended]
-                    incomplete_log.notes = f"Attended: {', '.join(subject_names)}"
-                else:
-                    incomplete_log.notes = "No subjects during attendance period"
+                try:
+                    subjects_attended = calculate_subjects_attended(user, incomplete_log.time_in, now)
+                    incomplete_log.subjects_attended = subjects_attended
+                    
+                    # Update notes with subject summary
+                    if subjects_attended:
+                        subject_names = [s['subject'] for s in subjects_attended if s.get('subject')]
+                        incomplete_log.notes = f"Attended: {', '.join(subject_names)}"
+                    else:
+                        incomplete_log.notes = "No subjects during attendance period"
+                except Exception as e:
+                    print(f"Error calculating subjects attended: {e}")
+                    incomplete_log.subjects_attended = []
+                    incomplete_log.notes = "Attendance recorded (subject calculation failed)"
             
             elif user_type == 'faculty':
                 # Faculty attendance - calculate work hours
@@ -378,35 +365,9 @@ def handle_rfid_scan():
                 'attendance': incomplete_log.to_dict()
             }), 200
         
-        # ===== NO INCOMPLETE LOG: CHECK FOR COMPLETED LOGS =====
-        completed_log = AttendanceLog.query.filter(
-            and_(
-                AttendanceLog.uid == uid,
-                AttendanceLog.time_in >= today_start,
-                AttendanceLog.time_in <= today_end,
-                AttendanceLog.time_out.is_not(None)
-            )
-        ).first()
-        
-        if completed_log:
-            print(f"🔍 Debug - User already completed attendance today")
-            return jsonify({
-                'success': False,
-                'message': 'You have already completed your attendance for today. Only one attendance session per day is allowed.',
-                'user': {
-                    'uid': user.uid,
-                    'id': user.id,
-                    'name': user.full_name(),
-                    'type': user_type,
-                    'department': user.department
-                },
-                'attendance': {
-                    'time_in': completed_log.time_in.isoformat(),
-                    'time_out': completed_log.time_out.isoformat(),
-                    'schedule_type': completed_log.schedule_type,
-                    'schedule_name': completed_log.schedule_name
-                }
-            }), 400
+        # ===== NO INCOMPLETE LOG: PROCEED WITH NEW TIME-IN =====
+        # Multiple attendances per day are now allowed
+        print(f"🔍 Debug - No incomplete log found, proceeding with new time-in")
         
         # ===== THIS IS A NEW TIME-IN OPERATION =====
         print(f"🔍 Debug - Processing NEW TIME-IN operation")
