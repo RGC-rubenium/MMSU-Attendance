@@ -162,7 +162,17 @@ class ClassSchedule(db.Model):
 
 class AttendanceLog(db.Model):
     __tablename__ = "attendance_logs"
-    __table_args__ = {'schema': 'attendance'}
+    __table_args__ = (
+        # Composite index for the most common query: date range + filters
+        db.Index('ix_alog_time_in',       'time_in'),
+        db.Index('ix_alog_user_type',     'user_type'),
+        db.Index('ix_alog_status',        'status'),
+        db.Index('ix_alog_department',    'department'),
+        db.Index('ix_alog_uid',           'uid'),
+        # Composite: date range filtered by user_type (most common combo)
+        db.Index('ix_alog_timein_utype',  'time_in', 'user_type'),
+        {'schema': 'attendance'},
+    )
 
     id = db.Column(db.Integer, primary_key=True)
     uid = db.Column(db.String(36), nullable=False)  # UID from RFID

@@ -543,47 +543,70 @@ def get_current_schedule():
 
 @rfid_scanner_bp.route('/api/scanner/attendance-logs', methods=['GET'])
 def get_attendance_logs():
-    """Get attendance logs with optional filtering"""
+    """Get attendance logs with filtering, search, and pagination"""
     try:
-        # Get query parameters
-        date_filter = request.args.get('date')
-        user_type = request.args.get('user_type')
-        limit = request.args.get('limit', 50, type=int)
-        
+        date_filter   = request.args.get('date')
+        user_type     = request.args.get('user_type')
+        search        = request.args.get('search', '').strip()
+        department    = request.args.get('department', '').strip()
+        status        = request.args.get('status', '').strip()
+        page          = request.args.get('page', 1, type=int)
+        per_page      = min(request.args.get('per_page', 20, type=int), 100)
+
         query = AttendanceLog.query
-        
-        # Apply filters
+
         if date_filter:
             try:
                 filter_date = datetime.strptime(date_filter, '%Y-%m-%d').date()
-                date_start = datetime.combine(filter_date, datetime_time.min)
-                date_end = datetime.combine(filter_date, datetime_time.max)
-                query = query.filter(AttendanceLog.created_at.between(date_start, date_end))
+                date_start  = datetime.combine(filter_date, datetime_time.min)
+                date_end    = datetime.combine(filter_date, datetime_time.max)
+                query = query.filter(AttendanceLog.time_in.between(date_start, date_end))
             except ValueError:
-                return jsonify({
-                    'success': False,
-                    'message': 'Invalid date format. Use YYYY-MM-DD'
-                }), 400
-        
+                return jsonify({'success': False, 'message': 'Invalid date format. Use YYYY-MM-DD'}), 400
+
         if user_type and user_type in ['student', 'faculty']:
             query = query.filter(AttendanceLog.user_type == user_type)
-        
-        # Get logs ordered by most recent
-        logs = query.order_by(AttendanceLog.created_at.desc()).limit(limit).all()
-        
+
+        if search:
+            like = f'%{search}%'
+            query = query.filter(
+                or_(
+                    AttendanceLog.full_name.ilike(like),
+                    AttendanceLog.uid.ilike(like),
+                    AttendanceLog.user_id.ilike(like),
+                    AttendanceLog.department.ilike(like),
+                )
+            )
+
+        if department:
+            query = query.filter(AttendanceLog.department.ilike(f'%{department}%'))
+
+        if status:
+            query = query.filter(AttendanceLog.status == status)
+
+        query = query.order_by(AttendanceLog.time_in.desc())
+
+        # paginate() issues a single optimised COUNT + windowed SELECT
+        pagination = query.paginate(page=page, per_page=per_page, error_out=False)
+
         return jsonify({
-            'success': True,
-            'logs': [log.to_dict() for log in logs],
-            'count': len(logs)
+            'success':     True,
+            'logs':        [log.to_dict() for log in pagination.items],
+            'count':       len(pagination.items),
+            'total':       pagination.total,
+            'page':        pagination.page,
+            'per_page':    per_page,
+            'total_pages': pagination.pages,
         }), 200
-        
+
     except Exception as e:
         print(f"Error getting attendance logs: {e}")
-        return jsonify({
-            'success': False,
-            'message': 'Failed to get attendance logs',
-            'error': str(e)
-        }), 500
+        return jsonify({'success': False, 'message': 'Failed to get attendance logs', 'error': str(e)}), 500
+
+@rfid_scanner_bp.route('/api/scanner/heartbeat', methods=['GET'])
+def heartbeat():
+    """Keep-alive endpoint to prevent backend sleep"""
+    return jsonify({'success': True, 'status': 'alive', 'timestamp': datetime.now().isoformat()}), 200
 
 @rfid_scanner_bp.route('/api/scanner/test-schedule', methods=['GET'])
 def test_schedule_system():

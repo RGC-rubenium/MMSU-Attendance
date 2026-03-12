@@ -8,6 +8,7 @@ import Surveillance from './pages/dashboard/pages/Surveillance'
 import SchedulePage from './pages/dashboard/pages/Schedule'
 import Scanner from './pages/user-scanner/Scanner'
 import UserProfile from './pages/dashboard/pages/UserProfile'
+import AttendanceLogs from './pages/dashboard/pages/AttendanceLogs'
 import {BrowserRouter as Router, Routes, Route} from 'react-router-dom'
 import ProtectedRoute from './components/auth/ProtectedRoute'
 import Event_scheduler from './pages/dashboard/pages/Event_scheduler'
@@ -35,6 +36,7 @@ function App() {
               <Route path="students/profile" element={<UserProfile />} />
               <Route path="schedule/events" element={<Event_scheduler />} />
               <Route path="schedule/class-schedule" element={<ClassSchedule />} />
+              <Route path="logs/attendance" element={<AttendanceLogs />} />
             </Route>
           </Routes>
         </AuthProvider>

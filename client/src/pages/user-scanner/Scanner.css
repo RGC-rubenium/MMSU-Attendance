@@ -603,7 +603,7 @@
     color: #721c24;
 }
 
-/* Error Tips Styling */\n.error-tips {\n    margin-top: 20px;\n    padding: 15px;\n    background: rgba(13, 110, 253, 0.1);\n    border: 1px solid rgba(13, 110, 253, 0.2);\n    border-radius: 10px;\n}\n\n.error-tips h4 {\n    margin: 0 0 12px 0;\n    color: #0d6efd;\n    font-size: 1rem;\n    font-weight: 600;\n}\n\n.error-tips ul {\n    margin: 0;\n    padding-left: 20px;\n    color: #495057;\n}\n\n.error-tips li {\n    margin: 8px 0;\n    line-height: 1.4;\n    font-size: 0.95rem;\n}\n\n/* Responsive Design */"
+/* Error Tips Styling \n.error-tips {\n    margin-top: 20px;\n    padding: 15px;\n    background: rgba(13, 110, 253, 0.1);\n    border: 1px solid rgba(13, 110, 253, 0.2);\n    border-radius: 10px;\n}\n\n.error-tips h4 {\n    margin: 0 0 12px 0;\n    color: #0d6efd;\n    font-size: 1rem;\n    font-weight: 600;\n}\n\n.error-tips ul {\n    margin: 0;\n    padding-left: 20px;\n    color: #495057;\n}\n\n.error-tips li {\n    margin: 8px 0;\n    line-height: 1.4;\n    font-size: 0.95rem;\n}\n\n Responsive Design */
 @media (max-width: 768px) {
     .scanner-container {
         padding: 15px;
