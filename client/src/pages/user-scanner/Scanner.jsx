@@ -21,6 +21,7 @@ const Scanner = () => {
     
     const scanInputRef = useRef(null);
     const scanTimeoutRef = useRef(null);
+    const displayTimeoutRef = useRef(null);
 
     // Live clock update
     useEffect(() => {
@@ -61,6 +62,9 @@ const Scanner = () => {
             if (scanTimeoutRef.current) {
                 clearTimeout(scanTimeoutRef.current);
             }
+            if (displayTimeoutRef.current) {
+                clearTimeout(displayTimeoutRef.current);
+            }
         };
     }, []);
 
@@ -87,13 +91,18 @@ const Scanner = () => {
         // Validate and format UID
         const formattedUID = ScannerAPI.formatUID(uid);
         if (!ScannerAPI.isValidUID(formattedUID)) {
+            // Clear any existing display timeout
+            if (displayTimeoutRef.current) {
+                clearTimeout(displayTimeoutRef.current);
+            }
+            
             setLastScanResult({
                 error: 'Invalid RFID card format. Please try scanning again.',
                 timestamp: new Date().toISOString()
             });
             playSound('error');
             
-            setTimeout(() => {
+            displayTimeoutRef.current = setTimeout(() => {
                 setLastScanResult(null);
             }, 5000);
             return;
@@ -105,6 +114,11 @@ const Scanner = () => {
             const data = await ScannerAPI.scanRFID(formattedUID);
 
             if (data.success) {
+                // Clear any existing display timeout
+                if (displayTimeoutRef.current) {
+                    clearTimeout(displayTimeoutRef.current);
+                }
+                
                 setLastScanResult({
                     ...data,
                     timestamp: new Date().toISOString()
@@ -113,12 +127,17 @@ const Scanner = () => {
                 // Play success sound
                 playSound('success');
                 
-                // Show result for 5 seconds
-                setTimeout(() => {
+                // Show result for 5 seconds - reset timeout for new scans
+                displayTimeoutRef.current = setTimeout(() => {
                     setLastScanResult(null);
                 }, 5000);
                 
             } else {
+                // Clear any existing display timeout
+                if (displayTimeoutRef.current) {
+                    clearTimeout(displayTimeoutRef.current);
+                }
+                
                 // Display detailed error message from backend
                 const errorMessage = data.message || 'Scan failed. Please try again.';
                 setLastScanResult({ 
@@ -129,12 +148,17 @@ const Scanner = () => {
                 });
                 playSound('error');
                 
-                setTimeout(() => {
+                displayTimeoutRef.current = setTimeout(() => {
                     setLastScanResult(null);
                 }, 7000); // Show error longer for reading
             }
         } catch (error) {
             console.error('Scan error:', error);
+            
+            // Clear any existing display timeout
+            if (displayTimeoutRef.current) {
+                clearTimeout(displayTimeoutRef.current);
+            }
             
             // Handle different types of network errors
             let errorMessage = 'Connection error. Please check your network and try again.';
@@ -155,7 +179,7 @@ const Scanner = () => {
             });
             playSound('error');
             
-            setTimeout(() => {
+            displayTimeoutRef.current = setTimeout(() => {
                 setLastScanResult(null);
             }, 7000); // Show error longer for reading
         } finally {

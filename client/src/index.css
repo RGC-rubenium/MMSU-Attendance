@@ -4,14 +4,19 @@ html, body {
   margin: 0;
   padding: 0;
   height: 100%;
+  width: 100%;
+  overflow-x: hidden;
   /* Use a modern system sans-serif stack */
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
 }
 
 #root {
-  margin: 0 auto;
+  margin: 0;
   padding: 0;
+  height: 100vh;
+  width: 100vw;
   text-align: center;
+  overflow-x: hidden;
 }
 
 *{
