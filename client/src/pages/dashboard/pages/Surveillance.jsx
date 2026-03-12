@@ -3,7 +3,9 @@ import {
   MdVideocam, MdVideocamOff, MdFullscreen, MdFullscreenExit,
   MdPhotoCamera, MdSettings, MdRefresh, MdPlayArrow, MdStop,
   MdSignalWifi4Bar, MdSignalWifiOff, MdClose, MdCheck,
-  MdFiberManualRecord, MdInfo, MdWifi
+  MdFiberManualRecord, MdInfo, MdWifi, MdHome, MdMyLocation,
+  MdArrowUpward, MdArrowDownward, MdArrowBack, MdArrowForward,
+  MdZoomIn, MdZoomOut, MdRadar, MdTune
 } from 'react-icons/md';
 import './Surveillance.css';
 
@@ -19,14 +21,16 @@ function fmtDate(d) {
 /* ─── Settings Modal ─────────────────────────────────── */
 function SettingsModal({ camera, onSave, onClose }) {
   const [form, setForm] = useState({
-    label:     camera.label,
-    ip:        camera.ip,
-    http_port: camera.http_port,
-    rtsp_port: camera.rtsp_port,
-    username:  camera.username,
-    password:  '',
-    channel:   camera.channel,
-    stream:    camera.stream,
+    label:       camera.label,
+    ip:          camera.ip,
+    http_port:   camera.http_port,
+    rtsp_port:   camera.rtsp_port,
+    username:    camera.username,
+    password:    '',
+    channel:     camera.channel,
+    stream:      camera.stream,
+    ptz_enabled: camera.ptz_enabled ?? false,
+    ptz_speed:   camera.ptz_speed ?? 5,
   });
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState('');
@@ -93,6 +97,19 @@ function SettingsModal({ camera, onSave, onClose }) {
               </select>
             </label>
           </div>
+          <div className="sv-form-row">
+            <label style={{flexDirection:'row', alignItems:'center', gap:10, cursor:'pointer'}}>
+              <input type="checkbox" checked={form.ptz_enabled}
+                onChange={e => set('ptz_enabled', e.target.checked)}
+                style={{width:16,height:16,accentColor:'#818cf8'}} />
+              Enable PTZ Controls
+            </label>
+            <label>PTZ Speed (1–10)
+              <input type="number" min={1} max={10} value={form.ptz_speed}
+                onChange={e => set('ptz_speed', +e.target.value)}
+                disabled={!form.ptz_enabled} />
+            </label>
+          </div>
           <div className="sv-rtsp-preview">
             <MdInfo size={14} />
             <span>RTSP: rtsp://{form.username}:***@{form.ip}:{form.rtsp_port}/{form.channel}/{form.stream}</span>
@@ -109,6 +126,182 @@ function SettingsModal({ camera, onSave, onClose }) {
     </div>
   );
 }
+
+/* ─── PTZ Panel ──────────────────────────────────── */
+function PTZPanel({ camId, ptzSpeed, patrolActive, patrolSequence }) {
+  const [speed, setSpeed]         = useState(ptzSpeed || 5);
+  const [patrol, setPatrol]       = useState(patrolActive);
+  const [presets, setPresets]     = useState([]);
+  const [selToken, setSelToken]   = useState('1');
+  const [feedback, setFeedback]   = useState('');
+  const pressRef                  = useRef(null);
+
+  const flash = (msg) => { setFeedback(msg); setTimeout(() => setFeedback(''), 2000); };
+
+  // Load ONVIF presets from camera
+  const loadPresets = useCallback(async () => {
+    try {
+      const res  = await fetch(`${API}/api/surveillance/ptz/${camId}/presets`);
+      const data = await res.json();
+      if (data.success && data.presets.length) {
+        setPresets(data.presets);
+        setSelToken(data.presets[0].token);
+        flash(`✓ ${data.presets.length} preset(s) loaded`);
+      } else {
+        flash(data.error || 'No presets found');
+      }
+    } catch { flash('Could not load presets'); }
+  }, [camId]);
+
+  useEffect(() => { loadPresets(); }, [loadPresets]);
+
+  // Hold-to-move helpers
+  const handlePress = (direction) => {
+    fetch(`${API}/api/surveillance/ptz/${camId}/move`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ direction, speed }),
+    }).catch(() => {});
+    pressRef.current = direction;
+  };
+
+  const handleRelease = () => {
+    if (!pressRef.current) return;
+    fetch(`${API}/api/surveillance/ptz/${camId}/stop`, { method: 'POST' }).catch(() => {});
+    pressRef.current = null;
+  };
+
+  const btn = (direction, icon, title, extraClass = '') => (
+    <button
+      className={`ptz-btn ${extraClass}`}
+      title={title}
+      onMouseDown={() => handlePress(direction)}
+      onMouseUp={handleRelease}
+      onMouseLeave={handleRelease}
+      onTouchStart={(e) => { e.preventDefault(); handlePress(direction); }}
+      onTouchEnd={handleRelease}
+    >{icon}</button>
+  );
+
+  const handleHome = () => {
+    fetch(`${API}/api/surveillance/ptz/${camId}/home`, { method: 'POST' }).catch(() => {});
+    flash('↩ Home');
+  };
+
+  const handleZoom = (dir) => {
+    fetch(`${API}/api/surveillance/ptz/${camId}/zoom`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ direction: dir, speed }),
+    }).catch(() => {});
+  };
+  const handleZoomRelease = () => {
+    fetch(`${API}/api/surveillance/ptz/${camId}/stop`, { method: 'POST' }).catch(() => {});
+  };
+
+  const handlePreset = (action) => {
+    const name = presets.find(p => p.token === selToken)?.name || `Preset ${selToken}`;
+    fetch(`${API}/api/surveillance/ptz/${camId}/preset`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action, token: selToken, name }),
+    }).catch(() => {});
+    flash(action === 'goto' ? `▶ ${name}` : `💾 Saved ${name}`);
+    if (action === 'set') setTimeout(loadPresets, 800);
+  };
+
+  const togglePatrol = async () => {
+    const endpoint = patrol ? 'stop' : 'start';
+    await fetch(`${API}/api/surveillance/patrol/${camId}/${endpoint}`, { method: 'POST' }).catch(() => {});
+    setPatrol(p => !p);
+    flash(patrol ? '⏹ Patrol stopped' : '🔄 Patrol started');
+  };
+
+  return (
+    <div className="sv-ptz-panel">
+      <div className="sv-ptz-header">
+        <span><MdTune size={14} /> PTZ Control · ONVIF</span>
+        {feedback && <span className="sv-ptz-feedback">{feedback}</span>}
+      </div>
+
+      <div className="sv-ptz-body">
+        {/* D-pad */}
+        <div className="ptz-dpad">
+          <div className="ptz-row">
+            {btn('up_left',  '↖', 'Up-Left')}
+            {btn('up',       <MdArrowUpward size={18}/>, 'Up', 'ptz-main')}
+            {btn('up_right', '↗', 'Up-Right')}
+          </div>
+          <div className="ptz-row">
+            {btn('left',  <MdArrowBack size={18}/>,    'Left',  'ptz-main')}
+            <button className="ptz-btn ptz-home" title="Home" onClick={handleHome}><MdHome size={16}/></button>
+            {btn('right', <MdArrowForward size={18}/>, 'Right', 'ptz-main')}
+          </div>
+          <div className="ptz-row">
+            {btn('down_left',  '↙', 'Down-Left')}
+            {btn('down',       <MdArrowDownward size={18}/>, 'Down', 'ptz-main')}
+            {btn('down_right', '↘', 'Down-Right')}
+          </div>
+        </div>
+
+        {/* Right column */}
+        <div className="ptz-right">
+          {/* Zoom */}
+          <div className="ptz-zoom">
+            <button className="ptz-btn ptz-zoom-btn"
+              onMouseDown={() => handleZoom('in')} onMouseUp={handleZoomRelease} onMouseLeave={handleZoomRelease}
+              onTouchStart={e => { e.preventDefault(); handleZoom('in'); }} onTouchEnd={handleZoomRelease}
+              title="Zoom In"><MdZoomIn size={18}/></button>
+            <span className="ptz-zoom-label">ZOOM</span>
+            <button className="ptz-btn ptz-zoom-btn"
+              onMouseDown={() => handleZoom('out')} onMouseUp={handleZoomRelease} onMouseLeave={handleZoomRelease}
+              onTouchStart={e => { e.preventDefault(); handleZoom('out'); }} onTouchEnd={handleZoomRelease}
+              title="Zoom Out"><MdZoomOut size={18}/></button>
+          </div>
+
+          {/* Speed */}
+          <div className="ptz-speed">
+            <span>Speed</span>
+            <input type="range" min={1} max={10} value={speed} onChange={e => setSpeed(+e.target.value)} />
+            <span className="ptz-speed-val">{speed}</span>
+          </div>
+
+          {/* Presets */}
+          <div className="ptz-presets">
+            <div className="ptz-presets-top">
+              <span className="ptz-label">Presets</span>
+              <button className="sv-btn sv-btn-xs sv-btn-ghost" onClick={loadPresets} title="Reload presets from camera">
+                <MdRefresh size={12}/>
+              </button>
+            </div>
+            {presets.length > 0 ? (
+              <select className="ptz-preset-select"
+                value={selToken} onChange={e => setSelToken(e.target.value)}>
+                {presets.map(p => (
+                  <option key={p.token} value={p.token}>{p.name || `Preset ${p.token}`}</option>
+                ))}
+              </select>
+            ) : (
+              <span className="ptz-no-presets">No presets – save one first</span>
+            )}
+            <div className="ptz-preset-actions">
+              <button className="sv-btn sv-btn-xs sv-btn-primary" onClick={() => handlePreset('goto')}>Go</button>
+              <button className="sv-btn sv-btn-xs sv-btn-ghost"   onClick={() => handlePreset('set')}>Save Here</button>
+            </div>
+          </div>
+
+          {/* Patrol */}
+          <button className={`sv-btn sv-btn-sm ${patrol ? 'sv-btn-danger' : 'sv-btn-patrol'}`}
+                  onClick={togglePatrol}>
+            <MdRadar size={15}/>
+            {patrol ? 'Stop Patrol' : 'Auto Patrol'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 
 /* ─── Snapshot Gallery Card ──────────────────────────── */
 function SnapshotCard({ snap, onRemove }) {
@@ -133,6 +326,8 @@ function CameraCard({ camera, onSettingsOpen, onSnapshot }) {
   const [fullscreen, setFs]    = useState(false);
   const [streaming, setStream] = useState(true);
   const [ts, setTs]            = useState(Date.now());
+  const [showPTZ, setShowPTZ]  = useState(false);
+  const [patrolActive, setPatrolActive] = useState(camera.patrol_active || false);
   const pollRef                = useRef(null);
 
   const pollStatus = useCallback(async () => {
@@ -199,6 +394,12 @@ function CameraCard({ camera, onSettingsOpen, onSnapshot }) {
         <div className="sv-camera-controls">
           <button className="sv-icon-btn" title="Reload stream" onClick={() => setTs(Date.now())}><MdRefresh /></button>
           <button className="sv-icon-btn" title="Take snapshot" onClick={handleSnapshot}><MdPhotoCamera /></button>
+          {camera.ptz_enabled && (
+            <button className={`sv-icon-btn ${showPTZ ? 'ptz-active' : ''}`}
+                    title="PTZ Controls" onClick={() => setShowPTZ(p => !p)}>
+              <MdMyLocation />
+            </button>
+          )}
           <button className={`sv-icon-btn ${streaming ? 'active-stop' : 'active-play'}`}
                   title={streaming ? 'Stop stream' : 'Start stream'}
                   onClick={handleToggleStream}>
@@ -250,10 +451,20 @@ function CameraCard({ camera, onSettingsOpen, onSnapshot }) {
         </span>
         <span className="sv-footer-chip">CH{camera.channel} · Stream {camera.stream}</span>
         <span className="sv-footer-chip">RTSP :{camera.rtsp_port}</span>
+        {patrolActive && <span className="sv-footer-chip patrol-chip"><MdRadar size={11}/>&nbsp;Patrolling</span>}
         {status.last_error && !status.connected && (
           <span className="sv-footer-chip err" title={status.last_error}>⚠ {status.last_error}</span>
         )}
       </div>
+
+      {showPTZ && camera.ptz_enabled && (
+        <PTZPanel
+          camId={camera.id}
+          ptzSpeed={camera.ptz_speed}
+          patrolActive={patrolActive}
+          patrolSequence={camera.patrol}
+        />
+      )}
     </div>
   );
 }

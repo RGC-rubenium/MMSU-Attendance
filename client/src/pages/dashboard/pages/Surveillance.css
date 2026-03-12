@@ -605,3 +605,246 @@
   .sv-cameras-grid { padding: 14px; }
   .sv-gallery-panel { margin: 0 14px 14px; }
 }
+
+/* ═══════════════════════════════════════════════════
+   PTZ Panel
+   ═══════════════════════════════════════════════════ */
+
+.sv-ptz-panel {
+  background: rgba(0, 0, 0, 0.35);
+  border-top: 1px solid rgba(99,102,241,0.2);
+  padding: 14px 16px;
+  animation: sv-modal-in 0.15s ease-out;
+}
+
+.sv-ptz-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #818cf8;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 12px;
+}
+
+.sv-ptz-feedback {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #4ade80;
+  animation: sv-fade-out 1.8s forwards;
+}
+@keyframes sv-fade-out {
+  0%   { opacity: 1; }
+  70%  { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+.sv-ptz-body {
+  display: flex;
+  gap: 18px;
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+
+/* ── D-pad ────────────────────────────────────────── */
+.ptz-dpad {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.ptz-row {
+  display: flex;
+  gap: 4px;
+}
+
+.ptz-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  background: rgba(255,255,255,0.07);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 7px;
+  color: #94a3b8;
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-weight: 700;
+  transition: background 0.12s, color 0.12s, transform 0.08s;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.ptz-btn:hover  { background: rgba(99,102,241,0.28); color: #a5b4fc; }
+.ptz-btn:active { transform: scale(0.92); background: rgba(99,102,241,0.45); }
+
+.ptz-btn.ptz-main {
+  width: 38px;
+  height: 38px;
+  background: rgba(99,102,241,0.15);
+  border-color: rgba(99,102,241,0.3);
+  color: #a5b4fc;
+}
+
+.ptz-btn.ptz-home {
+  width: 38px;
+  height: 38px;
+  background: rgba(251,191,36,0.12);
+  border-color: rgba(251,191,36,0.25);
+  color: #fbbf24;
+}
+.ptz-btn.ptz-home:hover { background: rgba(251,191,36,0.25); }
+
+/* ── Right column ─────────────────────────────────── */
+.ptz-right {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  flex: 1;
+  min-width: 160px;
+}
+
+/* ── Zoom ─────────────────────────────────────────── */
+.ptz-zoom {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ptz-zoom-label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: #475569;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.ptz-zoom-btn {
+  width: 32px;
+  height: 32px;
+  background: rgba(6,182,212,0.12);
+  border-color: rgba(6,182,212,0.25);
+  color: #22d3ee;
+}
+.ptz-zoom-btn:hover { background: rgba(6,182,212,0.25); }
+
+/* ── Speed ────────────────────────────────────────── */
+.ptz-speed {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.75rem;
+  color: #64748b;
+}
+
+.ptz-speed input[type="range"] {
+  flex: 1;
+  accent-color: #818cf8;
+  height: 4px;
+  cursor: pointer;
+}
+
+.ptz-speed-val {
+  width: 16px;
+  text-align: center;
+  font-weight: 700;
+  color: #a5b4fc;
+  font-size: 0.82rem;
+}
+
+/* ── Presets ──────────────────────────────────────── */
+.ptz-presets {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ptz-presets-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.ptz-label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: #475569;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.ptz-preset-select {
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 7px;
+  padding: 5px 8px;
+  color: #e2e8f0;
+  font-size: 0.82rem;
+  outline: none;
+  width: 100%;
+  cursor: pointer;
+}
+.ptz-preset-select:focus {
+  border-color: rgba(99,102,241,0.5);
+}
+.ptz-preset-select option { background: #1e293b; }
+
+.ptz-no-presets {
+  font-size: 0.74rem;
+  color: #475569;
+  font-style: italic;
+}
+
+.ptz-preset-row {
+  display: flex;
+  gap: 5px;
+}
+
+.ptz-preset-num {
+  width: 28px;
+  height: 28px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 6px;
+  color: #64748b;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.12s;
+}
+.ptz-preset-num:hover  { border-color: rgba(99,102,241,0.4); color: #a5b4fc; }
+.ptz-preset-num.active {
+  background: rgba(99,102,241,0.25);
+  border-color: rgba(99,102,241,0.6);
+  color: #e0e7ff;
+}
+
+.ptz-preset-actions {
+  display: flex;
+  gap: 6px;
+}
+
+/* ── Patrol ───────────────────────────────────────── */
+.sv-btn-patrol {
+  background: rgba(74,222,128,0.12);
+  color: #4ade80;
+  border: 1px solid rgba(74,222,128,0.25);
+}
+.sv-btn-patrol:hover { background: rgba(74,222,128,0.25); }
+
+.sv-footer-chip.patrol-chip {
+  background: rgba(74,222,128,0.1);
+  border-color: rgba(74,222,128,0.25);
+  color: #4ade80;
+  animation: sv-pulse 2s infinite;
+}
+
+/* PTZ icon button active state */
+.sv-icon-btn.ptz-active {
+  background: rgba(99,102,241,0.3);
+  border-color: rgba(99,102,241,0.5);
+  color: #a5b4fc;
+}
