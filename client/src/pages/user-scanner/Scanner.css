@@ -100,12 +100,62 @@
     to { transform: rotate(360deg); }
 }
 
-/* Network Status Styles */\n.scanner-status.offline {\n    background: #f8d7da;\n    border-color: #f5c2c7;\n}\n\n.scanner-status.error {\n    background: #fff3cd;\n    border-color: #ffecb5;\n}\n\n.status-indicator.offline {\n    color: #721c24;\n}\n\n.status-indicator.error {\n    color: #664d03;\n}\n\n.status-indicator.offline .radar-icon {\n    color: #dc3545;\n    animation: none;\n}\n\n.status-indicator.error .radar-icon {\n    color: #fd7e14;\n    animation: pulse 1s infinite;\n}\n\n/* Hidden Input for Background Scanning */"
+/* Network Status Styles */
+.scanner-status.offline {
+    background: #f8d7da;
+    border-color: #f5c2c7;
+}
+
+.scanner-status.error {
+    background: #fff3cd;
+    border-color: #ffecb5;
+}
+
+/* Processing Status Styles */
+.scanner-status .status-indicator.processing {
+    color: #0a58ca;
+    animation: pulse 1.5s infinite;
+}
+
+.status-indicator.processing .radar-icon {
+    color: #0d6efd;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+.status-indicator.offline {
+    color: #721c24;
+}
+
+.status-indicator.error {
+    color: #664d03;
+}
+
+.status-indicator.offline .radar-icon {
+    color: #dc3545;
+    animation: none;
+}
+
+.status-indicator.error .radar-icon {
+    color: #fd7e14;
+    animation: pulse 1s infinite;
+}
+
+/* Hidden Input for Background Scanning */
 .hidden-input {
     position: absolute;
     left: -9999px;
     opacity: 0;
     pointer-events: none;
+}
+
+.hidden-input:disabled {
+    pointer-events: none;
+    background-color: #f8f9fa;
 }
 
 /* Scan Result Display */

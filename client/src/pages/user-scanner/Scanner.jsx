@@ -33,33 +33,56 @@ const Scanner = () => {
 
     // Auto-focus input when component mounts and keep it focused
     useEffect(() => {
-        if (scanInputRef.current) {
+        if (scanInputRef.current && !isLoading) {
             scanInputRef.current.focus();
         }
         
-        // Keep input focused at all times
+        // Keep input focused at all times (except when processing)
         const focusInterval = setInterval(() => {
-            if (scanInputRef.current && document.activeElement !== scanInputRef.current) {
+            if (scanInputRef.current && !isLoading && document.activeElement !== scanInputRef.current) {
                 scanInputRef.current.focus();
             }
         }, 100);
         
         return () => clearInterval(focusInterval);
+    }, [isLoading]);
+
+    // Cleanup pending scan timeouts when loading state changes
+    useEffect(() => {
+        if (isLoading && scanTimeoutRef.current) {
+            clearTimeout(scanTimeoutRef.current);
+            scanTimeoutRef.current = null;
+        }
+    }, [isLoading]);
+
+    // Cleanup on unmount
+    useEffect(() => {
+        return () => {
+            if (scanTimeoutRef.current) {
+                clearTimeout(scanTimeoutRef.current);
+            }
+        };
     }, []);
 
     // Keep input focused
     const handleInputBlur = useCallback(() => {
+        // Don't refocus if we're currently processing
+        if (isLoading) return;
+        
         setTimeout(() => {
-            if (scanInputRef.current) {
+            if (scanInputRef.current && !isLoading) {
                 scanInputRef.current.focus();
             }
         }, 10);
-    }, []);
+    }, [isLoading]);
 
 
 
     const handleScan = async (uid) => {
         if (!uid || uid.trim() === '') return;
+        
+        // Prevent multiple scans during processing
+        if (isLoading) return;
         
         // Validate and format UID
         const formattedUID = ScannerAPI.formatUID(uid);
@@ -137,6 +160,12 @@ const Scanner = () => {
             }, 7000); // Show error longer for reading
         } finally {
             setIsLoading(false);
+            
+            // Clear any pending scan timeout since we just processed
+            if (scanTimeoutRef.current) {
+                clearTimeout(scanTimeoutRef.current);
+                scanTimeoutRef.current = null;
+            }
         }
     };
 
@@ -164,6 +193,9 @@ const Scanner = () => {
     };
 
     const handleInputChange = (e) => {
+        // Prevent input changes during processing
+        if (isLoading) return;
+        
         const value = e.target.value;
         setScanInput(value);
 
@@ -230,9 +262,9 @@ const Scanner = () => {
 
             {/* Scanner Status */}
             <div className="scanner-status">
-                <div className="status-indicator active">
+                <div className={`status-indicator ${isLoading ? 'processing' : 'active'}`}>
                     <MdRadar className="radar-icon" />
-                    <span>Scanner Active - Ready to Scan</span>
+                    <span>{isLoading ? 'Processing Scan...' : 'Scanner Active - Ready to Scan'}</span>
                 </div>
             </div>
 
@@ -246,6 +278,8 @@ const Scanner = () => {
                 className="hidden-input"
                 autoComplete="off"
                 autoFocus
+                disabled={isLoading}
+                style={{ pointerEvents: isLoading ? 'none' : 'auto' }}
             />
 
             {/* Last Scan Result */}
