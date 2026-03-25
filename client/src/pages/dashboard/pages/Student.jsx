@@ -155,10 +155,21 @@ export default function Student() {
                 const fullName = u.full_name || u.fullName ||
                     `${u.first_name || ''} ${u.middle_name || ''} ${u.last_name || ''}`.replace(/\s+/g, ' ').trim() ||
                     'Unknown Name';
-                
+
+                // Short name: first + last (or fallback to initials / fullName)
+                const nameParts = fullName.split(/\s+/).filter(Boolean);
+                let shortName = fullName;
+                if (nameParts.length >= 2) {
+                    shortName = `${nameParts[0]} ${nameParts[nameParts.length - 1]}`; // First + Last
+                } else if (nameParts.length === 1) {
+                    // Single name - use initials if too long
+                    shortName = nameParts[0].length > 12 ? `${nameParts[0].slice(0, 12)}...` : nameParts[0];
+                }
+
                 return {
                     id: u.id,
                     fullName: fullName,
+                    shortName: shortName,
                     avatar: u.avatar || u.profile_path, // Use avatar field from API
                     department: u.department || 'Unknown',
                     yearlevel: u.year_level || u.yearlevel || '',
@@ -575,7 +586,7 @@ export default function Student() {
                                             className="user-avatar" 
                                         />
                                         <div className="user-info">
-                                            <div className="user-name">{u.fullName}</div>
+                                            <div className="user-name" title={u.fullName}>{u.shortName || u.fullName}</div>
                                             <div className="user-id">{u.id}</div>
                                             <div className="user-section">
                                                 {`${u.department} - ${u.yearlevel || ''}${u.section || ''}`}

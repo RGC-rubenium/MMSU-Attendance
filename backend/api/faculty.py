@@ -81,13 +81,20 @@ def list_faculty():
             like_pattern = f"%{q}%"
             
             # For full name searches, also try to match against combined names
+            # Start with name and department fields
             search_filters = or_(
                 Faculty.first_name.ilike(like_pattern),
                 Faculty.middle_name.ilike(like_pattern),
                 Faculty.last_name.ilike(like_pattern),
-                Faculty.department.ilike(like_pattern),
-                cast(Faculty.year_level, String).ilike(like_pattern)
+                Faculty.department.ilike(like_pattern)
             )
+            # Include year_level in search only if the model has that attribute
+            if hasattr(Faculty, 'year_level'):
+                try:
+                    search_filters = or_(search_filters, cast(Faculty.year_level, String).ilike(like_pattern))
+                except Exception:
+                    # If casting fails for any reason, skip adding the year_level search
+                    pass
             
             # Add concatenated full name search for queries like "John Doe" or "John M. Doe"
             # This handles cases where someone searches for "Raven Gian S. Copon"
@@ -141,7 +148,7 @@ def list_faculty():
         filter_conditions = []
         if department:
             filter_conditions.append(Faculty.department == department)
-        if yearlevel:
+        if yearlevel and hasattr(Faculty, 'year_level'):
             try:
                 year_int = int(yearlevel)
                 filter_conditions.append(Faculty.year_level == year_int)

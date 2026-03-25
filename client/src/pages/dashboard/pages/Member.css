@@ -203,16 +203,55 @@
 
 .avatar-container {
   position: relative;
-  display: inline-block;
+  display: inline-flex;
   width: 60px;
   height: 60px;
   margin-right: 18px;
   flex-shrink: 0;
+  overflow: hidden;
+  box-sizing: border-box;
+  align-items: center;
+  justify-content: center;
 }
 
 .avatar-container .user-avatar {
   margin-right: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+  display: block;
+  box-sizing: border-box;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  object-position: center center;
+  background-clip: padding-box;
+  box-shadow: none;
 }
+
+/* Ensure placeholder matches avatar sizing and is centered */
+.avatar-placeholder, .avatar-placeholder .avatar-initials, .avatar-container .avatar-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  box-sizing: border-box;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  background-clip: padding-box;
+  box-shadow: none;
+}
+
+/* Make sure image and placeholder use identical inner sizing so borders align */
+.avatar-container .user-avatar, .avatar-container .avatar-placeholder {
+  padding: 0;
+  margin: 0;
+}
+
+/* Ensure same sizing across other avatar style variants used elsewhere */
+.user-avatar-container, .avatar-container { width: 80px; height: 80px; }
+.user-avatar, .user-avatar-image { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
+.user-avatar-placeholder, .avatar-placeholder { width: 100%; height: 100%; display:flex; align-items:center; justify-content:center; border-radius:50%; }
 
 .avatar-loading {
   position: absolute;
@@ -242,6 +281,9 @@
   width: 100%;
 }
 
+/* Allow child truncation inside flex containers */
+.user-info { min-width: 0; }
+
 .user-name {
   font-weight: 600;
   color: rgba(255, 255, 255, 0.95);
@@ -249,6 +291,14 @@
   margin-bottom: 8px;
   line-height: 1.4;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+/* Truncate long names and show ellipsis; tooltip displays full name */
+.user-name {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+  display: block;
 }
 
 .user-id {

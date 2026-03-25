@@ -34,6 +34,7 @@ function App() {
               <Route path="surveillance" element={<Surveillance />} />
               <Route path="schedule" element={<SchedulePage />} />
               <Route path="students/profile" element={<UserProfile />} />
+              <Route path="faculty/profile" element={<UserProfile />} />
               <Route path="schedule/events" element={<Event_scheduler />} />
               <Route path="schedule/class-schedule" element={<ClassSchedule />} />
               <Route path="logs/attendance" element={<AttendanceLogs />} />
