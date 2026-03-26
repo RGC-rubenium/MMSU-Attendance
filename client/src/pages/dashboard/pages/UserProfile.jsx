@@ -83,6 +83,20 @@ export default function UserProfile() {
                         <div><span className="meta-label">Gender:</span> {gender || '—'}</div>
                         <div><span className="meta-label">UID:</span> <span aria-hidden>{uidMasked}</span></div>
                         <div><span className="meta-label">ID:</span> {id || '—'}</div>
+                         {userType === 'student' && (
+                                <>
+                                    <div><span className="meta-label">Course: </span> {course || '—'}</div>
+                                    <div><span>Section: </span>{section || '—'}</div>
+                                    <div><span>Year: </span>{year || '—'}</div>
+                                </>
+                            )}
+
+                            {userType === 'faculty' && (
+                                <>
+                                    <div><span>Department: </span>{course || '—'}</div>
+                                    <div><span>Position: </span>{user.position || user.title || '—'}</div>
+                                </>
+                            )}
                     </div>
                 </aside>
 
@@ -102,12 +116,11 @@ export default function UserProfile() {
                                 <>
                                     <dt>Department</dt><dd>{course || '—'}</dd>
                                     <dt>Position</dt><dd>{user.position || user.title || '—'}</dd>
-                                    <dt>Email</dt><dd>{user.email || '—'}</dd>
                                 </>
                             )}
 
-                            {/* Common/optional fields */}
                             {user.contact_number && (<><dt>Contact</dt><dd>{user.contact_number}</dd></>)}
+                            {user.email && (<><dt>Email</dt><dd>{user.email}</dd></>)}
                             {user.address && (<><dt>Address</dt><dd>{user.address}</dd></>)}
                         </dl>
                     </div>

@@ -1,51 +1,139 @@
 .user-profile-page{
     color: white;
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 28px 16px;
 }
 
 .user-profile-card{
     background: rgba(255,255,255,0.04);
     padding: 16px;
     border-radius: 8px;
-    max-width: 520px;
 }
 
+/* Avatar */
 .profile-avatar{
-    width: 96px;
-    height: 96px;
+    width: 120px;
+    height: 120px;
     object-fit: cover;
     border-radius: 50%;
     margin-bottom: 12px;
 }
 
-/* New layout styles */
+/* Grid layout for left (avatar/meta) and right (details) */
 .profile-grid{
     display: grid;
-    grid-template-columns: 220px 1fr;
-    gap: 20px;
+    grid-template-columns: 260px 1fr;
+    gap: 24px;
     align-items: start;
+    justify-content: center;
 }
 
 .profile-left{
+    width: 100%;
     background: rgba(255,255,255,0.03);
-    padding: 16px;
+    padding: 20px;
     border-radius: 10px;
     text-align: center;
+    box-sizing: border-box;
 }
 
-.profile-avatar-wrap{ display:flex; align-items:center; justify-content:center; }
-.profile-avatar.placeholder{ width:96px; height:96px; border-radius:50%; background:rgba(255,255,255,0.12); display:flex; align-items:center; justify-content:center; font-weight:700; font-size:22px; }
-.profile-name{ margin:10px 0 6px 0; }
-.profile-meta { color: rgba(255,255,255,0.85); font-size:14px; }
-.meta-label{ color: rgba(255,255,255,0.7); font-weight:600; margin-right:6px; }
+/* Avatar wrapper */
+.profile-avatar-wrap{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+}
 
-.profile-right .profile-section{ background: rgba(255,255,255,0.03); padding:16px; border-radius:10px; }
-.profile-right h3{ margin-top:0; }
-.profile-right dl{ display:grid; grid-template-columns: 120px 1fr; gap:8px 12px; }
+/* Placeholder avatar */
+.profile-avatar.placeholder{
+    width:120px;
+    height:120px;
+    border-radius:50%;
+    background:rgba(255,255,255,0.12);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-weight:700;
+    font-size:28px;
+}
+
+/* Name styling */
+.profile-name{
+    font-size:20px;
+    font-weight:700;
+    margin: 10px 0 6px;
+    line-height:1.2;
+    color: #fff;
+}
+
+/* Meta area: arrange as label/value rows */
+.profile-meta { 
+    color: rgba(255,255,255,0.85);
+    font-size:14px;
+    margin-top: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    align-items: center; /* centered in desktop left column */
+    width: 100%;
+    box-sizing: border-box;
+}
+
+/* Each row: label + value */
+.meta-row{
+    display: grid;
+    grid-template-columns: max-content 1fr;
+    gap: 8px 12px;
+    align-items: center;
+    width: 100%;
+    justify-items: start;
+}
+
+/* small screens will left-align the rows */
+.meta-row .meta-label{ text-align: left; }
+
+/* label/value styles */
+.meta-label{
+    color: rgba(255,255,255,0.7);
+    font-weight:600;
+    margin-right:6px;
+    white-space: nowrap;
+}
+.meta-value{
+    color: rgba(255,255,255,0.95);
+    word-break: break-word;
+    text-align: left;
+}
+
+/* Right column details */
+.profile-right .profile-section{
+    background: rgba(255,255,255,0.03);
+    padding:18px;
+    border-radius:10px;
+}
+.profile-right h3{ margin-top:0; margin-bottom:8px }
+.profile-right dl{
+    display:grid;
+    grid-template-columns: 120px 1fr;
+    gap:8px 12px;
+}
 .profile-right dt{ color: rgba(255,255,255,0.7); font-weight:600; }
 .profile-right dd{ margin:0; color: rgba(255,255,255,0.9); }
 
-@media(max-width:800px){
+/* Responsive behavior */
+@media(max-width:900px){
     .profile-grid{ grid-template-columns: 1fr; }
-    .profile-left{ text-align:left; display:flex; gap:12px; align-items:center }
-    .profile-name{ margin:0 }
+    .profile-left{
+        text-align:left;
+        display:flex;
+        gap:12px;
+        align-items:center;
+    }
+    .profile-avatar{ width:84px; height:84px; margin-bottom:0; }
+    .profile-avatar.placeholder{ width:84px; height:84px; font-size:18px; }
+    .profile-name{ margin:0; font-size:18px; }
+    /* left-align meta on mobile and allow values to wrap */
+    .profile-meta{ align-items: flex-start; }
+    .meta-row{ grid-template-columns: 90px 1fr; }
 }
