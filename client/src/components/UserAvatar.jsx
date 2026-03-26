@@ -4,12 +4,12 @@ const UserAvatar = ({ src, alt, fullName, className = "user-avatar" }) => {
     const [imageLoaded, setImageLoaded] = useState(false);
     const [imageError, setImageError] = useState(false);
     
-    console.log('UserAvatar render:', { src, fullName, imageLoaded, imageError });
+    // console.log('UserAvatar render:', { src, fullName, imageLoaded, imageError });
 
     // Reset states when src changes
     useEffect(() => {
         if (src) {
-            console.log('UserAvatar: Resetting states for new src:', src);
+            // console.log('UserAvatar: Resetting states for new src:', src);
             setImageLoaded(false);
             setImageError(false);
         } else {
@@ -30,13 +30,13 @@ const UserAvatar = ({ src, alt, fullName, className = "user-avatar" }) => {
     };
 
     const handleImageError = (e) => {
-        console.error('UserAvatar: Image failed to load:', src, e.type, e);
+        // console.log('UserAvatar: Image failed to load:', src, e.type, e);
         setImageError(true);
         setImageLoaded(false);
     };
-
+    //load image
     const handleImageLoad = (e) => {
-        console.log('UserAvatar: Image loaded successfully:', src, e.type);
+        // console.log('UserAvatar: Image loaded successfully:', src, e.type);
         setImageLoaded(true);
         setImageError(false);
     };

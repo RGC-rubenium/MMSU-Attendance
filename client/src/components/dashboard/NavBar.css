@@ -7,7 +7,6 @@
     display: flex;
     justify-content: center;
     align-items: start;
-    position: sticky;
     top: 60px;
     flex-shrink: 0;
 }
