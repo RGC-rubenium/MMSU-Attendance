@@ -438,7 +438,7 @@ def handle_rfid_scan():
         
         db.session.add(attendance_log)
         db.session.commit()
-        
+        #debuger
         print(f"🔍 Debug - NEW TIME-IN created: ID={attendance_log.id}")
         
         return jsonify({

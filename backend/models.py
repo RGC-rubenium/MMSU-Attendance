@@ -38,20 +38,21 @@ class Student(db.Model):
     __tablename__ = "students"
     __table_args__ = {'schema': 'attendance'}
 
-    uid = db.Column(db.String(36), primary_key=True)  # Full UUID length
+    uid = db.Column(db.String(36), primary_key=True) 
     id = db.Column(db.String(50), unique=True, nullable=True)
-    first_name = db.Column(db.String(100))  # Increased for longer names
+    first_name = db.Column(db.String(100)) 
     middle_name = db.Column(db.String(100), nullable=True)
     last_name = db.Column(db.String(100))
-    department = db.Column(db.String(100))  # Increased for longer department names
+    department = db.Column(db.String(100)) 
     year_level = db.Column(db.Integer)
     schedule = db.Column(db.JSON, nullable=True)
     profile_path = db.Column(db.Text, nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     section = db.Column(db.String(20), nullable=True)
-    gender = db.Column(db.String(20), nullable=True)  # Increased from 10 to handle longer values
+    gender = db.Column(db.String(20), nullable=True)
     schedule = db.Column(db.JSON, nullable=True)
+    parent_contact = db.Column(db.String(20), nullable=True)
 
     def full_name(self):
         parts = [self.first_name, self.middle_name, self.last_name]
@@ -175,7 +176,7 @@ class AttendanceLog(db.Model):
     )
 
     id = db.Column(db.Integer, primary_key=True)
-    uid = db.Column(db.String(36), nullable=False)  # UID from RFID
+    uid = db.Column(db.String(36), nullable=False)
     user_type = db.Column(db.String(20), nullable=False)  # 'student' or 'faculty'
     user_id = db.Column(db.String(50), nullable=True)  # Student/Faculty ID
     full_name = db.Column(db.String(200), nullable=False)
@@ -184,7 +185,7 @@ class AttendanceLog(db.Model):
     schedule_name = db.Column(db.String(100), nullable=True)
     time_in = db.Column(db.DateTime, nullable=False)
     time_out = db.Column(db.DateTime, nullable=True)
-    status = db.Column(db.String(20), default='present')  # 'present', 'late', 'absent'
+    status = db.Column(db.String(20), default='present') 
     subjects_attended = db.Column(db.JSON, nullable=True)  # List of subjects attended during time-in to time-out
     notes = db.Column(db.Text, nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)

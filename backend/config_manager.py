@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Scanner Configuration Manager - Easy way to update scanner settings
+Something important
 """
 
 from scanner_config import SCANNER_CONFIG, DEFAULT_SCHEDULE_CONFIG
