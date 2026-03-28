@@ -111,6 +111,7 @@
     background: rgba(255,255,255,0.03);
     padding:18px;
     border-radius:10px;
+    margin-bottom:16px;
 }
 .profile-right h3{ margin-top:0; margin-bottom:8px }
 .profile-right dl{
@@ -137,3 +138,45 @@
     .profile-meta{ align-items: flex-start; }
     .meta-row{ grid-template-columns: 90px 1fr; }
 }
+
+/* Attendance section */
+
+/* Analytics: stack and center text to match design */
+.attendance-section .attendance-stats{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:8px;
+    margin-bottom:12px;
+}
+.attendance-section .stat{
+    background: rgba(255,255,255,0.02);
+    padding:12px 16px;
+    border-radius:8px;
+    width:100%;
+    max-width:480px;
+    box-sizing:border-box;
+    text-align:center;
+}
+.attendance-section .stat-label{ color: rgba(255,255,255,0.75); font-size:13px; margin-bottom:6px; }
+.attendance-section .stat-value{ color:#fff; font-weight:700; font-size:18px; }
+
+/* Make analytics appear as two-column label/value like Profile Details */
+.attendance-section .attendance-grid{
+    display: grid;
+    grid-template-columns: 120px 1fr;
+    gap:8px 12px;
+    max-width:480px;
+    margin: 0 auto;
+    align-items: center;
+}
+.attendance-section .attendance-grid dt{ color: rgba(255,255,255,0.7); font-weight:600; text-align:left }
+.attendance-section .attendance-grid dd{ margin:0; color: rgba(255,255,255,0.9); text-align:center }
+
+.attendance-table-wrap{ overflow:auto; margin-top:8px }
+.attendance-table{ width:100%; border-collapse:collapse; font-size:13px }
+.attendance-table th, .attendance-table td{ text-align:left; padding:8px 10px; border-bottom:1px solid rgba(255,255,255,0.04) }
+.attendance-table th{ color: rgba(255,255,255,0.75); font-weight:700 }
+.attendance-table td{ color: rgba(255,255,255,0.95) }
+
+.error{ color: #ffb4b4 }
