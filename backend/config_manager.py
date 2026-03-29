@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# Attendance ATMMSU - Configuration Manager
+#   does not work but is important for future use
 """
 Something important
 """
