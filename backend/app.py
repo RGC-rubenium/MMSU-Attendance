@@ -14,7 +14,7 @@ from api.add_faculty import add_faculty_bp
 from api.add_schedule import event_schedule_bp
 from api.add_class_schedule import class_schedule_bp
 from api.rfid_scanner import rfid_scanner_bp
-
+from api.pizero_handler import pizero_scanner_bp
 
 app = Flask(__name__)
 app.config.from_object(config)
@@ -31,6 +31,7 @@ db.init_app(app)
 migrate.init_app(app, db)
 
 # Register API blueprints under /api
+app.register_blueprint(pizero_scanner_bp, url_prefix='/api')
 app.register_blueprint(auth_bp, url_prefix='/api')
 app.register_blueprint(students_bp, url_prefix='/api')
 app.register_blueprint(students_delete_bp, url_prefix='/api')

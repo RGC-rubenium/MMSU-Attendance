@@ -40,12 +40,13 @@ export const SideBarData = [
                 title: 'Student Scheduler',
                 Path: '/dashboard/schedule/class-schedule',
                 cName: 'sidebar-subtext'
-            },
-            {
-                title: 'Event Scheduler',
-                Path: '/dashboard/schedule/events',
-                cName: 'sidebar-subtext'
             }
+            // ,
+            // {
+            //     title: 'Event Scheduler',
+            //     Path: '/dashboard/schedule/events',
+            //     cName: 'sidebar-subtext'
+            // }
         ]
     },
     {
