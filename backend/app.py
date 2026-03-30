@@ -16,6 +16,7 @@ from api.add_class_schedule import class_schedule_bp
 from api.rfid_scanner import rfid_scanner_bp
 from api.rpi_management import rpi_management_bp
 from api.scanner_access import scanner_access_bp
+from api.analytics import analytics_bp
 
 app = Flask(__name__)
 app.config.from_object(config)
@@ -44,6 +45,7 @@ app.register_blueprint(class_schedule_bp, url_prefix='/api')
 app.register_blueprint(rfid_scanner_bp)
 app.register_blueprint(rpi_management_bp)
 app.register_blueprint(scanner_access_bp)
+app.register_blueprint(analytics_bp, url_prefix='/api')
 
 # Static file route for serving images
 @app.route('/images/<path:filename>')
