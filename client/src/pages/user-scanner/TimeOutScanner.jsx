@@ -502,6 +502,6 @@ const TimeOutScanner = () => {
             )}
         </div>
     );
-};
+}
 
 export default TimeOutScanner;

@@ -15,6 +15,7 @@ import {BrowserRouter as Router, Routes, Route} from 'react-router-dom'
 import ProtectedRoute from './components/auth/ProtectedRoute'
 import Event_scheduler from './pages/dashboard/pages/Event_scheduler'
 import ClassSchedule from './pages/dashboard/pages/ClassSchedule'
+import RpiManagement from './components/dashboard/RpiManagement'
 import './index.css'
 
 
@@ -30,6 +31,7 @@ function App() {
             <Route path="/scanner" element={<Scanner />} />
             <Route path="/scanner/time-in" element={<TimeInScanner />} />
             <Route path="/scanner/time-out" element={<TimeOutScanner />} />
+            <Route path="/pairing" element={<div style={{height: '100vh'}}><iframe src="/pairing.html" style={{width: '100%', height: '100%', border: 'none'}} /></div>} />
             <Route path="/" element={<Login />} />
             <Route path="/dashboard/*" element={<ProtectedRoute allowedRoles={["admin"]}><AdminDashboard /></ProtectedRoute>}>
               <Route index element={<Dashboard />} />
@@ -42,6 +44,7 @@ function App() {
               <Route path="schedule/events" element={<Event_scheduler />} />
               <Route path="schedule/class-schedule" element={<ClassSchedule />} />
               <Route path="logs/attendance" element={<AttendanceLogs />} />
+              <Route path="rpi/management" element={<RpiManagement />} />
             </Route>
           </Routes>
         </AuthProvider>

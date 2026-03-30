@@ -1,0 +1,14 @@
+{
+  "device_id": null,
+  "device_name": "Scanner Terminal 1",
+  "location": "Main Entrance",
+  "backend_url": "http://192.168.1.100:5000",
+  "is_paired": false,
+  "pairing_code": null,
+  "scanner_mode": "both",
+  "default_page": "time-in",
+  "heartbeat_interval": 30,
+  "auto_start": true,
+  "fullscreen": true,
+  "kiosk_mode": true
+}

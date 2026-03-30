@@ -209,3 +209,109 @@ class AttendanceLog(db.Model):
             'created_at': self.created_at.isoformat() if self.created_at else None,
             'updated_at': self.updated_at.isoformat() if self.updated_at else None,
         }
+
+
+class RpiDevice(db.Model):
+    __tablename__ = "rpi_devices"
+    __table_args__ = {'schema': 'attendance'}
+
+    id = db.Column(db.Integer, primary_key=True)
+    device_id = db.Column(db.String(50), unique=True, nullable=False)  # Unique identifier for RPi
+    device_name = db.Column(db.String(100), nullable=False)
+    mac_address = db.Column(db.String(17), nullable=True)  # MAC address for identification
+    ip_address = db.Column(db.String(15), nullable=True)  # Current IP address
+    location = db.Column(db.String(200), nullable=True)  # Physical location description
+    
+    # Pairing and status
+    is_paired = db.Column(db.Boolean, default=False)
+    is_online = db.Column(db.Boolean, default=False)
+    last_heartbeat = db.Column(db.DateTime, nullable=True)
+    pairing_code = db.Column(db.String(10), nullable=True)  # Temporary pairing code
+    pairing_expires = db.Column(db.DateTime, nullable=True)
+    
+    # Configuration
+    config_data = db.Column(db.JSON, nullable=True)  # Scanner configuration
+    is_enabled = db.Column(db.Boolean, default=True)
+    scanner_mode = db.Column(db.String(20), default='both')  # 'time_in', 'time_out', 'both'
+    
+    # Metadata
+    paired_at = db.Column(db.DateTime, nullable=True)
+    paired_by = db.Column(db.String(50), nullable=True)  # Admin who approved pairing
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'device_id': self.device_id,
+            'device_name': self.device_name,
+            'mac_address': self.mac_address,
+            'ip_address': self.ip_address,
+            'location': self.location,
+            'is_paired': self.is_paired,
+            'is_online': self.is_online,
+            'last_heartbeat': self.last_heartbeat.isoformat() if self.last_heartbeat else None,
+            'config_data': self.config_data,
+            'is_enabled': self.is_enabled,
+            'scanner_mode': self.scanner_mode,
+            'paired_at': self.paired_at.isoformat() if self.paired_at else None,
+            'paired_by': self.paired_by,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'updated_at': self.updated_at.isoformat() if self.updated_at else None,
+        }
+
+    def is_heartbeat_recent(self, timeout_minutes=5):
+        """Check if device heartbeat is recent"""
+        if not self.last_heartbeat:
+            return False
+        from datetime import timedelta
+        threshold = datetime.utcnow() - timedelta(minutes=timeout_minutes)
+        return self.last_heartbeat > threshold
+
+
+class PairingRequest(db.Model):
+    __tablename__ = "pairing_requests"
+    __table_args__ = {'schema': 'attendance'}
+
+    id = db.Column(db.Integer, primary_key=True)
+    device_id = db.Column(db.String(50), nullable=False)
+    device_name = db.Column(db.String(100), nullable=False)
+    mac_address = db.Column(db.String(17), nullable=True)
+    ip_address = db.Column(db.String(15), nullable=True)
+    location = db.Column(db.String(200), nullable=True)
+    
+    # Request details
+    pairing_code = db.Column(db.String(10), nullable=False)
+    status = db.Column(db.String(20), default='pending')  # 'pending', 'approved', 'rejected'
+    
+    # Admin response
+    reviewed_by = db.Column(db.String(50), nullable=True)
+    reviewed_at = db.Column(db.DateTime, nullable=True)
+    rejection_reason = db.Column(db.Text, nullable=True)
+    
+    # Metadata
+    expires_at = db.Column(db.DateTime, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'device_id': self.device_id,
+            'device_name': self.device_name,
+            'mac_address': self.mac_address,
+            'ip_address': self.ip_address,
+            'location': self.location,
+            'pairing_code': self.pairing_code,
+            'status': self.status,
+            'reviewed_by': self.reviewed_by,
+            'reviewed_at': self.reviewed_at.isoformat() if self.reviewed_at else None,
+            'rejection_reason': self.rejection_reason,
+            'expires_at': self.expires_at.isoformat() if self.expires_at else None,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'updated_at': self.updated_at.isoformat() if self.updated_at else None,
+        }
+
+    def is_expired(self):
+        """Check if pairing request has expired"""
+        return datetime.utcnow() > self.expires_at

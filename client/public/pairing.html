@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Device Pairing - MMSU Attendance System</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .pairing-container {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            width: 100%;
+            max-width: 500px;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 1.8rem;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            opacity: 0.9;
+        }
+        
+        .form-container {
+            padding: 40px;
+        }
+        
+        .form-group {
+            margin-bottom: 25px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e1e1e1;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+        
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #4facfe;
+        }
+        
+        .btn {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+        
+        .btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .status-message {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-weight: 600;
+        }
+        
+        .status-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .status-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .status-info {
+            background: #cce7f0;
+            color: #0c5460;
+            border: 1px solid #b6d4fe;
+        }
+        
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+            margin-right: 10px;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .pairing-code-display {
+            text-align: center;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        
+        .pairing-code {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #4facfe;
+            letter-spacing: 0.2em;
+            margin: 10px 0;
+        }
+        
+        .device-info {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        
+        .device-info h3 {
+            margin-bottom: 10px;
+            color: #333;
+        }
+        
+        .device-info p {
+            margin: 5px 0;
+            color: #666;
+        }
+        
+        .retry-btn {
+            background: #6c757d;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="pairing-container">
+        <div class="header">
+            <h1>🔗 Device Pairing</h1>
+            <p>MMSU Attendance System</p>
+        </div>
+        
+        <div class="form-container">
+            <div id="pairingForm">
+                <h2 style="margin-bottom: 20px; color: #333;">Register New Device</h2>
+                
+                <div class="form-group">
+                    <label for="deviceName">Device Name *</label>
+                    <input type="text" id="deviceName" placeholder="e.g., Scanner Terminal 1" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="location">Location</label>
+                    <input type="text" id="location" placeholder="e.g., Main Entrance, Building A">
+                </div>
+                
+                <div class="form-group">
+                    <label for="macAddress">MAC Address</label>
+                    <input type="text" id="macAddress" placeholder="Auto-detected if possible" readonly>
+                </div>
+                
+                <button class="btn" onclick="requestPairing()">
+                    <span id="btnText">Submit Pairing Request</span>
+                </button>
+            </div>
+            
+            <div id="pairingStatus" style="display: none;">
+                <div class="pairing-code-display">
+                    <h3>Pairing Code Generated</h3>
+                    <div class="pairing-code" id="pairingCodeDisplay"></div>
+                    <p>Share this code with an administrator</p>
+                </div>
+                
+                <div class="device-info">
+                    <h3>Device Information</h3>
+                    <p><strong>Device ID:</strong> <span id="deviceIdDisplay"></span></p>
+                    <p><strong>Name:</strong> <span id="deviceNameDisplay"></span></p>
+                    <p><strong>Location:</strong> <span id="locationDisplay"></span></p>
+                    <p><strong>Status:</strong> <span id="statusDisplay">Waiting for approval...</span></p>
+                </div>
+                
+                <button class="btn" onclick="checkPairingStatus()">
+                    <span id="checkBtnText">Check Status</span>
+                </button>
+                
+                <button class="btn retry-btn" onclick="resetPairing()">
+                    Start New Request
+                </button>
+            </div>
+            
+            <div id="messageContainer"></div>
+        </div>
+    </div>
+
+    <script>
+        let currentDeviceId = null;
+        let currentPairingCode = null;
+        let statusCheckInterval = null;
+
+        // Auto-detect MAC address if possible
+        function detectMacAddress() {
+            // This would require special permissions in a real browser
+            // For now, we'll generate a simulated MAC or leave it empty
+            // In a real RPi implementation, this would be detected from the system
+        }
+
+        function showMessage(message, type = 'info') {
+            const container = document.getElementById('messageContainer');
+            container.innerHTML = `<div class="status-message status-${type}">${message}</div>`;
+            setTimeout(() => {
+                container.innerHTML = '';
+            }, 5000);
+        }
+
+        function setLoading(button, isLoading) {
+            const textElement = button.querySelector('span');
+            if (isLoading) {
+                button.disabled = true;
+                textElement.innerHTML = '<div class="loading"></div>Processing...';
+            } else {
+                button.disabled = false;
+                textElement.innerHTML = button.id === 'btnText' ? 'Submit Pairing Request' : 'Check Status';
+            }
+        }
+
+        async function requestPairing() {
+            const deviceName = document.getElementById('deviceName').value.trim();
+            const location = document.getElementById('location').value.trim();
+            const macAddress = document.getElementById('macAddress').value.trim();
+
+            if (!deviceName) {
+                showMessage('Device name is required', 'error');
+                return;
+            }
+
+            const btn = document.querySelector('#pairingForm .btn');
+            setLoading(btn, true);
+
+            try {
+                const response = await fetch('/api/rpi/pairing/request', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        device_name: deviceName,
+                        location: location,
+                        mac_address: macAddress
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    currentDeviceId = data.device_id;
+                    currentPairingCode = data.pairing_code;
+                    
+                    // Update displays
+                    document.getElementById('pairingCodeDisplay').textContent = data.pairing_code;
+                    document.getElementById('deviceIdDisplay').textContent = data.device_id;
+                    document.getElementById('deviceNameDisplay').textContent = deviceName;
+                    document.getElementById('locationDisplay').textContent = location || 'Not specified';
+                    
+                    // Switch to status view
+                    document.getElementById('pairingForm').style.display = 'none';
+                    document.getElementById('pairingStatus').style.display = 'block';
+                    
+                    showMessage('Pairing request submitted successfully!', 'success');
+                    
+                    // Start status checking
+                    statusCheckInterval = setInterval(checkPairingStatus, 10000); // Check every 10 seconds
+                } else {
+                    showMessage(data.message, 'error');
+                }
+            } catch (error) {
+                showMessage('Network error. Please check your connection.', 'error');
+                console.error('Error:', error);
+            } finally {
+                setLoading(btn, false);
+            }
+        }
+
+        async function checkPairingStatus() {
+            if (!currentDeviceId || !currentPairingCode) {
+                showMessage('No active pairing request found', 'error');
+                return;
+            }
+
+            const btn = document.querySelector('#pairingStatus .btn');
+            setLoading(btn, true);
+
+            try {
+                const response = await fetch(`/api/rpi/pairing/check?device_id=${currentDeviceId}&pairing_code=${currentPairingCode}`);
+                const data = await response.json();
+
+                const statusDisplay = document.getElementById('statusDisplay');
+
+                if (data.success) {
+                    if (data.status === 'approved') {
+                        statusDisplay.innerHTML = '<span style="color: #28a745;">✅ Approved - Device Paired!</span>';
+                        showMessage('Device has been approved and paired successfully!', 'success');
+                        
+                        // Clear interval
+                        if (statusCheckInterval) {
+                            clearInterval(statusCheckInterval);
+                        }
+                        
+                        // Redirect to scanner after delay
+                        setTimeout(() => {
+                            window.location.href = `/scanner/access/${currentDeviceId}`;
+                        }, 3000);
+                    } else if (data.status === 'pending') {
+                        statusDisplay.innerHTML = '<span style="color: #ffc107;">⏳ Pending admin approval...</span>';
+                        showMessage('Request is still pending. Please wait for admin approval.', 'info');
+                    }
+                } else {
+                    if (data.status === 'rejected') {
+                        statusDisplay.innerHTML = '<span style="color: #dc3545;">❌ Rejected</span>';
+                        showMessage(`Request was rejected: ${data.reason || 'No reason provided'}`, 'error');
+                        
+                        if (statusCheckInterval) {
+                            clearInterval(statusCheckInterval);
+                        }
+                    } else {
+                        statusDisplay.innerHTML = '<span style="color: #dc3545;">❌ Error</span>';
+                        showMessage(data.message, 'error');
+                    }
+                }
+            } catch (error) {
+                showMessage('Error checking status. Please try again.', 'error');
+                console.error('Error:', error);
+            } finally {
+                setLoading(btn, false);
+            }
+        }
+
+        function resetPairing() {
+            // Clear interval
+            if (statusCheckInterval) {
+                clearInterval(statusCheckInterval);
+            }
+            
+            // Reset variables
+            currentDeviceId = null;
+            currentPairingCode = null;
+            
+            // Reset form
+            document.getElementById('deviceName').value = '';
+            document.getElementById('location').value = '';
+            document.getElementById('macAddress').value = '';
+            
+            // Switch views
+            document.getElementById('pairingStatus').style.display = 'none';
+            document.getElementById('pairingForm').style.display = 'block';
+            
+            // Clear messages
+            document.getElementById('messageContainer').innerHTML = '';
+        }
+
+        // Initialize
+        window.onload = function() {
+            detectMacAddress();
+        };
+
+        // Clean up on page unload
+        window.onbeforeunload = function() {
+            if (statusCheckInterval) {
+                clearInterval(statusCheckInterval);
+            }
+        };
+    </script>
+</body>
+</html>

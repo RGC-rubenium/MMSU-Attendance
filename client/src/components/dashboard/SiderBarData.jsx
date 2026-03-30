@@ -69,6 +69,19 @@ export const SideBarData = [
         ]
     },
     {
+        title: 'Scanner Management',
+        Path: '/dashboard/rpi',
+        Icon: <IoIcons.IoHardwareChip/>,
+        cName: 'sidebar-dropdown',
+        subNav: [
+            {
+                title: 'Device Management',
+                Path: '/dashboard/rpi/management',
+                cName: 'sidebar-subtext'
+            }
+        ]
+    },
+    {
         title: 'Settings',
         Path: '/dashboard/settings',
         Icon: <AiIcons.AiOutlineSetting/>,
