@@ -32,6 +32,68 @@ class ScannerAPI {
         }
     }
 
+    static async scanTimeIn(uid) {
+        try {
+            const response = await fetch('/api/scanner/time-in', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${AuthToken.getToken()}`
+                },
+                body: JSON.stringify({ uid })
+            });
+
+            // Check if response is actually JSON
+            const contentType = response.headers.get('content-type');
+            if (!contentType || !contentType.includes('application/json')) {
+                const text = await response.text();
+                throw new Error(`Expected JSON response, got: ${text.substring(0, 100)}...`);
+            }
+
+            const data = await response.json();
+            
+            if (!response.ok) {
+                throw new Error(data.message || `HTTP error! status: ${response.status}`);
+            }
+
+            return data;
+        } catch (error) {
+            console.error('Time-in scan error:', error);
+            throw error;
+        }
+    }
+
+    static async scanTimeOut(uid) {
+        try {
+            const response = await fetch('/api/scanner/time-out', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${AuthToken.getToken()}`
+                },
+                body: JSON.stringify({ uid })
+            });
+
+            // Check if response is actually JSON
+            const contentType = response.headers.get('content-type');
+            if (!contentType || !contentType.includes('application/json')) {
+                const text = await response.text();
+                throw new Error(`Expected JSON response, got: ${text.substring(0, 100)}...`);
+            }
+
+            const data = await response.json();
+            
+            if (!response.ok) {
+                throw new Error(data.message || `HTTP error! status: ${response.status}`);
+            }
+
+            return data;
+        } catch (error) {
+            console.error('Time-out scan error:', error);
+            throw error;
+        }
+    }
+
     static async getCurrentSchedule() {
         try {
             const response = await fetch('/api/scanner/current-schedule', {

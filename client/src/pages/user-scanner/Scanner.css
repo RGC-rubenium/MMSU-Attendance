@@ -15,6 +15,16 @@
     overflow-x: hidden;
 }
 
+/* Time-In Scanner Theme */
+.scanner-container.time-in-scanner {
+    background: linear-gradient(135deg, #e8f5e8 0%, #d4edda 100%);
+}
+
+/* Time-Out Scanner Theme */
+.scanner-container.time-out-scanner {
+    background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
+}
+
 /* Header with School Name and Clock - Full Screen Responsive */
 .scanner-header {
     display: flex;
@@ -27,6 +37,79 @@
     box-shadow: 0 8px 32px rgba(13, 110, 253, 0.3);
     min-height: 120px;
     flex-shrink: 0;
+}
+
+/* Time-In Header Theme */
+.time-in-scanner .scanner-header {
+    background: linear-gradient(135deg, #198754 0%, #157347 100%);
+    box-shadow: 0 8px 32px rgba(25, 135, 84, 0.3);
+}
+
+/* Time-Out Header Theme */
+.time-out-scanner .scanner-header {
+    background: linear-gradient(135deg, #fd7e14 0%, #e8590c 100%);
+    box-shadow: 0 8px 32px rgba(253, 126, 20, 0.3);
+}
+
+/* Scanner Mode Indicator */
+.scanner-mode {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 30px;
+    background: rgba(255, 255, 255, 0.9);
+    border-radius: 12px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+    flex-shrink: 0;
+}
+
+.mode-indicator {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 1.1rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.mode-indicator.time-in {
+    background: linear-gradient(135deg, #198754 0%, #157347 100%);
+    color: white;
+    box-shadow: 0 4px 12px rgba(25, 135, 84, 0.3);
+}
+
+.mode-indicator.time-out {
+    background: linear-gradient(135deg, #fd7e14 0%, #e8590c 100%);
+    color: white;
+    box-shadow: 0 4px 12px rgba(253, 126, 20, 0.3);
+}
+
+.mode-indicator .mode-icon {
+    font-size: 1.5rem;
+}
+
+.switch-mode-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 20px;
+    background: #6c757d;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-decoration: none;
+}
+
+.switch-mode-btn:hover {
+    background: #5a6268;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(108, 117, 125, 0.3);
 }
 
 .school-info h1 {
@@ -89,6 +172,18 @@
     flex-shrink: 0;
 }
 
+/* Time-In Scanner Status Theme */
+.time-in-scanner .scanner-status {
+    background: #d1e7dd;
+    border-color: #a3cfbb;
+}
+
+/* Time-Out Scanner Status Theme */
+.time-out-scanner .scanner-status {
+    background: #fff3cd;
+    border-color: #ffecb5;
+}
+
 .status-indicator {
     display: flex;
     align-items: center;
@@ -99,10 +194,26 @@
     text-align: center;
 }
 
+.status-indicator.time-in {
+    color: #0f5132;
+}
+
+.status-indicator.time-out {
+    color: #664d03;
+}
+
 .radar-icon {
     font-size: clamp(1.8rem, 4vw, 2.5rem);
     color: #198754;
     animation: rotate 2s linear infinite;
+}
+
+.status-indicator.time-in .radar-icon {
+    color: #198754;
+}
+
+.status-indicator.time-out .radar-icon {
+    color: #fd7e14;
 }
 
 @keyframes rotate {
@@ -199,6 +310,18 @@
 .scan-result.success {
     border-left-color: #198754;
     background: linear-gradient(135deg, #ffffff 0%, #f8fff9 100%);
+}
+
+.scan-result.success.time-in {
+    border-left-color: #198754;
+    background: linear-gradient(135deg, #f8fff9 0%, #d1e7dd 100%);
+    box-shadow: 0 8px 32px rgba(25, 135, 84, 0.2);
+}
+
+.scan-result.success.time-out {
+    border-left-color: #fd7e14;
+    background: linear-gradient(135deg, #fffbf0 0%, #fff3cd 100%);
+    box-shadow: 0 8px 32px rgba(253, 126, 20, 0.2);
 }
 
 .scan-result.error {
@@ -350,11 +473,51 @@
     min-height: 300px;
 }
 
+/* Time-In Default Message Theme */
+.default-message.time-in {
+    background: linear-gradient(135deg, #f8fff9 0%, #e8f5e8 100%);
+    border: 2px solid rgba(25, 135, 84, 0.1);
+}
+
+/* Time-Out Default Message Theme */
+.default-message.time-out {
+    background: linear-gradient(135deg, #fffbf0 0%, #fff3cd 100%);
+    border: 2px solid rgba(253, 126, 20, 0.1);
+}
+
 .scanning-icon {
     font-size: clamp(4rem, 10vw, 8rem);
     color: #6c757d;
     margin-bottom: clamp(15px, 3vw, 25px);
     animation: bounce 2s infinite;
+}
+
+.scanning-icon.time-in {
+    color: #198754;
+}
+
+.scanning-icon.time-out {
+    color: #fd7e14;
+}
+
+.instruction-text {
+    margin-top: 20px;
+    padding: 15px 25px;
+    background: rgba(108, 117, 125, 0.1);
+    border-radius: 12px;
+    border-left: 4px solid #6c757d;
+}
+
+.time-in .instruction-text {
+    background: rgba(25, 135, 84, 0.1);
+    border-left-color: #198754;
+    color: #0f5132;
+}
+
+.time-out .instruction-text {
+    background: rgba(253, 126, 20, 0.1);
+    border-left-color: #fd7e14;
+    color: #664d03;
 }
 
 @keyframes bounce {
@@ -399,6 +562,18 @@
     min-height: 300px;
 }
 
+/* Time-In Loading State Theme */
+.loading-state.time-in {
+    background: linear-gradient(135deg, #f8fff9 0%, #e8f5e8 100%);
+    border: 2px solid rgba(25, 135, 84, 0.1);
+}
+
+/* Time-Out Loading State Theme */
+.loading-state.time-out {
+    background: linear-gradient(135deg, #fffbf0 0%, #fff3cd 100%);
+    border: 2px solid rgba(253, 126, 20, 0.1);
+}
+
 .loading-spinner {
     width: clamp(50px, 8vw, 80px);
     height: clamp(50px, 8vw, 80px);
@@ -407,6 +582,14 @@
     border-radius: 50%;
     animation: spin 1s linear infinite;
     margin: 0 auto clamp(20px, 4vw, 35px);
+}
+
+.loading-spinner.time-in {
+    border-top-color: #198754;
+}
+
+.loading-spinner.time-out {
+    border-top-color: #fd7e14;
 }
 
 @keyframes spin {

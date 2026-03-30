@@ -7,6 +7,8 @@ import Faculty from './pages/dashboard/pages/Faculty'
 import Surveillance from './pages/dashboard/pages/Surveillance'
 import SchedulePage from './pages/dashboard/pages/Schedule'
 import Scanner from './pages/user-scanner/Scanner'
+import TimeInScanner from './pages/user-scanner/TimeInScanner'
+import TimeOutScanner from './pages/user-scanner/TimeOutScanner'
 import UserProfile from './pages/dashboard/pages/UserProfile'
 import AttendanceLogs from './pages/dashboard/pages/AttendanceLogs'
 import {BrowserRouter as Router, Routes, Route} from 'react-router-dom'
@@ -26,6 +28,8 @@ function App() {
         <AuthProvider>
           <Routes>
             <Route path="/scanner" element={<Scanner />} />
+            <Route path="/scanner/time-in" element={<TimeInScanner />} />
+            <Route path="/scanner/time-out" element={<TimeOutScanner />} />
             <Route path="/" element={<Login />} />
             <Route path="/dashboard/*" element={<ProtectedRoute allowedRoles={["admin"]}><AdminDashboard /></ProtectedRoute>}>
               <Route index element={<Dashboard />} />

@@ -541,6 +541,286 @@ def get_current_schedule():
             'error': str(e)
         }), 500
 
+@rfid_scanner_bp.route('/api/scanner/time-in', methods=['POST'])
+def handle_time_in():
+    """Handle RFID scan specifically for time-in operations"""
+    try:
+        data = request.get_json()
+        uid = data.get('uid', '').strip()
+        
+        if not uid:
+            return jsonify({
+                'success': False,
+                'message': 'UID is required'
+            }), 400
+        
+        current_day, current_time, current_date, now = get_current_day_time()
+        
+        # Find user by UID
+        user = None
+        user_type = None
+        
+        student = Student.query.filter_by(uid=uid).first()
+        if student:
+            user = student
+            user_type = 'student'
+        else:
+            faculty = Faculty.query.filter_by(uid=uid).first()
+            if faculty:
+                user = faculty
+                user_type = 'faculty'
+        
+        if not user:
+            return jsonify({
+                'success': False,
+                'message': 'RFID card not registered',
+                'details': 'The scanned card is not associated with any student or faculty member.',
+                'uid': uid
+            }), 404
+        
+        # Check for existing incomplete log today
+        today_start = datetime.combine(current_date, datetime_time.min)
+        today_end = datetime.combine(current_date, datetime_time.max)
+        
+        incomplete_log = AttendanceLog.query.filter(
+            and_(
+                AttendanceLog.uid == uid,
+                AttendanceLog.time_in >= today_start,
+                AttendanceLog.time_in <= today_end,
+                AttendanceLog.time_out.is_(None)
+            )
+        ).order_by(AttendanceLog.time_in.desc()).first()
+        
+        if incomplete_log:
+            return jsonify({
+                'success': False,
+                'message': 'You already have an active time-in session',
+                'details': f'You checked in at {incomplete_log.time_in.strftime("%H:%M")}. Please use time-out scanner to complete your session.',
+                'user': {
+                    'uid': user.uid,
+                    'id': user.id,
+                    'name': user.full_name(),
+                    'type': user_type,
+                    'department': user.department,
+                    'avatar': getattr(user, 'profile_path', None)
+                },
+                'existing_time_in': incomplete_log.time_in.isoformat()
+            }), 400
+        
+        # Check scanner availability for time-in
+        if not is_scanner_available(user_type):
+            config = SCANNER_CONFIG[f'{user_type}_scanner_hours']
+            
+            if current_day in ['monday', 'tuesday', 'wednesday', 'thursday', 'friday']:
+                allowed_hours = config['weekdays']
+                day_type = 'weekdays'
+            else:
+                allowed_hours = config['weekends']
+                day_type = 'weekends'
+            
+            return jsonify({
+                'success': False,
+                'message': f'Time-in not available for {user_type}s at this time',
+                'details': f'Scanner hours: {allowed_hours["start_time"]} - {allowed_hours["end_time"]} on {day_type}',
+                'allowed_hours': {
+                    'day_type': day_type,
+                    'start_time': allowed_hours['start_time'],
+                    'end_time': allowed_hours['end_time']
+                },
+                'current_time': current_time.strftime('%H:%M'),
+                'user': {
+                    'name': user.full_name(),
+                    'type': user_type,
+                    'department': user.department,
+                    'uid': uid
+                }
+            }), 403
+        
+        # Find active schedule for time-in
+        if user_type == 'student':
+            active_schedule = find_active_schedule_for_student(user)
+        elif user_type == 'faculty':
+            active_schedule = find_active_schedule_for_faculty(user)
+        else:
+            active_schedule = find_active_schedule()
+        
+        # Create new time-in entry
+        attendance_log = AttendanceLog(
+            uid=uid,
+            user_type=user_type,
+            user_id=user.id,
+            full_name=user.full_name(),
+            department=user.department,
+            schedule_type=active_schedule['type'],
+            schedule_name=active_schedule['name'],
+            time_in=now,
+            status='present',
+            subjects_attended=None,
+            notes='Time-in recorded'
+        )
+        
+        db.session.add(attendance_log)
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'action': 'time_in',
+            'message': 'Time-in recorded successfully',
+            'user': {
+                'uid': user.uid,
+                'id': user.id,
+                'name': user.full_name(),
+                'type': user_type,
+                'department': user.department,
+                'avatar': getattr(user, 'profile_path', None)
+            },
+            'schedule': {
+                'type': active_schedule['type'],
+                'name': active_schedule['name'],
+                'current_slot': active_schedule.get('current_slot') or {}
+            },
+            'attendance': attendance_log.to_dict(),
+            'schedule_info': f"Checked in to {active_schedule['name']}"
+        }), 200
+        
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error handling time-in: {e}")
+        return jsonify({
+            'success': False,
+            'message': 'Failed to process time-in',
+            'error': str(e)
+        }), 500
+
+@rfid_scanner_bp.route('/api/scanner/time-out', methods=['POST'])
+def handle_time_out():
+    """Handle RFID scan specifically for time-out operations"""
+    try:
+        data = request.get_json()
+        uid = data.get('uid', '').strip()
+        
+        if not uid:
+            return jsonify({
+                'success': False,
+                'message': 'UID is required'
+            }), 400
+        
+        current_day, current_time, current_date, now = get_current_day_time()
+        
+        # Find user by UID
+        user = None
+        user_type = None
+        
+        student = Student.query.filter_by(uid=uid).first()
+        if student:
+            user = student
+            user_type = 'student'
+        else:
+            faculty = Faculty.query.filter_by(uid=uid).first()
+            if faculty:
+                user = faculty
+                user_type = 'faculty'
+        
+        if not user:
+            return jsonify({
+                'success': False,
+                'message': 'RFID card not registered',
+                'details': 'The scanned card is not associated with any student or faculty member.',
+                'uid': uid
+            }), 404
+        
+        # Look for incomplete log today
+        today_start = datetime.combine(current_date, datetime_time.min)
+        today_end = datetime.combine(current_date, datetime_time.max)
+        
+        incomplete_log = AttendanceLog.query.filter(
+            and_(
+                AttendanceLog.uid == uid,
+                AttendanceLog.time_in >= today_start,
+                AttendanceLog.time_in <= today_end,
+                AttendanceLog.time_out.is_(None)
+            )
+        ).order_by(AttendanceLog.time_in.desc()).first()
+        
+        if not incomplete_log:
+            return jsonify({
+                'success': False,
+                'message': 'No active time-in session found',
+                'details': 'You need to check in first before you can check out. Please use the time-in scanner.',
+                'user': {
+                    'uid': user.uid,
+                    'id': user.id,
+                    'name': user.full_name(),
+                    'type': user_type,
+                    'department': user.department,
+                    'avatar': getattr(user, 'profile_path', None)
+                }
+            }), 400
+        
+        # Process time-out
+        incomplete_log.time_out = now
+        incomplete_log.updated_at = now
+        
+        # Calculate attendance details based on user type
+        subjects_attended = []
+        if user_type == 'student':
+            try:
+                subjects_attended = calculate_subjects_attended(user, incomplete_log.time_in, now)
+                incomplete_log.subjects_attended = subjects_attended
+                
+                # Update notes with subject summary
+                if subjects_attended:
+                    subject_names = [s['subject'] for s in subjects_attended if s.get('subject')]
+                    incomplete_log.notes = f"Completed session. Attended: {', '.join(subject_names)}"
+                else:
+                    incomplete_log.notes = "Completed session. No subjects during attendance period"
+            except Exception as e:
+                print(f"Error calculating subjects attended: {e}")
+                incomplete_log.subjects_attended = []
+                incomplete_log.notes = "Completed session (subject calculation failed)"
+        
+        elif user_type == 'faculty':
+            # Faculty attendance - calculate work duration
+            work_duration = now - incomplete_log.time_in
+            hours = work_duration.total_seconds() / 3600
+            incomplete_log.notes = f"Completed work session. Duration: {hours:.1f} hours"
+            incomplete_log.subjects_attended = []
+        
+        db.session.commit()
+        
+        # Calculate duration for response
+        duration_seconds = (now - incomplete_log.time_in).total_seconds()
+        duration_hours = int(duration_seconds // 3600)
+        duration_minutes = int((duration_seconds % 3600) // 60)
+        
+        return jsonify({
+            'success': True,
+            'action': 'time_out',
+            'message': 'Time-out recorded successfully',
+            'user': {
+                'uid': user.uid,
+                'id': user.id,
+                'name': user.full_name(),
+                'type': user_type,
+                'department': user.department,
+                'avatar': getattr(user, 'profile_path', None)
+            },
+            'attendance': incomplete_log.to_dict(),
+            'time_in': incomplete_log.time_in.isoformat(),
+            'time_out': now.isoformat(),
+            'duration': f"{duration_hours}h {duration_minutes}m" if duration_hours > 0 else f"{duration_minutes}m",
+            'subjects_attended': subjects_attended
+        }), 200
+        
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error handling time-out: {e}")
+        return jsonify({
+            'success': False,
+            'message': 'Failed to process time-out',
+            'error': str(e)
+        }), 500
+
 @rfid_scanner_bp.route('/api/scanner/attendance-logs', methods=['GET'])
 def get_attendance_logs():
     """Get attendance logs with filtering, search, and pagination"""
