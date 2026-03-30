@@ -598,7 +598,7 @@ export default function Student() {
                         })}
                     </div>
 
-                    {/* Pagination */}
+                    {/* Pagination - back inside scrollable area */}
                     {state.meta.totalPages > 1 && (
                         <div className="pagination">
                             <button 
