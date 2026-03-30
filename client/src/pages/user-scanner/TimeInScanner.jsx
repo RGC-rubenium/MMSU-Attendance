@@ -115,6 +115,10 @@ const TimeInScanner = () => {
                     clearTimeout(displayTimeoutRef.current);
                 }
                 
+                // Debug: Log the avatar URL
+                console.log('🖼️ Debug - Received user data:', data.user);
+                console.log('🖼️ Debug - Avatar URL:', data.user?.avatar);
+                
                 setLastScanResult({
                     ...data,
                     action: 'time_in',
@@ -372,10 +376,30 @@ const TimeInScanner = () => {
                             </div>
                             <div className="result-info">
                                 <h2>✅ TIME IN SUCCESSFUL</h2>
-                                <div className="user-profile">
-                                    <div className="user-avatar">
+                                <div className="user-profile enhanced">
+                                    <div className="user-avatar-large">
                                         {lastScanResult.user.avatar ? (
-                                            <img src={lastScanResult.user.avatar} alt="Profile" />
+                                            <>
+                                                <img 
+                                                    src={lastScanResult.user.avatar} 
+                                                    alt={`${lastScanResult.user.name} Profile Photo`}
+                                                    className="profile-photo"
+                                                    onLoad={() => console.log('✅ Image loaded successfully:', lastScanResult.user.avatar)}
+                                                    onError={(e) => {
+                                                        console.error('❌ Image failed to load:', lastScanResult.user.avatar);
+                                                        console.error('Error details:', e);
+                                                        e.target.style.display = 'none';
+                                                        const placeholder = e.target.parentElement.querySelector('.avatar-placeholder');
+                                                        if (placeholder) {
+                                                            placeholder.style.display = 'flex';
+                                                        }
+                                                    }}
+                                                    style={{display: 'block'}}
+                                                />
+                                                <div className="avatar-placeholder" style={{display: 'none'}}>
+                                                    {lastScanResult.user.type === 'student' ? <MdSchool /> : <MdPerson />}
+                                                </div>
+                                            </>
                                         ) : (
                                             <div className="avatar-placeholder">
                                                 {lastScanResult.user.type === 'student' ? <MdSchool /> : <MdPerson />}
@@ -384,10 +408,14 @@ const TimeInScanner = () => {
                                     </div>
                                     <div className="user-details">
                                         <h3>{lastScanResult.user.name}</h3>
-                                        <p>{lastScanResult.user.type?.toUpperCase()}</p>
-                                        <p>ID: {lastScanResult.user.id}</p>
+                                        <div className="user-badges">
+                                            <span className={`user-type-badge ${lastScanResult.user.type}`}>
+                                                {lastScanResult.user.type === 'student' ? '🎓 STUDENT' : '👨‍🏫 FACULTY'}
+                                            </span>
+                                        </div>
+                                        <p className="user-id">🆔 {lastScanResult.user.id}</p>
                                         {lastScanResult.user.department && (
-                                            <p>Department: {lastScanResult.user.department}</p>
+                                            <p className="user-department">🏢 {lastScanResult.user.department}</p>
                                         )}
                                     </div>
                                 </div>

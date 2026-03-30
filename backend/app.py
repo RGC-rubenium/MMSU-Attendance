@@ -46,7 +46,22 @@ app.register_blueprint(rfid_scanner_bp)
 def serve_images(filename):
     """Serve images from the images directory"""
     images_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'images')
-    return send_from_directory(images_dir, filename)
+    full_path = os.path.join(images_dir, filename)
+    print(f"🖼️ Serving image: {filename}")
+    print(f"🖼️ Images directory: {images_dir}")
+    print(f"🖼️ Full path: {full_path}")
+    print(f"🖼️ File exists: {os.path.exists(full_path)}")
+    
+    try:
+        from flask import make_response
+        response = make_response(send_from_directory(images_dir, filename))
+        response.headers['Access-Control-Allow-Origin'] = '*'
+        response.headers['Access-Control-Allow-Headers'] = 'Content-Type'
+        response.headers['Cache-Control'] = 'no-cache'
+        return response
+    except Exception as e:
+        print(f"❌ Error serving image: {e}")
+        return f"Error serving image: {e}", 404
 
 
 if __name__ == '__main__':

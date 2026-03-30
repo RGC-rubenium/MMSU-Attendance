@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Image Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        img { max-width: 200px; border: 2px solid #ccc; margin: 10px 0; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; }
+    </style>
+</head>
+<body>
+    <h1>Image Serving Test</h1>
+    
+    <div class="test-section">
+        <h2>Direct Flask Backend (port 5000)</h2>
+        <p>Image URL: <code>http://localhost:5000/images/members/student/raven_gian_sulit_copon.jpg</code></p>
+        <img src="http://localhost:5000/images/members/student/raven_gian_sulit_copon.jpg" alt="Raven - Direct Backend" />
+    </div>
+    
+    <div class="test-section">
+        <h2>Through React Dev Server (port 5173)</h2>
+        <p>Image URL: <code>http://localhost:5173/images/members/student/raven_gian_sulit_copon.jpg</code></p>
+        <img src="/images/members/student/raven_gian_sulit_copon.jpg" alt="Raven - Through Proxy" />
+    </div>
+    
+    <script>
+        // Test image loading with JavaScript
+        function testImageLoad(url, description) {
+            const img = new Image();
+            img.onload = () => console.log(`✅ ${description} loaded successfully`);
+            img.onerror = () => console.error(`❌ ${description} failed to load`);
+            img.src = url;
+        }
+        
+        testImageLoad('http://localhost:5000/images/members/student/raven_gian_sulit_copon.jpg', 'Direct backend image');
+        testImageLoad('/images/members/student/raven_gian_sulit_copon.jpg', 'Proxied image');
+    </script>
+</body>
+</html>

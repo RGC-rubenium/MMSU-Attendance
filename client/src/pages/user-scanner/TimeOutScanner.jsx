@@ -115,6 +115,10 @@ const TimeOutScanner = () => {
                     clearTimeout(displayTimeoutRef.current);
                 }
                 
+                // Debug: Log the avatar URL
+                console.log('🖼️ Debug - Received user data:', data.user);
+                console.log('🖼️ Debug - Avatar URL:', data.user?.avatar);
+                
                 setLastScanResult({
                     ...data,
                     action: 'time_out',
@@ -254,25 +258,31 @@ const TimeOutScanner = () => {
         });
     };
 
-    const navigateToTimeIn = () => {
-        window.location.href = '/scanner/time-in';
+    const calculateDuration = (timeIn, timeOut) => {
+        if (!timeIn || !timeOut) return 'Unknown';
+        
+        try {
+            const start = new Date(timeIn);
+            const end = new Date(timeOut);
+            const diffMs = end - start;
+            
+            if (diffMs < 0) return 'Invalid duration';
+            
+            const hours = Math.floor(diffMs / (1000 * 60 * 60));
+            const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+            
+            if (hours > 0) {
+                return `${hours}h ${minutes}m`;
+            } else {
+                return `${minutes}m`;
+            }
+        } catch (error) {
+            return 'Unknown';
+        }
     };
 
-    const calculateDuration = (timeIn, timeOut) => {
-        if (!timeIn || !timeOut) return '';
-        
-        const inTime = new Date(timeIn);
-        const outTime = new Date(timeOut);
-        const diffMs = outTime - inTime;
-        
-        const hours = Math.floor(diffMs / (1000 * 60 * 60));
-        const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
-        
-        if (hours > 0) {
-            return `${hours}h ${minutes}m`;
-        } else {
-            return `${minutes}m`;
-        }
+    const navigateToTimeIn = () => {
+        window.location.href = '/scanner/time-in';
     };
 
     return (
@@ -353,21 +363,32 @@ const TimeOutScanner = () => {
                                     )}
                                 </div>
                                 {lastScanResult.user && (
-                                    <div className="user-brief">
-                                        <h4>👤 Card Information:</h4>
+                                    <div className="user-brief enhanced">
+                                        <h4>👤 Recognized User:</h4>
                                         <div className="user-info-brief">
-                                            <div className="user-avatar-small">
+                                            <div className="user-avatar-medium">
                                                 {lastScanResult.user.avatar ? (
-                                                    <img src={lastScanResult.user.avatar} alt="Profile" />
-                                                ) : (
-                                                    <div className="avatar-placeholder">
-                                                        {lastScanResult.user.type === 'student' ? <MdSchool /> : <MdPerson />}
-                                                    </div>
-                                                )}
+                                                    <img 
+                                                        src={lastScanResult.user.avatar} 
+                                                        alt={`${lastScanResult.user.name} Profile Photo`}
+                                                        className="profile-photo"
+                                                        onError={(e) => {
+                                                            e.target.style.display = 'none';
+                                                            e.target.nextSibling.style.display = 'flex';
+                                                        }}
+                                                    />
+                                                ) : null}
+                                                <div className="avatar-placeholder" style={{display: lastScanResult.user.avatar ? 'none' : 'flex'}}>
+                                                    {lastScanResult.user.type === 'student' ? <MdSchool /> : <MdPerson />}
+                                                </div>
                                             </div>
                                             <div className="user-details-brief">
                                                 <p className="user-name">📛 {lastScanResult.user.name}</p>
-                                                <p className="user-type">🏫 {lastScanResult.user.type?.toUpperCase()}</p>
+                                                <div className="user-badges">
+                                                    <span className={`user-type-badge-small ${lastScanResult.user.type}`}>
+                                                        {lastScanResult.user.type === 'student' ? '🎓 STUDENT' : '👨‍🏫 FACULTY'}
+                                                    </span>
+                                                </div>
                                                 <p className="user-id">🆔 {lastScanResult.user.id}</p>
                                                 {lastScanResult.user.department && (
                                                     <p className="user-department">🏢 {lastScanResult.user.department}</p>
@@ -389,10 +410,30 @@ const TimeOutScanner = () => {
                             </div>
                             <div className="result-info">
                                 <h2>✅ TIME OUT SUCCESSFUL</h2>
-                                <div className="user-profile">
-                                    <div className="user-avatar">
+                                <div className="user-profile enhanced">
+                                    <div className="user-avatar-large">
                                         {lastScanResult.user.avatar ? (
-                                            <img src={lastScanResult.user.avatar} alt="Profile" />
+                                            <>
+                                                <img 
+                                                    src={lastScanResult.user.avatar} 
+                                                    alt={`${lastScanResult.user.name} Profile Photo`}
+                                                    className="profile-photo"
+                                                    onLoad={() => console.log('✅ Image loaded successfully:', lastScanResult.user.avatar)}
+                                                    onError={(e) => {
+                                                        console.error('❌ Image failed to load:', lastScanResult.user.avatar);
+                                                        console.error('Error details:', e);
+                                                        e.target.style.display = 'none';
+                                                        const placeholder = e.target.parentElement.querySelector('.avatar-placeholder');
+                                                        if (placeholder) {
+                                                            placeholder.style.display = 'flex';
+                                                        }
+                                                    }}
+                                                    style={{display: 'block'}}
+                                                />
+                                                <div className="avatar-placeholder" style={{display: 'none'}}>
+                                                    {lastScanResult.user.type === 'student' ? <MdSchool /> : <MdPerson />}
+                                                </div>
+                                            </>
                                         ) : (
                                             <div className="avatar-placeholder">
                                                 {lastScanResult.user.type === 'student' ? <MdSchool /> : <MdPerson />}
@@ -401,10 +442,14 @@ const TimeOutScanner = () => {
                                     </div>
                                     <div className="user-details">
                                         <h3>{lastScanResult.user.name}</h3>
-                                        <p>{lastScanResult.user.type?.toUpperCase()}</p>
-                                        <p>ID: {lastScanResult.user.id}</p>
+                                        <div className="user-badges">
+                                            <span className={`user-type-badge ${lastScanResult.user.type}`}>
+                                                {lastScanResult.user.type === 'student' ? '🎓 STUDENT' : '👨‍🏫 FACULTY'}
+                                            </span>
+                                        </div>
+                                        <p className="user-id">🆔 {lastScanResult.user.id}</p>
                                         {lastScanResult.user.department && (
-                                            <p>Department: {lastScanResult.user.department}</p>
+                                            <p className="user-department">🏢 {lastScanResult.user.department}</p>
                                         )}
                                     </div>
                                 </div>
