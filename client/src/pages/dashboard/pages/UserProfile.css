@@ -3,6 +3,30 @@
     max-width: 1100px;
     margin: 0 auto;
     padding: 28px 16px;
+    height: 100cvh;
+    overflow-y: auto;
+    overflow-x: hidden;
+    box-sizing: border-box;
+}
+
+/* Custom scrollbar styling */
+.user-profile-page::-webkit-scrollbar {
+    width: 8px;
+}
+
+.user-profile-page::-webkit-scrollbar-track {
+    background: rgba(255,255,255,0.05);
+    border-radius: 4px;
+}
+
+.user-profile-page::-webkit-scrollbar-thumb {
+    background: rgba(255,255,255,0.2);
+    border-radius: 4px;
+    transition: background 0.2s ease;
+}
+
+.user-profile-page::-webkit-scrollbar-thumb:hover {
+    background: rgba(255,255,255,0.3);
 }
 
 .user-profile-card{
@@ -178,5 +202,195 @@
 .attendance-table th, .attendance-table td{ text-align:left; padding:8px 10px; border-bottom:1px solid rgba(255,255,255,0.04) }
 .attendance-table th{ color: rgba(255,255,255,0.75); font-weight:700 }
 .attendance-table td{ color: rgba(255,255,255,0.95) }
+
+/* AttendanceLogs specific styles for detailed table */
+.alog-table-wrap {
+    overflow: auto;
+    border-radius: 8px;
+    border: 1px solid rgba(255,255,255,0.05);
+}
+
+.alog-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+}
+
+.alog-table thead tr {
+    background: rgba(255,255,255,0.02);
+}
+
+.alog-table th {
+    padding: 12px 10px;
+    text-align: left;
+    font-weight: 600;
+    color: rgba(255,255,255,0.8);
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+
+.alog-table tbody tr {
+    border-bottom: 1px solid rgba(255,255,255,0.03);
+    transition: background-color 0.15s ease;
+}
+.alog-table tbody tr:hover,
+.alog-table tbody tr.row-expanded {
+    background: rgba(255,255,255,0.02);
+}
+
+.alog-table td {
+    padding: 10px;
+    color: rgba(255,255,255,0.9);
+}
+
+.col-num { color: #475569; font-size: 0.8rem; width: 40px; }
+
+/* Name cell */
+.name-cell {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.name-avatar {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: rgba(255,255,255,0.8);
+}
+.name-text {
+    font-weight: 500;
+    color: rgba(255,255,255,0.95);
+}
+.uid-text {
+    font-size: 0.75rem;
+    color: rgba(255,255,255,0.5);
+    margin-top: 2px;
+}
+
+/* Badges */
+.badge {
+    font-size: 0.7rem;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-weight: 500;
+    text-transform: capitalize;
+}
+.badge-present { background: rgba(34,197,94,0.15); color: #86efac; border: 1px solid rgba(34,197,94,0.25); }
+.badge-late    { background: rgba(234,179,8,0.15);  color: #fde047; border: 1px solid rgba(234,179,8,0.25); }
+.badge-absent  { background: rgba(239,68,68,0.15);  color: #fca5a5; border: 1px solid rgba(239,68,68,0.25); }
+
+.type-badge {
+    font-size: 0.7rem;
+    padding: 2px 6px;
+    border-radius: 10px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    text-transform: capitalize;
+}
+.type-student { background: rgba(99,102,241,0.15); color: #a5b4fc; border: 1px solid rgba(99,102,241,0.25); }
+.type-faculty { background: rgba(168,85,247,0.15); color: #c4b5fd; border: 1px solid rgba(168,85,247,0.25); }
+
+/* Filters */
+.alog-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    align-items: end;
+    margin-bottom: 16px;
+}
+
+.filter-group {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.filter-group label {
+    color: rgba(255,255,255,0.7);
+    font-size: 0.8rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.filter-group input[type="date"],
+.filter-group input[type="time"],
+.filter-group input[type="datetime-local"],
+.filter-group select {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 6px;
+    padding: 6px 10px;
+    color: rgba(255,255,255,0.9);
+    font-size: 0.85rem;
+    min-width: 140px;
+}
+.filter-group input[type="date"]:focus,
+.filter-group input[type="time"]:focus,
+.filter-group input[type="datetime-local"]:focus,
+.filter-group select:focus {
+    outline: none;
+    border-color: #818cf8;
+}
+.filter-group select option {
+    background: #1e293b;
+    color: rgba(255,255,255,0.9);
+}
+
+.alog-clear-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 6px;
+    padding: 6px 12px;
+    color: rgba(255,255,255,0.7);
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+.alog-clear-btn:hover {
+    background: rgba(255,255,255,0.08);
+    color: rgba(255,255,255,0.9);
+}
+
+/* Loading, error, and empty states */
+.alog-loading {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: rgba(255,255,255,0.7);
+    font-size: 0.9rem;
+}
+.alog-spinner {
+    animation: alog-spin 1s linear infinite;
+}
+@keyframes alog-spin { to { transform: rotate(360deg); } }
+
+.alog-error {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #fca5a5;
+    background: rgba(239,68,68,0.1);
+    padding: 12px 16px;
+    border-radius: 6px;
+    border: 1px solid rgba(239,68,68,0.2);
+}
+
+.alog-empty {
+    text-align: center;
+    padding: 40px 20px;
+    color: rgba(255,255,255,0.5);
+}
+.empty-icon { font-size: 3.5rem; color: #334155; }
+.alog-empty p { margin: 0; font-size: 0.95rem; }
 
 .error{ color: #ffb4b4 }

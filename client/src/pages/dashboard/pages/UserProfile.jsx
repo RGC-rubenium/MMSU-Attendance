@@ -4,6 +4,7 @@ import FacultyHandler from '../../../api/FacultyHandler.js';
 import React from 'react';
 import { useEffect, useState, useMemo } from "react";
 import AttendanceLogsHandler from '../../../api/AttendanceLogsHandler.js';
+import * as MdIcons from 'react-icons/md';
 
 const studentHandler = new StudentHandler();
 const facultyHandler = new FacultyHandler();
@@ -16,6 +17,24 @@ function maskUid(uid = '') {
     return '*'.repeat(Math.max(0, s.length - keep)) + s.slice(-keep)
 }
 
+function fmt(iso) {
+    if (!iso) return '—';
+    return new Date(iso).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+}
+
+function fmtDate(iso) {
+    if (!iso) return '—';
+    return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+function duration(inIso, outIso) {
+    if (!inIso || !outIso) return '—';
+    const ms = new Date(outIso) - new Date(inIso);
+    const h = Math.floor(ms / 3600000);
+    const m = Math.floor((ms % 3600000) / 60000);
+    return h > 0 ? `${h}h ${m}m` : `${m}m`;
+}
+
 export default function UserProfile() {
     const queryParams = new URLSearchParams(window.location.search);
     const userId = queryParams.get('id');
@@ -25,6 +44,7 @@ export default function UserProfile() {
     const [attendanceLogs, setAttendanceLogs] = useState([]);
     const [attendanceLoading, setAttendanceLoading] = useState(false);
     const [attendanceError, setAttendanceError] = useState(null);
+    const [expanded, setExpanded] = useState(null);
     // Filters for attendance records
     const [filterDateFrom, setFilterDateFrom] = useState('')
     const [filterDateTo, setFilterDateTo] = useState('')
@@ -39,39 +59,49 @@ export default function UserProfile() {
             const t = new Date(l.time_in)
             if (isNaN(t)) return false
 
-            // Date range checks
+            // Date range checks with time support
             if (filterDateFrom) {
                 const df = new Date(filterDateFrom)
-                df.setHours(0,0,0,0)
-                if (t < df) return false
+                if (filterTimeFrom) {
+                    const [h, m] = filterTimeFrom.split(':').map(Number)
+                    if (!isNaN(h) && !isNaN(m)) {
+                        df.setHours(h, m, 0, 0)
+                    }
+                } else {
+                    df.setHours(0, 0, 0, 0)
+                }
+                if (!isNaN(df) && t < df) return false
             }
             if (filterDateTo) {
                 const dt = new Date(filterDateTo)
-                dt.setHours(23,59,59,999)
-                if (t > dt) return false
-            }
-
-            // Time-only checks (compare hh:mm)
-            if (filterTimeFrom) {
-                const [hf, mf] = filterTimeFrom.split(':').map(Number)
-                if (!Number.isNaN(hf) && !Number.isNaN(mf)) {
-                    const minutes = t.getHours()*60 + t.getMinutes()
-                    const fromMinutes = hf*60 + mf
-                    if (minutes < fromMinutes) return false
+                if (filterTimeTo) {
+                    const [h, m] = filterTimeTo.split(':').map(Number)
+                    if (!isNaN(h) && !isNaN(m)) {
+                        dt.setHours(h, m, 59, 999)
+                    }
+                } else {
+                    dt.setHours(23, 59, 59, 999)
                 }
-            }
-            if (filterTimeTo) {
-                const [ht, mt] = filterTimeTo.split(':').map(Number)
-                if (!Number.isNaN(ht) && !Number.isNaN(mt)) {
-                    const minutes = t.getHours()*60 + t.getMinutes()
-                    const toMinutes = ht*60 + mt
-                    if (minutes > toMinutes) return false
-                }
+                if (!isNaN(dt) && t > dt) return false
             }
 
             return true
         })
     }, [attendanceLogs, filterDateFrom, filterDateTo, filterTimeFrom, filterTimeTo])
+
+    const toggleExpand = (id) => setExpanded(prev => prev === id ? null : id);
+
+    const statusBadge = (s) => {
+        const map = { present: 'badge-present', late: 'badge-late', absent: 'badge-absent' };
+        return <span className={`badge ${map[s] || 'badge-present'}`}>{s || 'present'}</span>;
+    };
+
+    const typeBadge = (t) => (
+        <span className={`type-badge ${t === 'student' ? 'type-student' : 'type-faculty'}`}>
+            {t === 'student' ? <MdIcons.MdSchool /> : <MdIcons.MdPerson />}
+            {t}
+        </span>
+    );
 
     useEffect(() => {
         if (!userId) return
@@ -238,50 +268,151 @@ export default function UserProfile() {
                         </div>
                         <div className='profile-section'>
                             <h3 style={{marginTop:16}}>Attendance Records</h3>
-                                    {attendanceLogs.length === 0 ? (
-                                        <div>No attendance records found.</div>
+                                    {attendanceLoading ? (
+                                        <div className="alog-loading">
+                                            <MdIcons.MdRefresh className="alog-spinner" />
+                                            Loading attendance records...
+                                        </div>
+                                    ) : attendanceError ? (
+                                        <div className="alog-error">
+                                            <MdIcons.MdError />
+                                            {attendanceError}
+                                        </div>
+                                    ) : attendanceLogs.length === 0 ? (
+                                        <div className="alog-empty">
+                                            <MdIcons.MdEventNote className="empty-icon" />
+                                            <p>No attendance records found.</p>
+                                        </div>
                                     ) : (
                                         <>
-                                            <div className="attendance-filters" style={{display:'flex',gap:8,flexWrap:'wrap',alignItems:'center',marginBottom:12}}>
-                                                <label style={{display:'flex',flexDirection:'column',fontSize:12}}>From Date
-                                                    <input type="date" value={filterDateFrom} onChange={e => setFilterDateFrom(e.target.value)} />
-                                                </label>
-                                                <label style={{display:'flex',flexDirection:'column',fontSize:12}}>To Date
-                                                    <input type="date" value={filterDateTo} onChange={e => setFilterDateTo(e.target.value)} />
-                                                </label>
-                                                <label style={{display:'flex',flexDirection:'column',fontSize:12}}>From Time
-                                                    <input type="time" value={filterTimeFrom} onChange={e => setFilterTimeFrom(e.target.value)} />
-                                                </label>
-                                                <label style={{display:'flex',flexDirection:'column',fontSize:12}}>To Time
-                                                    <input type="time" value={filterTimeTo} onChange={e => setFilterTimeTo(e.target.value)} />
-                                                </label>
-                                                <div style={{display:'flex',gap:8,alignItems:'center'}}>
-                                                    <button type="button" onClick={() => { setFilterDateFrom(''); setFilterDateTo(''); setFilterTimeFrom(''); setFilterTimeTo('') }}>Clear</button>
+                                            {/* Filters */}
+                                            <div className="alog-filters" style={{marginBottom:16}}>
+                                                <div className="filter-group">
+                                                    <label>From Date</label>
+                                                    <input 
+                                                        type="date" 
+                                                        value={filterDateFrom} 
+                                                        onChange={e => setFilterDateFrom(e.target.value)} 
+                                                    />
                                                 </div>
+                                                <div className="filter-group">
+                                                    <label>From Time</label>
+                                                    <input 
+                                                        type="time" 
+                                                        value={filterTimeFrom} 
+                                                        onChange={e => setFilterTimeFrom(e.target.value)} 
+                                                    />
+                                                </div>
+                                                <div className="filter-group">
+                                                    <label>To Date</label>
+                                                    <input 
+                                                        type="date" 
+                                                        value={filterDateTo} 
+                                                        onChange={e => setFilterDateTo(e.target.value)} 
+                                                    />
+                                                </div>
+                                                <div className="filter-group">
+                                                    <label>To Time</label>
+                                                    <input 
+                                                        type="time" 
+                                                        value={filterTimeTo} 
+                                                        onChange={e => setFilterTimeTo(e.target.value)} 
+                                                    />
+                                                </div>
+                                                <button 
+                                                    type="button" 
+                                                    className="alog-clear-btn"
+                                                    onClick={() => { 
+                                                        setFilterDateFrom(''); 
+                                                        setFilterDateTo(''); 
+                                                        setFilterTimeFrom(''); 
+                                                        setFilterTimeTo(''); 
+                                                    }}
+                                                >
+                                                    <MdIcons.MdClearAll />
+                                                    Clear
+                                                </button>
                                             </div>
+
                                             {filteredAttendanceLogs.length === 0 ? (
-                                                <div>No records match the current filters.</div>
+                                                <div className="alog-empty">
+                                                    <MdIcons.MdFilterList className="empty-icon" />
+                                                    <p>No records match the current filters.</p>
+                                                </div>
                                             ) : (
-                                                <div className="attendance-table-wrap">
-                                                    <table className="attendance-table">
+                                                <div className="alog-table-wrap">
+                                                    <table className="alog-table">
                                                         <thead>
                                                             <tr>
+                                                                <th className="col-num">#</th>
                                                                 <th>Date</th>
                                                                 <th>Time In</th>
+                                                                <th>Time Out</th>
+                                                                <th>Duration</th>
                                                                 <th>Status</th>
                                                                 <th>Schedule</th>
-                                                                <th>Notes</th>
+                                                                <th>Type</th>
+                                                                <th></th>
                                                             </tr>
                                                         </thead>
                                                         <tbody>
-                                                            {filteredAttendanceLogs.map((log) => (
-                                                                <tr key={log.id}>
-                                                                    <td>{log.time_in ? new Date(log.time_in).toLocaleDateString() : '—'}</td>
-                                                                    <td>{log.time_in ? new Date(log.time_in).toLocaleTimeString() : '—'}</td>
-                                                                    <td>{log.status || 'present'}</td>
-                                                                    <td>{log.schedule_name || log.schedule_type || '—'}</td>
-                                                                    <td>{log.notes || (log.subjects_attended ? (Array.isArray(log.subjects_attended) ? log.subjects_attended.join(', ') : JSON.stringify(log.subjects_attended)) : '—')}</td>
-                                                                </tr>
+                                                            {filteredAttendanceLogs.map((log, idx) => (
+                                                                <React.Fragment key={log.id}>
+                                                                    <tr 
+                                                                        className={expanded === log.id ? 'row-expanded' : ''}
+                                                                        onClick={() => toggleExpand(log.id)}
+                                                                        style={{ cursor: 'pointer' }}
+                                                                    >
+                                                                        <td className="col-num">{idx + 1}</td>
+                                                                        <td>{fmtDate(log.time_in)}</td>
+                                                                        <td>{fmt(log.time_in)}</td>
+                                                                        <td>{fmt(log.time_out)}</td>
+                                                                        <td>{duration(log.time_in, log.time_out)}</td>
+                                                                        <td>{statusBadge(log.status)}</td>
+                                                                        <td>{log.schedule_name || log.subject_name || '—'}</td>
+                                                                        <td>{typeBadge(userType)}</td>
+                                                                        <td>
+                                                                            {expanded === log.id ? <MdIcons.MdExpandLess /> : <MdIcons.MdExpandMore />}
+                                                                        </td>
+                                                                    </tr>
+                                                                    {expanded === log.id && (
+                                                                        <tr className="expanded-row">
+                                                                            <td colSpan="9">
+                                                                                <div className="expanded-content" style={{
+                                                                                    padding: '12px 16px',
+                                                                                    background: 'rgba(255,255,255,0.02)',
+                                                                                    borderRadius: '6px',
+                                                                                    fontSize: '0.85rem'
+                                                                                }}>
+                                                                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
+                                                                                        <div>
+                                                                                            <strong>Schedule Details:</strong><br />
+                                                                                            Type: {log.schedule_type || '—'}<br />
+                                                                                            Name: {log.schedule_name || log.subject_name || '—'}<br />
+                                                                                            Location: {log.location || log.room || '—'}
+                                                                                        </div>
+                                                                                        <div>
+                                                                                            <strong>Attendance Info:</strong><br />
+                                                                                            Status: {log.status || 'present'}<br />
+                                                                                            Method: {log.method || 'RFID'}<br />
+                                                                                            Scanner: {log.scanner_name || '—'}
+                                                                                        </div>
+                                                                                        <div>
+                                                                                            <strong>Additional:</strong><br />
+                                                                                            Notes: {log.notes || '—'}<br />
+                                                                                            Subjects: {log.subjects_attended ? 
+                                                                                                (Array.isArray(log.subjects_attended) ? 
+                                                                                                    log.subjects_attended.join(', ') : 
+                                                                                                    log.subjects_attended
+                                                                                                ) : '—'
+                                                                                            }
+                                                                                        </div>
+                                                                                    </div>
+                                                                                </div>
+                                                                            </td>
+                                                                        </tr>
+                                                                    )}
+                                                                </React.Fragment>
                                                             ))}
                                                         </tbody>
                                                     </table>

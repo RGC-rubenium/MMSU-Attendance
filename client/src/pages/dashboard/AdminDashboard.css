@@ -3,13 +3,12 @@
     width: 100%;
     padding: 0;
     background-color: rgb(15, 13, 24);
-    height: calc(100vh - 60px);
     overflow: hidden;
+    height: calc(100vh - 60px);
 }
 
 /* Every page that renders inside <Outlet /> should fill the remaining space */
 .admin-dashboard > *:not(.sidebar) {
     flex: 1;
     min-width: 0;
-    overflow: hidden;
 }
