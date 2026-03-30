@@ -92,8 +92,8 @@ export default function UserProfile() {
     const toggleExpand = (id) => setExpanded(prev => prev === id ? null : id);
 
     const statusBadge = (s) => {
-        const map = { present: 'badge-present', late: 'badge-late', absent: 'badge-absent' };
-        return <span className={`badge ${map[s] || 'badge-present'}`}>{s || 'present'}</span>;
+        const map = { incomplete: 'badge-incomplete', complete: 'badge-complete' };
+        return <span className={`badge ${map[s] || 'badge-incomplete'}`}>{s || 'incomplete'}</span>;
     };
 
     const typeBadge = (t) => (
@@ -393,7 +393,7 @@ export default function UserProfile() {
                                                                                         </div>
                                                                                         <div>
                                                                                             <strong>Attendance Info:</strong><br />
-                                                                                            Status: {log.status || 'present'}<br />
+                                                                                            Status: {log.status || 'incomplete'}<br />
                                                                                             Method: {log.method || 'RFID'}<br />
                                                                                             Scanner: {log.scanner_name || '—'}
                                                                                         </div>

@@ -84,9 +84,8 @@
 .recent-table tr:last-child td{ border-bottom: none; }
 
 .status{ font-weight:600; }
-.status.present{ color: #059669; }
-.status.late{ color: #d97706; }
-.status.absent{ color: #ef4444; }
+.status.incomplete{ color: #d97706; }
+.status.complete{ color: #059669; }
 
 @media (max-width:600px){
   .dashboard-main{ padding:12px; }

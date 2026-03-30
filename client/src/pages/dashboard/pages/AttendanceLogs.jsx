@@ -97,8 +97,8 @@ export default function AttendanceLogs() {
     const toggleExpand = (id) => setExpanded(prev => prev === id ? null : id);
 
     const statusBadge = (s) => {
-        const map = { present: 'badge-present', late: 'badge-late', absent: 'badge-absent' };
-        return <span className={`badge ${map[s] || 'badge-present'}`}>{s || 'present'}</span>;
+        const map = { incomplete: 'badge-incomplete', complete: 'badge-complete' };
+        return <span className={`badge ${map[s] || 'badge-incomplete'}`}>{s || 'incomplete'}</span>;
     };
 
     const typeBadge = (t) => (
@@ -186,9 +186,8 @@ export default function AttendanceLogs() {
                         <label><MdIcons.MdCircle /> Status</label>
                         <select value={status} onChange={handleFilterChange(setStatus)}>
                             <option value="">All Statuses</option>
-                            <option value="present">Present</option>
-                            <option value="late">Late</option>
-                            <option value="absent">Absent</option>
+                            <option value="incomplete">Incomplete</option>
+                            <option value="complete">Complete</option>
                         </select>
                     </div>
 

@@ -11,9 +11,9 @@ export default function Dashboard() {
     ]
 
     const recent = [
-        { id: 1, name: 'Juan Dela Cruz', status: 'Present', time: '08:12 AM' },
-        { id: 2, name: 'Maria Santos', status: 'Late', time: '08:45 AM' },
-        { id: 3, name: 'Pedro Reyes', status: 'Absent', time: '-' },
+        { id: 1, name: 'Juan Dela Cruz', status: 'Complete', time: '08:12 AM' },
+        { id: 2, name: 'Maria Santos', status: 'Incomplete', time: '08:45 AM' },
+        { id: 3, name: 'Pedro Reyes', status: 'Complete', time: '09:15 AM' },
     ]
 
     return (

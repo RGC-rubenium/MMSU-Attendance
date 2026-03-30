@@ -431,7 +431,7 @@ def handle_rfid_scan():
             schedule_type=active_schedule['type'],
             schedule_name=active_schedule['name'],
             time_in=now,
-            status='present',
+            status='incomplete',
             subjects_attended=None,  # Will be calculated on time-out
             notes=None
         )
@@ -654,7 +654,7 @@ def handle_time_in():
             schedule_type=active_schedule['type'],
             schedule_name=active_schedule['name'],
             time_in=now,
-            status='present',
+            status='incomplete',
             subjects_attended=None,
             notes='Time-in recorded'
         )
@@ -759,6 +759,7 @@ def handle_time_out():
         
         # Process time-out
         incomplete_log.time_out = now
+        incomplete_log.status = 'complete'
         incomplete_log.updated_at = now
         
         # Calculate attendance details based on user type

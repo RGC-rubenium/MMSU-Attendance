@@ -185,7 +185,7 @@ class AttendanceLog(db.Model):
     schedule_name = db.Column(db.String(100), nullable=True)
     time_in = db.Column(db.DateTime, nullable=False)
     time_out = db.Column(db.DateTime, nullable=True)
-    status = db.Column(db.String(20), default='present') 
+    status = db.Column(db.String(20), default='incomplete') 
     subjects_attended = db.Column(db.JSON, nullable=True)  # List of subjects attended during time-in to time-out
     notes = db.Column(db.Text, nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
