@@ -8,6 +8,25 @@ from scanner_config import SCANNER_CONFIG, DEFAULT_SCHEDULE_CONFIG
 
 rfid_scanner_bp = Blueprint('rfid_scanner', __name__)
 
+def format_avatar_url(profile_path):
+    """Format profile_path to proper avatar URL"""
+    if not profile_path or not profile_path.strip():
+        return None
+    
+    clean_path = profile_path.strip()
+    if clean_path.startswith('http'):
+        return clean_path
+    
+    # Remove leading slash if present to avoid double slashes
+    if clean_path.startswith('/'):
+        clean_path = clean_path[1:]
+    
+    # Check if path already starts with 'images/' to avoid duplication
+    if clean_path.startswith('images/'):
+        return f"{request.url_root}{clean_path}"
+    else:
+        return f"{request.url_root}images/{clean_path}"
+
 def get_current_day_time():
     """Get current day and time for schedule checking"""
     now = datetime.now()
@@ -253,7 +272,6 @@ def check_student_personal_schedule(student):
 
 @rfid_scanner_bp.route('/api/scanner/rfid-scan', methods=['POST'])
 def handle_rfid_scan():
-    """Handle RFID scan and log attendance based on active schedules"""
     try:
         data = request.get_json()
         uid = data.get('uid', '').strip()
@@ -355,7 +373,7 @@ def handle_rfid_scan():
                     'name': user.full_name(),
                     'type': user_type,
                     'department': user.department,
-                    'avatar': getattr(user, 'profile_path', None)
+                    'avatar': format_avatar_url(getattr(user, 'profile_path', None))
                 },
                 'schedule': {
                     'type': incomplete_log.schedule_type,
@@ -450,7 +468,7 @@ def handle_rfid_scan():
                 'name': user.full_name(),
                 'type': user_type,
                 'department': user.department,
-                'avatar': getattr(user, 'profile_path', None)
+                'avatar': format_avatar_url(getattr(user, 'profile_path', None))
             },
             'schedule': {
                 'type': active_schedule['type'],
@@ -602,7 +620,7 @@ def handle_time_in():
                     'name': user.full_name(),
                     'type': user_type,
                     'department': user.department,
-                    'avatar': getattr(user, 'profile_path', None)
+                    'avatar': format_avatar_url(getattr(user, 'profile_path', None))
                 },
                 'existing_time_in': incomplete_log.time_in.isoformat()
             }), 400
@@ -672,7 +690,7 @@ def handle_time_in():
                 'name': user.full_name(),
                 'type': user_type,
                 'department': user.department,
-                'avatar': getattr(user, 'profile_path', None)
+                'avatar': format_avatar_url(getattr(user, 'profile_path', None))
             },
             'schedule': {
                 'type': active_schedule['type'],
@@ -753,7 +771,7 @@ def handle_time_out():
                     'name': user.full_name(),
                     'type': user_type,
                     'department': user.department,
-                    'avatar': getattr(user, 'profile_path', None)
+                    'avatar': format_avatar_url(getattr(user, 'profile_path', None))
                 }
             }), 400
         
@@ -804,7 +822,7 @@ def handle_time_out():
                 'name': user.full_name(),
                 'type': user_type,
                 'department': user.department,
-                'avatar': getattr(user, 'profile_path', None)
+                'avatar': format_avatar_url(getattr(user, 'profile_path', None))
             },
             'attendance': incomplete_log.to_dict(),
             'time_in': incomplete_log.time_in.isoformat(),
@@ -912,5 +930,35 @@ def test_schedule_system():
         return jsonify({
             'success': False,
             'message': 'Failed to test schedule system',
+            'error': str(e)
+        }), 500
+
+@rfid_scanner_bp.route('/api/scanner/test-avatar', methods=['GET'])
+def test_avatar_url():
+    """Test endpoint to check avatar URL generation"""
+    try:
+        # Get the student "Raven Gian Sulit Copon"
+        student = Student.query.filter_by(uid='0637611191').first()
+        
+        if student:
+            avatar_url = format_avatar_url(student.profile_path)
+            return jsonify({
+                'success': True,
+                'student_name': student.full_name(),
+                'profile_path': student.profile_path,
+                'formatted_avatar_url': avatar_url,
+                'request_url_root': request.url_root
+            }), 200
+        else:
+            return jsonify({
+                'success': False,
+                'message': 'Student not found'
+            }), 404
+            
+    except Exception as e:
+        print(f"Error testing avatar URL: {e}")
+        return jsonify({
+            'success': False,
+            'message': 'Failed to test avatar URL',
             'error': str(e)
         }), 500
