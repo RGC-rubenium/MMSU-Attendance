@@ -315,3 +315,44 @@ class PairingRequest(db.Model):
     def is_expired(self):
         """Check if pairing request has expired"""
         return datetime.utcnow() > self.expires_at
+
+
+class Camera(db.Model):
+    """Model for surveillance cameras with RTSP support"""
+    __tablename__ = "cameras"
+    __table_args__ = {'schema': 'attendance'}
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+    rtsp_url = db.Column(db.Text, nullable=False)  # RTSP URL for the camera stream
+    location = db.Column(db.String(200), nullable=True)  # Physical location description
+    description = db.Column(db.Text, nullable=True)
+    
+    # Camera settings
+    is_active = db.Column(db.Boolean, default=True)
+    is_online = db.Column(db.Boolean, default=False)
+    last_check = db.Column(db.DateTime, nullable=True)
+    
+    # Display settings
+    grid_position = db.Column(db.Integer, nullable=True)  # Position in the grid view
+    
+    # Metadata
+    created_by = db.Column(db.String(50), nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'name': self.name,
+            'rtsp_url': self.rtsp_url,
+            'location': self.location,
+            'description': self.description,
+            'is_active': self.is_active,
+            'is_online': self.is_online,
+            'last_check': self.last_check.isoformat() if self.last_check else None,
+            'grid_position': self.grid_position,
+            'created_by': self.created_by,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'updated_at': self.updated_at.isoformat() if self.updated_at else None,
+        }
