@@ -14,6 +14,7 @@ import {
     MdEdit
 } from 'react-icons/md';
 import './RpiManagement.css';
+import LoadingScreen from '../common/LoadingScreen';
 
 const RpiManagement = () => {
     const [devices, setDevices] = useState([]);
@@ -225,10 +226,10 @@ const RpiManagement = () => {
     if (loading) {
         return (
             <div className="rpi-management">
-                <div className="loading">
-                    <MdRefresh className="loading-icon" />
-                    <p>Loading devices...</p>
-                </div>
+                <LoadingScreen 
+                    message="Loading devices" 
+                    size="large"
+                />
             </div>
         );
     }

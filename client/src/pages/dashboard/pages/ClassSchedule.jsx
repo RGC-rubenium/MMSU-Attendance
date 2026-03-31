@@ -5,6 +5,7 @@ import * as MdIcons from "react-icons/md";
 import * as IoIcons from "react-icons/io5";
 import * as BiIcons from "react-icons/bi";
 import * as FaIcons from "react-icons/fa";
+import LoadingScreen from '../../../components/common/LoadingScreen';
 
 const ClassSchedule = () => {
     const [state, setState] = useState({
@@ -394,16 +395,10 @@ const ClassSchedule = () => {
             )}
 
             {state.loading && (
-                <div className="loading-spinner">
-                    <div className="loading-content">
-                        <div className="loading-dots">
-                            <div className="loading-dot"></div>
-                            <div className="loading-dot"></div>
-                            <div className="loading-dot"></div>
-                        </div>
-                        <div className="loading-text">Loading schedules...</div>
-                    </div>
-                </div>
+                <LoadingScreen 
+                    message="Loading schedules" 
+                    size="medium"
+                />
             )}
 
             <div className="schedules-grid">

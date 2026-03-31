@@ -4,6 +4,7 @@ import EventScheduleHandler from '../../../api/EventScheduleHandler';
 import * as MdIcons from "react-icons/md";
 import * as IoIcons from "react-icons/io5";
 import * as BiIcons from "react-icons/bi";
+import LoadingScreen from '../../../components/common/LoadingScreen';
 
 const Event_scheduler = () => {
     const [state, setState] = useState({
@@ -257,16 +258,10 @@ const Event_scheduler = () => {
             )}
 
             {state.loading && (
-                <div className="loading-spinner">
-                    <div className="loading-content">
-                        <div className="loading-dots">
-                            <div className="loading-dot"></div>
-                            <div className="loading-dot"></div>
-                            <div className="loading-dot"></div>
-                        </div>
-                        <div className="loading-text">Loading events...</div>
-                    </div>
-                </div>
+                <LoadingScreen 
+                    message="Loading events" 
+                    size="medium"
+                />
             )}
 
             <div className="events-grid">

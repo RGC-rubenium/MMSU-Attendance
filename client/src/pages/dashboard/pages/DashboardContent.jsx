@@ -3,6 +3,7 @@ import './Dashboard.css'
 import { MdPeople, MdOutlineCalendarToday, MdSchool, MdAssignment, MdTrendingUp, MdAccessTime } from 'react-icons/md'
 import { FaUsers, FaChalkboardTeacher, FaClipboardList } from 'react-icons/fa'
 import AnalyticsAPI from '../../../api/AnalyticsAPI'
+import LoadingScreen from '../../../components/common/LoadingScreen'
 
 export default function Dashboard() {
     const [dashboardStats, setDashboardStats] = useState({
@@ -129,10 +130,11 @@ export default function Dashboard() {
     if (loading) {
         return (
             <main className="dashboard-main" aria-labelledby="dashboard-title">
-                <div className="loading-container">
-                    <div className="loading-spinner"></div>
-                    <p>Loading dashboard analytics...</p>
-                </div>
+                <LoadingScreen 
+                    message="Loading dashboard analytics" 
+                    size="large" 
+                    variant="dashboard"
+                />
             </main>
         );
     }

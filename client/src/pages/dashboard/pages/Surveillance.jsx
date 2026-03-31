@@ -5,6 +5,7 @@ import * as MdIcons from "react-icons/md";
 import * as IoIcons from "react-icons/io5";
 import * as BiIcons from "react-icons/bi";
 import * as FaIcons from "react-icons/fa";
+import LoadingScreen from '../../../components/common/LoadingScreen';
 
 const Surveillance = () => {
     // State management
@@ -295,10 +296,11 @@ const Surveillance = () => {
     if (loading) {
         return (
             <div className="surveillance-wrapper">
-                <div className="loading-container">
-                    <div className="loading-spinner"></div>
-                    <p>Loading cameras...</p>
-                </div>
+                <LoadingScreen 
+                    message="Loading cameras" 
+                    size="large" 
+                    variant="surveillance"
+                />
             </div>
         );
     }

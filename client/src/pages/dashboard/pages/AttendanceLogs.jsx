@@ -3,6 +3,7 @@ import * as MdIcons from 'react-icons/md';
 import * as FaIcons from 'react-icons/fa';
 import AttendanceLogsHandler from '../../../api/AttendanceLogsHandler';
 import './AttendanceLogs.css';
+import LoadingScreen from '../../../components/common/LoadingScreen';
 
 const DEPARTMENTS = ['BSCpE','BSME','BSEE','BSECE','BSCE','BSChE','BSCerE','BSABE'];
 const PER_PAGE = 20;
@@ -206,10 +207,10 @@ export default function AttendanceLogs() {
                 )}
 
                 {loading ? (
-                    <div className="alog-loading">
-                        <div className="alog-spinner" />
-                        <span>Loading attendance records…</span>
-                    </div>
+                    <LoadingScreen 
+                        message="Loading attendance records" 
+                        size="medium"
+                    />
                 ) : logs.length === 0 ? (
                     <div className="alog-empty">
                         <MdIcons.MdInbox className="empty-icon" />

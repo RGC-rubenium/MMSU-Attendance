@@ -1,0 +1,315 @@
+/* Modern Loading Screen Styles */
+.loading-screen {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 400px;
+    width: 100%;
+    padding: 40px 24px;
+    box-sizing: border-box;
+}
+
+.loading-screen.small {
+    min-height: 200px;
+    padding: 24px;
+}
+
+.loading-screen.large {
+    min-height: 60vh;
+}
+
+.loading-screen.fullscreen {
+    min-height: 100vh;
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+}
+
+/* Loading content wrapper */
+.loading-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 32px;
+    position: relative;
+}
+
+/* Animated rings */
+.loading-rings {
+    position: relative;
+    width: 120px;
+    height: 120px;
+}
+
+.loading-screen.small .loading-rings {
+    width: 80px;
+    height: 80px;
+}
+
+.ring {
+    position: absolute;
+    border-radius: 50%;
+    border: 2px solid transparent;
+    animation: ring-spin 2s linear infinite;
+}
+
+.ring-1 {
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+    border-top-color: #6366f1;
+    border-right-color: rgba(99, 102, 241, 0.3);
+    animation-duration: 2s;
+}
+
+.ring-2 {
+    width: 75%;
+    height: 75%;
+    top: 12.5%;
+    left: 12.5%;
+    border-top-color: #8b5cf6;
+    border-left-color: rgba(139, 92, 246, 0.3);
+    animation-duration: 1.5s;
+    animation-direction: reverse;
+}
+
+.ring-3 {
+    width: 50%;
+    height: 50%;
+    top: 25%;
+    left: 25%;
+    border-top-color: #a78bfa;
+    border-bottom-color: rgba(167, 139, 250, 0.3);
+    animation-duration: 1s;
+}
+
+@keyframes ring-spin {
+    0% {
+        transform: rotate(0deg);
+    }
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+/* Central pulse dot */
+.loading-center {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 1;
+}
+
+.pulse-dot {
+    width: 16px;
+    height: 16px;
+    background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #a78bfa 100%);
+    border-radius: 50%;
+    animation: pulse-glow 1.5s ease-in-out infinite;
+    box-shadow: 0 0 20px rgba(99, 102, 241, 0.6),
+                0 0 40px rgba(99, 102, 241, 0.3),
+                0 0 60px rgba(99, 102, 241, 0.1);
+}
+
+.loading-screen.small .pulse-dot {
+    width: 12px;
+    height: 12px;
+}
+
+@keyframes pulse-glow {
+    0%, 100% {
+        transform: scale(1);
+        box-shadow: 0 0 20px rgba(99, 102, 241, 0.6),
+                    0 0 40px rgba(99, 102, 241, 0.3),
+                    0 0 60px rgba(99, 102, 241, 0.1);
+    }
+    50% {
+        transform: scale(1.2);
+        box-shadow: 0 0 30px rgba(99, 102, 241, 0.8),
+                    0 0 60px rgba(99, 102, 241, 0.5),
+                    0 0 90px rgba(99, 102, 241, 0.2);
+    }
+}
+
+/* Progress bar */
+.loading-progress {
+    width: 200px;
+    max-width: 80%;
+}
+
+.loading-screen.small .loading-progress {
+    width: 140px;
+}
+
+.progress-track {
+    height: 4px;
+    background: rgba(99, 102, 241, 0.15);
+    border-radius: 4px;
+    overflow: hidden;
+    position: relative;
+}
+
+.progress-fill {
+    position: absolute;
+    height: 100%;
+    width: 40%;
+    background: linear-gradient(90deg, 
+        transparent 0%, 
+        #6366f1 20%, 
+        #8b5cf6 50%, 
+        #6366f1 80%, 
+        transparent 100%
+    );
+    border-radius: 4px;
+    animation: progress-slide 1.5s ease-in-out infinite;
+}
+
+@keyframes progress-slide {
+    0% {
+        left: -40%;
+    }
+    100% {
+        left: 100%;
+    }
+}
+
+/* Loading text */
+.loading-text-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+}
+
+.loading-message {
+    color: #94a3b8;
+    font-size: 15px;
+    font-weight: 500;
+    letter-spacing: 0.3px;
+}
+
+.loading-screen.small .loading-message {
+    font-size: 13px;
+}
+
+.loading-dots-text {
+    display: flex;
+    margin-left: 2px;
+}
+
+.loading-dots-text .dot {
+    color: #6366f1;
+    font-size: 18px;
+    font-weight: bold;
+    animation: dot-bounce 1.4s ease-in-out infinite;
+    opacity: 0.3;
+}
+
+.loading-dots-text .dot:nth-child(1) {
+    animation-delay: 0s;
+}
+
+.loading-dots-text .dot:nth-child(2) {
+    animation-delay: 0.2s;
+}
+
+.loading-dots-text .dot:nth-child(3) {
+    animation-delay: 0.4s;
+}
+
+@keyframes dot-bounce {
+    0%, 60%, 100% {
+        opacity: 0.3;
+        transform: translateY(0);
+    }
+    30% {
+        opacity: 1;
+        transform: translateY(-4px);
+    }
+}
+
+/* Variant: Surveillance theme */
+.loading-screen.surveillance {
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%);
+}
+
+.loading-screen.surveillance .ring-1 {
+    border-top-color: #818cf8;
+}
+
+.loading-screen.surveillance .ring-2 {
+    border-top-color: #a78bfa;
+}
+
+.loading-screen.surveillance .ring-3 {
+    border-top-color: #c4b5fd;
+}
+
+.loading-screen.surveillance .pulse-dot {
+    background: linear-gradient(135deg, #818cf8 0%, #a78bfa 50%, #c4b5fd 100%);
+}
+
+/* Variant: Dashboard theme */
+.loading-screen.dashboard {
+    background: transparent;
+}
+
+/* Shimmer effect on the container */
+.loading-screen::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+        90deg,
+        transparent 0%,
+        rgba(99, 102, 241, 0.03) 50%,
+        transparent 100%
+    );
+    animation: shimmer 3s ease-in-out infinite;
+    pointer-events: none;
+}
+
+@keyframes shimmer {
+    0% {
+        left: -100%;
+    }
+    100% {
+        left: 100%;
+    }
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .loading-rings {
+        width: 100px;
+        height: 100px;
+    }
+    
+    .loading-progress {
+        width: 160px;
+    }
+    
+    .loading-message {
+        font-size: 14px;
+    }
+}
+
+@media (max-width: 480px) {
+    .loading-screen {
+        min-height: 250px;
+        padding: 32px 16px;
+    }
+    
+    .loading-rings {
+        width: 80px;
+        height: 80px;
+    }
+    
+    .loading-progress {
+        width: 140px;
+    }
+}
