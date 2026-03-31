@@ -159,5 +159,53 @@ export default class FacultyHandler {
             throw err
         }
     }
+
+    /**
+     * Update a faculty member by ID
+     * @param {string} id - Faculty ID
+     * @param {Object} data - Data to update
+     * @param {File} profileImage - Optional profile image file
+     */
+    async updateFaculty(id, data, profileImage = null) {
+        const url = `${FacultyHandler.getBase()}/faculty/${encodeURIComponent(id)}`
+        
+        try {
+            const formData = new FormData()
+            
+            // Append all data fields
+            Object.entries(data).forEach(([key, value]) => {
+                if (value !== null && value !== undefined) {
+                    formData.append(key, value)
+                }
+            })
+            
+            // Append profile image if provided
+            if (profileImage) {
+                formData.append('profile_image', profileImage)
+            }
+            
+            const res = await fetch(url, {
+                method: 'PUT',
+                body: formData
+            })
+            
+            if (!res.ok) {
+                let errorMessage = `Update failed with status ${res.status}`
+                try {
+                    const errorData = await res.json()
+                    errorMessage = errorData.message || errorMessage
+                } catch {
+                    const text = await res.text().catch(() => '')
+                    errorMessage = text || errorMessage
+                }
+                
+                throw new Error(errorMessage)
+            }
+            
+            return await res.json()
+        } catch (err) {
+            throw err
+        }
+    }
     
 }

@@ -15,7 +15,9 @@ const AddStudent = ({ isOpen, onClose, onSuccess }) => {
         department: '',
         year_level: '',
         section: '',
-        gender: ''
+        gender: '',
+        parent_contact: '',
+        contact_number: ''
     });
     
     const [profileImage, setProfileImage] = useState(null);
@@ -206,7 +208,9 @@ const AddStudent = ({ isOpen, onClose, onSuccess }) => {
             department: '',
             year_level: '',
             section: '',
-            gender: ''
+            gender: '',
+            parent_contact: '',
+            contact_number: ''
         });
         setProfileImage(null);
         setImagePreview(null);
@@ -461,6 +465,34 @@ const AddStudent = ({ isOpen, onClose, onSuccess }) => {
                                 ))}
                             </select>
                             {errors.gender && <div className="form-error">{errors.gender}</div>}
+                        </div>
+                        
+                        {/* Parent/Guardian Contact */}
+                        <div className="form-group">
+                            <label className="form-label required">Parent/Guardian Contact</label>
+                            <input
+                                type="tel"
+                                name="parent_contact"
+                                className={`form-input ${errors.parent_contact ? 'error' : ''}`}
+                                value={formData.parent_contact}
+                                onChange={handleInputChange}
+                                placeholder="e.g. 09123456789"
+                            />
+                            {errors.parent_contact && <div className="form-error">{errors.parent_contact}</div>}
+                        </div>
+                        
+                        {/* Student Contact Number (Optional) */}
+                        <div className="form-group">
+                            <label className="form-label">Student Contact Number</label>
+                            <input
+                                type="tel"
+                                name="contact_number"
+                                className={`form-input ${errors.contact_number ? 'error' : ''}`}
+                                value={formData.contact_number}
+                                onChange={handleInputChange}
+                                placeholder="e.g. 09123456789 (optional)"
+                            />
+                            {errors.contact_number && <div className="form-error">{errors.contact_number}</div>}
                         </div>
                     </div>
                     

@@ -18,6 +18,8 @@ from api.rpi_management import rpi_management_bp
 from api.scanner_access import scanner_access_bp
 from api.analytics import analytics_bp
 from api.surveillance import surveillance_bp
+from api.student_update import student_update_bp
+from api.faculty_update import faculty_update_bp
 
 app = Flask(__name__)
 app.config.from_object(config)
@@ -48,6 +50,8 @@ app.register_blueprint(rpi_management_bp)
 app.register_blueprint(scanner_access_bp)
 app.register_blueprint(analytics_bp, url_prefix='/api')
 app.register_blueprint(surveillance_bp)
+app.register_blueprint(student_update_bp, url_prefix='/api')
+app.register_blueprint(faculty_update_bp, url_prefix='/api')
 
 # Static file route for serving images
 @app.route('/images/<path:filename>')

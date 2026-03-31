@@ -94,7 +94,8 @@ class AddStudentHandler {
             department: 'Department',
             year_level: 'Year Level',
             gender: 'Gender',
-            section: 'Section'
+            section: 'Section',
+            parent_contact: 'Parent/Guardian Contact'
         };
         
         // Check required fields
@@ -111,6 +112,17 @@ class AddStudentHandler {
                 errors.year_level = 'Year Level must be between 1-5';
             }
         }
+        
+        // Validate phone numbers (basic validation)
+        const phoneFields = ['parent_contact', 'contact_number'];
+        phoneFields.forEach(field => {
+            if (studentData[field] && studentData[field].trim() !== '') {
+                // Allow digits, spaces, dashes, parentheses, and plus sign
+                if (!/^[\d\s\-\(\)\+]+$/.test(studentData[field])) {
+                    errors[field] = 'Please enter a valid phone number';
+                }
+            }
+        });
         
         // Validate names (no numbers or special characters)
         const nameFields = ['first_name', 'middle_name', 'last_name'];
@@ -220,7 +232,9 @@ AddStudentHandler.prototype.downloadTemplate = function() {
         'department',
         'year_level',
         'section',
-        'gender'
+        'gender',
+        'parent_contact',
+        'contact_number'
     ];
     
     const sampleData = [
@@ -233,7 +247,9 @@ AddStudentHandler.prototype.downloadTemplate = function() {
             'BSCPE',
             '1',
             'A',
-            'MALE'
+            'MALE',
+            '09123456789',
+            '09987654321'
         ],
         [
             'SAMPLE002',
@@ -244,7 +260,9 @@ AddStudentHandler.prototype.downloadTemplate = function() {
             'IT',
             '2',
             'B',
-            'FEMALE'
+            'FEMALE',
+            '09111222333',
+            ''
         ]
     ];
     

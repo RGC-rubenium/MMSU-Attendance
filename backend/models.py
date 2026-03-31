@@ -53,7 +53,7 @@ class Student(db.Model):
     gender = db.Column(db.String(20), nullable=True)
     schedule = db.Column(db.JSON, nullable=True)
     parent_contact = db.Column(db.String(20), nullable=True)
-
+    contact_number = db.Column(db.String(20), nullable=True)
     def full_name(self):
         parts = [self.first_name, self.middle_name, self.last_name]
         return ' '.join(p for p in parts if p)
@@ -71,7 +71,9 @@ class Student(db.Model):
             'section': self.section,
             'avatar': self.profile_path,
             'gender': self.gender,
-            'profile_path': self.profile_path
+            'profile_path': self.profile_path,
+            'parent_contact': self.parent_contact,
+            'contact_number': self.contact_number,
         }
 
 

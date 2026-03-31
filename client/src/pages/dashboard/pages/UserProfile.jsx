@@ -2,7 +2,8 @@ import './UserProfile.css';
 import StudentHandler from '../../../api/StudentHandler.js';
 import FacultyHandler from '../../../api/FacultyHandler.js';
 import React from 'react';
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
+import { useNavigate } from 'react-router-dom';
 import AttendanceLogsHandler from '../../../api/AttendanceLogsHandler.js';
 import * as MdIcons from 'react-icons/md';
 
@@ -36,6 +37,7 @@ function duration(inIso, outIso) {
 }
 
 export default function UserProfile() {
+    const navigate = useNavigate();
     const queryParams = new URLSearchParams(window.location.search);
     const userId = queryParams.get('id');
     const [user, setUser] = useState(null);
@@ -50,6 +52,19 @@ export default function UserProfile() {
     const [filterDateTo, setFilterDateTo] = useState('')
     const [filterTimeFrom, setFilterTimeFrom] = useState('')
     const [filterTimeTo, setFilterTimeTo] = useState('')
+    
+    // Edit mode state
+    const [isEditing, setIsEditing] = useState(false);
+    const [editData, setEditData] = useState({});
+    const [isSaving, setIsSaving] = useState(false);
+    const [saveMessage, setSaveMessage] = useState({ type: '', text: '' });
+    const [profileImage, setProfileImage] = useState(null);
+    const [imagePreview, setImagePreview] = useState(null);
+    const fileInputRef = useRef(null);
+    
+    // Delete confirmation state
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+    const [isDeleting, setIsDeleting] = useState(false);
 
     // Memoized filtered attendance logs (keep hooks at top-level)
     const filteredAttendanceLogs = useMemo(() => {
@@ -102,6 +117,127 @@ export default function UserProfile() {
             {t}
         </span>
     );
+
+    // Start editing - populate editData with current user data
+    const handleStartEdit = () => {
+        setEditData({
+            first_name: user.first_name || '',
+            middle_name: user.middle_name || '',
+            last_name: user.last_name || '',
+            department: user.department || '',
+            gender: user.gender || '',
+            ...(userType === 'student' && {
+                year_level: user.year_level || user.yearlevel || '',
+                section: user.section || '',
+                parent_contact: user.parent_contact || ''
+            })
+        });
+        setImagePreview(user.avatar || null);
+        setProfileImage(null);
+        setSaveMessage({ type: '', text: '' });
+        setIsEditing(true);
+    };
+
+    // Cancel editing
+    const handleCancelEdit = () => {
+        setIsEditing(false);
+        setEditData({});
+        setProfileImage(null);
+        setImagePreview(null);
+        setSaveMessage({ type: '', text: '' });
+    };
+
+    // Handle form field changes
+    const handleEditChange = (e) => {
+        const { name, value } = e.target;
+        setEditData(prev => ({ ...prev, [name]: value }));
+    };
+
+    // Handle profile image selection
+    const handleImageChange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            const allowedTypes = ['image/png', 'image/jpg', 'image/jpeg', 'image/gif'];
+            if (!allowedTypes.includes(file.type)) {
+                setSaveMessage({ type: 'error', text: 'Please select a valid image file (PNG, JPG, JPEG, GIF)' });
+                return;
+            }
+            if (file.size > 5 * 1024 * 1024) {
+                setSaveMessage({ type: 'error', text: 'Image file size must be less than 5MB' });
+                return;
+            }
+            setProfileImage(file);
+            const reader = new FileReader();
+            reader.onload = (e) => setImagePreview(e.target.result);
+            reader.readAsDataURL(file);
+            setSaveMessage({ type: '', text: '' });
+        }
+    };
+
+    // Remove profile image
+    const handleRemoveImage = () => {
+        setProfileImage(null);
+        setImagePreview(null);
+        setEditData(prev => ({ ...prev, remove_profile_image: 'true' }));
+        if (fileInputRef.current) fileInputRef.current.value = '';
+    };
+
+    // Save edited profile
+    const handleSaveEdit = async () => {
+        setIsSaving(true);
+        setSaveMessage({ type: '', text: '' });
+        
+        try {
+            const idToUpdate = user.id || user.uid;
+            let result;
+            
+            if (userType === 'student') {
+                result = await studentHandler.updateStudent(idToUpdate, editData, profileImage);
+            } else {
+                result = await facultyHandler.updateFaculty(idToUpdate, editData, profileImage);
+            }
+            
+            if (result.success) {
+                // Update local user state with new data
+                const updatedUser = result.student || result.faculty;
+                setUser(prev => ({ ...prev, ...updatedUser }));
+                setSaveMessage({ type: 'success', text: 'Profile updated successfully!' });
+                setTimeout(() => {
+                    setIsEditing(false);
+                    setSaveMessage({ type: '', text: '' });
+                }, 1500);
+            } else {
+                setSaveMessage({ type: 'error', text: result.message || 'Failed to update profile' });
+            }
+        } catch (err) {
+            setSaveMessage({ type: 'error', text: err.message || 'Failed to update profile' });
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    // Delete user
+    const handleDelete = async () => {
+        setIsDeleting(true);
+        
+        try {
+            const idToDelete = user.id || user.uid;
+            
+            if (userType === 'student') {
+                await studentHandler.deleteStudent(idToDelete);
+            } else {
+                await facultyHandler.deleteFaculty(idToDelete);
+            }
+            
+            // Navigate back to the appropriate list page
+            navigate(userType === 'student' ? '/dashboard/students' : '/dashboard/faculty');
+        } catch (err) {
+            setSaveMessage({ type: 'error', text: err.message || 'Failed to delete profile' });
+            setShowDeleteConfirm(false);
+        } finally {
+            setIsDeleting(false);
+        }
+    };
 
     useEffect(() => {
         if (!userId) return
@@ -172,48 +308,299 @@ export default function UserProfile() {
     const course = user.department || user.course || ''
     const section = user.section || ''
     const year = user.yearlevel || user.year || user.year_level || ''
+    
+    // Department options
+    const departmentOptions = ['BSCpE', 'BSME', 'BSEE', 'BSECE', 'BSCE', 'BSChE', 'BSCerE', 'BSABE'];
+    const yearLevelOptions = ['1', '2', '3', '4', '5'];
+    const sectionOptions = ['A', 'B', 'C', 'D', 'E'];
+    const genderOptions = ['MALE', 'FEMALE'];
+    
     return (
         <div className="user-profile-page">
+            {/* Delete Confirmation Modal */}
+            {showDeleteConfirm && (
+                <div className="modal-overlay">
+                    <div className="modal-content delete-confirm-modal">
+                        <div className="modal-icon delete-icon">
+                            <MdIcons.MdWarning />
+                        </div>
+                        <h3>Delete {userType === 'student' ? 'Student' : 'Faculty'}</h3>
+                        <p>Are you sure you want to delete <strong>{fullName}</strong>?</p>
+                        <p className="warning-text">This action cannot be undone. All associated data will be permanently removed.</p>
+                        <div className="modal-actions">
+                            <button 
+                                className="btn-cancel" 
+                                onClick={() => setShowDeleteConfirm(false)}
+                                disabled={isDeleting}
+                            >
+                                Cancel
+                            </button>
+                            <button 
+                                className="btn-delete" 
+                                onClick={handleDelete}
+                                disabled={isDeleting}
+                            >
+                                {isDeleting ? (
+                                    <>
+                                        <MdIcons.MdRefresh className="spin" />
+                                        Deleting...
+                                    </>
+                                ) : (
+                                    <>
+                                        <MdIcons.MdDelete />
+                                        Delete
+                                    </>
+                                )}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+            
             <div className="profile-grid">
                 <aside className="profile-left">
+                    {/* Profile Avatar */}
                     <div className="profile-avatar-wrap">
-                        {user.avatar ? (
-                            <img src={user.avatar} alt={`${fullName} avatar`} className="profile-avatar" />
+                        {isEditing ? (
+                            <div className="avatar-edit-container">
+                                {imagePreview ? (
+                                    <img src={imagePreview} alt="Preview" className="profile-avatar" />
+                                ) : (
+                                    <div className="profile-avatar placeholder">
+                                        {(editData.first_name || fullName || 'U').split(' ').map(n=>n[0]).slice(0,2).join('').toUpperCase()}
+                                    </div>
+                                )}
+                                <div className="avatar-edit-actions">
+                                    <input
+                                        type="file"
+                                        ref={fileInputRef}
+                                        onChange={handleImageChange}
+                                        accept="image/png, image/jpeg, image/jpg, image/gif"
+                                        style={{ display: 'none' }}
+                                    />
+                                    <button 
+                                        type="button" 
+                                        className="btn-avatar-action"
+                                        onClick={() => fileInputRef.current?.click()}
+                                    >
+                                        <MdIcons.MdCameraAlt />
+                                    </button>
+                                    {imagePreview && (
+                                        <button 
+                                            type="button" 
+                                            className="btn-avatar-action btn-remove"
+                                            onClick={handleRemoveImage}
+                                        >
+                                            <MdIcons.MdClose />
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
                         ) : (
-                            <div className="profile-avatar placeholder">{(fullName || 'U').split(' ').map(n=>n[0]).slice(0,2).join('').toUpperCase()}</div>
+                            user.avatar ? (
+                                <img src={user.avatar} alt={`${fullName} avatar`} className="profile-avatar" />
+                            ) : (
+                                <div className="profile-avatar placeholder">{(fullName || 'U').split(' ').map(n=>n[0]).slice(0,2).join('').toUpperCase()}</div>
+                            )
                         )}
                     </div>
-                    <h2 className="profile-name">{fullName}</h2>
-                    <div className="profile-meta">
-                        <div><span className="meta-label">Gender:</span> {gender || '—'}</div>
-                        <div><span className="meta-label">UID:</span> <span aria-hidden>{uidMasked}</span></div>
-                        <div><span className="meta-label">ID:</span> {id || '—'}</div>
+                    
+                    {/* Name and Meta */}
+                    {!isEditing && (
+                        <>
+                            <h2 className="profile-name">{fullName}</h2>
+                            <div className="profile-meta">
+                                <div><span className="meta-label">Gender:</span> {gender || '—'}</div>
+                                <div><span className="meta-label">UID:</span> <span aria-hidden>{uidMasked}</span></div>
+                                <div><span className="meta-label">ID:</span> {id || '—'}</div>
+                            </div>
+                        </>
+                    )}
+                    
+                    {/* Action Buttons */}
+                    <div className="profile-actions">
+                        {isEditing ? (
+                            <>
+                                <button 
+                                    className="btn-action btn-save" 
+                                    onClick={handleSaveEdit}
+                                    disabled={isSaving}
+                                >
+                                    {isSaving ? (
+                                        <>
+                                            <MdIcons.MdRefresh className="spin" />
+                                            Saving...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <MdIcons.MdSave />
+                                            Save Changes
+                                        </>
+                                    )}
+                                </button>
+                                <button 
+                                    className="btn-action btn-cancel-edit" 
+                                    onClick={handleCancelEdit}
+                                    disabled={isSaving}
+                                >
+                                    <MdIcons.MdClose />
+                                    Cancel
+                                </button>
+                            </>
+                        ) : (
+                            <>
+                                <button className="btn-action btn-edit" onClick={handleStartEdit}>
+                                    <MdIcons.MdEdit />
+                                    Edit Profile
+                                </button>
+                                <button className="btn-action btn-delete-profile" onClick={() => setShowDeleteConfirm(true)}>
+                                    <MdIcons.MdDelete />
+                                    Delete
+                                </button>
+                            </>
+                        )}
                     </div>
+                    
+                    {/* Save Message */}
+                    {saveMessage.text && (
+                        <div className={`save-message ${saveMessage.type}`}>
+                            {saveMessage.type === 'success' ? <MdIcons.MdCheckCircle /> : <MdIcons.MdError />}
+                            {saveMessage.text}
+                        </div>
+                    )}
                 </aside>
 
                 <section className="profile-right">
                     <div className="profile-section">
-                        <h3>Profile Details</h3>
-                        <dl>
-                            {userType === 'student' && (
-                                <>
-                                    <dt>Course</dt><dd>{course || '—'}</dd>
-                                    <dt>Section</dt><dd>{section || '—'}</dd>
-                                    <dt>Year</dt><dd>{year || '—'}</dd>
-                                </>
-                            )}
+                        <h3>{isEditing ? 'Edit Profile' : 'Profile Details'}</h3>
+                        
+                        {isEditing ? (
+                            <div className="edit-form">
+                                <div className="form-row">
+                                    <div className="form-group">
+                                        <label>First Name</label>
+                                        <input
+                                            type="text"
+                                            name="first_name"
+                                            value={editData.first_name || ''}
+                                            onChange={handleEditChange}
+                                            placeholder="First Name"
+                                        />
+                                    </div>
+                                    <div className="form-group">
+                                        <label>Middle Name</label>
+                                        <input
+                                            type="text"
+                                            name="middle_name"
+                                            value={editData.middle_name || ''}
+                                            onChange={handleEditChange}
+                                            placeholder="Middle Name"
+                                        />
+                                    </div>
+                                    <div className="form-group">
+                                        <label>Last Name</label>
+                                        <input
+                                            type="text"
+                                            name="last_name"
+                                            value={editData.last_name || ''}
+                                            onChange={handleEditChange}
+                                            placeholder="Last Name"
+                                        />
+                                    </div>
+                                </div>
+                                
+                                <div className="form-row">
+                                    <div className="form-group">
+                                        <label>Department</label>
+                                        <select
+                                            name="department"
+                                            value={editData.department || ''}
+                                            onChange={handleEditChange}
+                                        >
+                                            <option value="">Select Department</option>
+                                            {departmentOptions.map(d => (
+                                                <option key={d} value={d}>{d}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                    <div className="form-group">
+                                        <label>Gender</label>
+                                        <select
+                                            name="gender"
+                                            value={editData.gender || ''}
+                                            onChange={handleEditChange}
+                                        >
+                                            <option value="">Select Gender</option>
+                                            {genderOptions.map(g => (
+                                                <option key={g} value={g}>{g}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                </div>
+                                
+                                {userType === 'student' && (
+                                    <div className="form-row">
+                                        <div className="form-group">
+                                            <label>Year Level</label>
+                                            <select
+                                                name="year_level"
+                                                value={editData.year_level || ''}
+                                                onChange={handleEditChange}
+                                            >
+                                                <option value="">Select Year</option>
+                                                {yearLevelOptions.map(y => (
+                                                    <option key={y} value={y}>{y}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                        <div className="form-group">
+                                            <label>Section</label>
+                                            <select
+                                                name="section"
+                                                value={editData.section || ''}
+                                                onChange={handleEditChange}
+                                            >
+                                                <option value="">Select Section</option>
+                                                {sectionOptions.map(s => (
+                                                    <option key={s} value={s}>{s}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                        <div className="form-group">
+                                            <label>Parent Contact</label>
+                                            <input
+                                                type="text"
+                                                name="parent_contact"
+                                                value={editData.parent_contact || ''}
+                                                onChange={handleEditChange}
+                                                placeholder="Parent Contact Number"
+                                            />
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        ) : (
+                            <dl>
+                                {userType === 'student' && (
+                                    <>
+                                        <dt>Course</dt><dd>{course || '—'}</dd>
+                                        <dt>Section</dt><dd>{section || '—'}</dd>
+                                        <dt>Year</dt><dd>{year || '—'}</dd>
+                                    </>
+                                )}
 
-                            {userType === 'faculty' && (
-                                <>
-                                    <dt>Department</dt><dd>{course || '—'}</dd>
-                                    <dt>Position</dt><dd>{user.position || user.title || '—'}</dd>
-                                </>
-                            )}
+                                {userType === 'faculty' && (
+                                    <>
+                                        <dt>Department</dt><dd>{course || '—'}</dd>
+                                        <dt>Position</dt><dd>{user.position || user.title || '—'}</dd>
+                                    </>
+                                )}
 
-                            {user.contact_number && (<><dt>Contact</dt><dd>{user.contact_number}</dd></>)}
-                            {user.email && (<><dt>Email</dt><dd>{user.email}</dd></>)}
-                            {user.address && (<><dt>Address</dt><dd>{user.address}</dd></>)}
-                        </dl>
+                                {user.contact_number && (<><dt>Contact</dt><dd>{user.contact_number}</dd></>)}
+                                {user.email && (<><dt>Email</dt><dd>{user.email}</dd></>)}
+                                {user.address && (<><dt>Address</dt><dd>{user.address}</dd></>)}
+                            </dl>
+                        )}
                     </div>
 
                     {(userType === 'student' || userType === 'faculty') && (
