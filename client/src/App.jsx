@@ -16,6 +16,9 @@ import ProtectedRoute from './components/auth/ProtectedRoute'
 import Event_scheduler from './pages/dashboard/pages/Event_scheduler'
 import ClassSchedule from './pages/dashboard/pages/ClassSchedule'
 import RpiManagement from './components/dashboard/RpiManagement'
+import DeviceCheck from './pages/device/DeviceCheck'
+import DevicePending from './pages/device/DevicePending'
+import DeviceDisabled from './pages/device/DeviceDisabled'
 import './index.css'
 
 
@@ -28,11 +31,22 @@ function App() {
       <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <AuthProvider>
           <Routes>
+            {/* Device Management Routes */}
+            <Route path="/device/check" element={<DeviceCheck />} />
+            <Route path="/device/pending" element={<DevicePending />} />
+            <Route path="/device/disabled" element={<DeviceDisabled />} />
+            <Route path="/device/register" element={<div style={{height: '100vh'}}><iframe src="/pairing.html" style={{width: '100%', height: '100%', border: 'none'}} title="Device Registration" /></div>} />
+            
+            {/* Scanner Routes */}
             <Route path="/scanner" element={<Scanner />} />
             <Route path="/scanner/time-in" element={<TimeInScanner />} />
             <Route path="/scanner/time-out" element={<TimeOutScanner />} />
-            <Route path="/pairing" element={<div style={{height: '100vh'}}><iframe src="/pairing.html" style={{width: '100%', height: '100%', border: 'none'}} /></div>} />
+            <Route path="/pairing" element={<div style={{height: '100vh'}}><iframe src="/pairing.html" style={{width: '100%', height: '100%', border: 'none'}} title="Device Pairing" /></div>} />
+            
+            {/* Auth Routes */}
             <Route path="/" element={<Login />} />
+            
+            {/* Dashboard Routes */}
             <Route path="/dashboard/*" element={<ProtectedRoute allowedRoles={["admin"]}><AdminDashboard /></ProtectedRoute>}>
               <Route index element={<Dashboard />} />
               <Route path="students" element={<Student />} />

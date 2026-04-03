@@ -16,6 +16,7 @@ from api.add_class_schedule import class_schedule_bp
 from api.rfid_scanner import rfid_scanner_bp
 from api.rpi_management import rpi_management_bp
 from api.scanner_access import scanner_access_bp
+from api.device_eligibility import device_eligibility_bp
 from api.analytics import analytics_bp
 from api.surveillance import surveillance_bp
 from api.student_update import student_update_bp
@@ -24,11 +25,11 @@ from api.faculty_update import faculty_update_bp
 app = Flask(__name__)
 app.config.from_object(config)
 
-# Configure CORS to allow DELETE methods
+# Configure CORS to allow requests from frontend and RPi devices
 CORS(app,
-     origins=["http://localhost:3000", "http://localhost:5173", "http://localhost:5174", "http://127.0.0.1:3000", "http://127.0.0.1:5173", "http://127.0.0.1:5174"],
+     origins=["http://localhost:3000", "http://localhost:5173", "http://localhost:5174", "http://127.0.0.1:3000", "http://127.0.0.1:5173", "http://127.0.0.1:5174", "*"],
      methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-     allow_headers=["Content-Type", "Authorization", "Access-Control-Allow-Origin"],
+     allow_headers=["Content-Type", "Authorization", "Access-Control-Allow-Origin", "X-Device-ID"],
      supports_credentials=True)
 
 # initialize extensions
@@ -48,6 +49,7 @@ app.register_blueprint(class_schedule_bp, url_prefix='/api')
 app.register_blueprint(rfid_scanner_bp)
 app.register_blueprint(rpi_management_bp)
 app.register_blueprint(scanner_access_bp)
+app.register_blueprint(device_eligibility_bp)
 app.register_blueprint(analytics_bp, url_prefix='/api')
 app.register_blueprint(surveillance_bp)
 app.register_blueprint(student_update_bp, url_prefix='/api')

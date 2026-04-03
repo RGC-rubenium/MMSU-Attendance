@@ -1,10 +1,8 @@
 import AuthToken from '../Utils/AuthToken'
 
-const API_BASE = (import.meta && import.meta.env && import.meta.env.VITE_API_BASE) || 'http://localhost:5000'
-
 export default class FacultyHandler {
     static getBase() {
-        return API_BASE.replace(/\/$/, '') + '/api'
+        return '/api'
     }
 
     async fetchFaculties(params = {}) {

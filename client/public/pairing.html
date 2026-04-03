@@ -239,9 +239,29 @@
     </div>
 
     <script>
-        let currentDeviceId = null;
-        let currentPairingCode = null;
+        let currentDeviceId = localStorage.getItem('mmsu_device_id') || null;
+        let currentPairingCode = localStorage.getItem('mmsu_pairing_code') || null;
         let statusCheckInterval = null;
+
+        // Check if there's already a pending request on page load
+        window.onload = function() {
+            detectMacAddress();
+            
+            // If we have a device ID, check its status
+            if (currentDeviceId && currentPairingCode) {
+                document.getElementById('pairingCodeDisplay').textContent = currentPairingCode;
+                document.getElementById('deviceIdDisplay').textContent = currentDeviceId;
+                document.getElementById('deviceNameDisplay').textContent = localStorage.getItem('mmsu_device_name') || 'Unknown';
+                document.getElementById('locationDisplay').textContent = localStorage.getItem('mmsu_device_location') || 'Not specified';
+                
+                document.getElementById('pairingForm').style.display = 'none';
+                document.getElementById('pairingStatus').style.display = 'block';
+                
+                // Start status checking
+                statusCheckInterval = setInterval(checkPairingStatus, 10000);
+                checkPairingStatus();
+            }
+        };
 
         // Auto-detect MAC address if possible
         function detectMacAddress() {
@@ -300,6 +320,12 @@
                 if (data.success) {
                     currentDeviceId = data.device_id;
                     currentPairingCode = data.pairing_code;
+                    
+                    // Store in localStorage for persistence
+                    localStorage.setItem('mmsu_device_id', data.device_id);
+                    localStorage.setItem('mmsu_pairing_code', data.pairing_code);
+                    localStorage.setItem('mmsu_device_name', deviceName);
+                    localStorage.setItem('mmsu_device_location', location || '');
                     
                     // Update displays
                     document.getElementById('pairingCodeDisplay').textContent = data.pairing_code;
@@ -390,6 +416,12 @@
             currentDeviceId = null;
             currentPairingCode = null;
             
+            // Clear localStorage
+            localStorage.removeItem('mmsu_device_id');
+            localStorage.removeItem('mmsu_pairing_code');
+            localStorage.removeItem('mmsu_device_name');
+            localStorage.removeItem('mmsu_device_location');
+            
             // Reset form
             document.getElementById('deviceName').value = '';
             document.getElementById('location').value = '';
@@ -402,11 +434,6 @@
             // Clear messages
             document.getElementById('messageContainer').innerHTML = '';
         }
-
-        // Initialize
-        window.onload = function() {
-            detectMacAddress();
-        };
 
         // Clean up on page unload
         window.onbeforeunload = function() {

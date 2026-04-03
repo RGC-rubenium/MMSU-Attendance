@@ -1,78 +1,64 @@
+"""
+RPI Device Management API
+Handles device registration, pairing, approval, and configuration
+"""
+
 from flask import Blueprint, request, jsonify
-from datetime import datetime, timedelta
 from models import RpiDevice, PairingRequest
 from extensions import db
-import secrets
-import string
+from datetime import datetime, timedelta
 import uuid
+import random
+import string
 
 rpi_management_bp = Blueprint('rpi_management', __name__)
 
-def generate_pairing_code():
-    """Generate a 6-digit pairing code"""
-    return ''.join(secrets.choice(string.digits) for _ in range(6))
 
 def generate_device_id():
     """Generate a unique device ID"""
-    return str(uuid.uuid4())[:8].upper()
+    return f"RPI-{uuid.uuid4().hex[:8].upper()}"
+
+
+def generate_pairing_code():
+    """Generate a 6-character alphanumeric pairing code"""
+    return ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
+
+
+# ==================== Device Pairing Endpoints ====================
 
 @rpi_management_bp.route('/api/rpi/pairing/request', methods=['POST'])
 def request_pairing():
-    """RPi device requests pairing with the backend"""
+    """Submit a pairing request from a Raspberry Pi device"""
     try:
         data = request.get_json()
         
-        # Validate required fields
-        device_name = data.get('device_name', '').strip()
-        mac_address = data.get('mac_address', '').strip()
-        location = data.get('location', '').strip()
+        device_name = data.get('device_name')
+        location = data.get('location', '')
+        mac_address = data.get('mac_address', '')
         
         if not device_name:
-            return jsonify({'success': False, 'message': 'Device name is required'}), 400
-        
-        # Get client IP
-        client_ip = request.environ.get('HTTP_X_FORWARDED_FOR', request.environ['REMOTE_ADDR'])
-        
-        # Check if device already exists (by MAC address if provided)
-        existing_device = None
-        if mac_address:
-            existing_device = RpiDevice.query.filter_by(mac_address=mac_address).first()
-        
-        if existing_device and existing_device.is_paired:
-            return jsonify({
-                'success': False, 
-                'message': 'Device is already paired',
-                'device_id': existing_device.device_id
-            }), 400
-        
-        # Check for existing pending requests
-        pending_request = PairingRequest.query.filter_by(
-            mac_address=mac_address,
-            status='pending'
-        ).first()
-        
-        if pending_request and not pending_request.is_expired():
             return jsonify({
                 'success': False,
-                'message': 'Pairing request already exists',
-                'pairing_code': pending_request.pairing_code,
-                'expires_at': pending_request.expires_at.isoformat()
+                'message': 'Device name is required'
             }), 400
         
-        # Generate pairing code and expiry
+        # Generate unique identifiers
+        device_id = generate_device_id()
         pairing_code = generate_pairing_code()
-        device_id = data.get('device_id') or generate_device_id()
-        expires_at = datetime.utcnow() + timedelta(hours=24)  # 24-hour expiry
         
-        # Create pairing request
+        # Get client IP
+        ip_address = request.environ.get('HTTP_X_FORWARDED_FOR', request.environ.get('REMOTE_ADDR', ''))
+        
+        # Create pairing request (expires in 24 hours)
         pairing_request = PairingRequest(
             device_id=device_id,
             device_name=device_name,
             mac_address=mac_address,
-            ip_address=client_ip,
+            ip_address=ip_address,
             location=location,
             pairing_code=pairing_code,
-            expires_at=expires_at
+            status='pending',
+            expires_at=datetime.utcnow() + timedelta(hours=24)
         )
         
         db.session.add(pairing_request)
@@ -80,50 +66,66 @@ def request_pairing():
         
         return jsonify({
             'success': True,
-            'message': 'Pairing request created successfully',
+            'message': 'Pairing request submitted successfully',
             'device_id': device_id,
             'pairing_code': pairing_code,
-            'expires_at': expires_at.isoformat()
-        }), 200
+            'expires_at': pairing_request.expires_at.isoformat()
+        }), 201
         
     except Exception as e:
         db.session.rollback()
         print(f"Error creating pairing request: {e}")
-        return jsonify({'success': False, 'message': 'Failed to create pairing request', 'error': str(e)}), 500
+        return jsonify({
+            'success': False,
+            'message': 'Failed to create pairing request',
+            'error': str(e)
+        }), 500
+
 
 @rpi_management_bp.route('/api/rpi/pairing/check', methods=['GET'])
 def check_pairing_status():
-    """RPi device checks if pairing has been approved"""
+    """Check the status of a pairing request"""
     try:
         device_id = request.args.get('device_id')
         pairing_code = request.args.get('pairing_code')
         
         if not device_id or not pairing_code:
-            return jsonify({'success': False, 'message': 'Device ID and pairing code required'}), 400
+            return jsonify({
+                'success': False,
+                'message': 'Device ID and pairing code are required'
+            }), 400
         
-        # Check pairing request status
+        # First, check if device is already paired
+        device = RpiDevice.query.filter_by(device_id=device_id).first()
+        if device and device.is_paired:
+            return jsonify({
+                'success': True,
+                'status': 'approved',
+                'message': 'Device is paired',
+                'device': device.to_dict()
+            }), 200
+        
+        # Check pairing request
         pairing_request = PairingRequest.query.filter_by(
             device_id=device_id,
             pairing_code=pairing_code
         ).first()
         
         if not pairing_request:
-            return jsonify({'success': False, 'message': 'Pairing request not found'}), 404
+            return jsonify({
+                'success': False,
+                'status': 'not_found',
+                'message': 'Pairing request not found'
+            }), 404
         
         if pairing_request.is_expired():
-            return jsonify({'success': False, 'message': 'Pairing request expired'}), 400
+            return jsonify({
+                'success': False,
+                'status': 'expired',
+                'message': 'Pairing request has expired'
+            }), 410
         
-        if pairing_request.status == 'approved':
-            # Get the paired device
-            device = RpiDevice.query.filter_by(device_id=device_id).first()
-            if device:
-                return jsonify({
-                    'success': True,
-                    'status': 'approved',
-                    'message': 'Device successfully paired',
-                    'device': device.to_dict()
-                }), 200
-        elif pairing_request.status == 'rejected':
+        if pairing_request.status == 'rejected':
             return jsonify({
                 'success': False,
                 'status': 'rejected',
@@ -131,183 +133,181 @@ def check_pairing_status():
                 'reason': pairing_request.rejection_reason
             }), 403
         
-        # Still pending
+        if pairing_request.status == 'pending':
+            return jsonify({
+                'success': True,
+                'status': 'pending',
+                'message': 'Pairing request is pending approval'
+            }), 200
+        
         return jsonify({
             'success': True,
-            'status': 'pending',
-            'message': 'Pairing request is still pending approval'
+            'status': pairing_request.status,
+            'message': f'Pairing request status: {pairing_request.status}'
         }), 200
         
     except Exception as e:
         print(f"Error checking pairing status: {e}")
-        return jsonify({'success': False, 'message': 'Failed to check pairing status', 'error': str(e)}), 500
+        return jsonify({
+            'success': False,
+            'message': 'Failed to check pairing status',
+            'error': str(e)
+        }), 500
 
-@rpi_management_bp.route('/api/rpi/heartbeat', methods=['POST'])
-def device_heartbeat():
-    """RPi device sends heartbeat to indicate it's online"""
+
+# ==================== Admin Management Endpoints ====================
+
+@rpi_management_bp.route('/api/admin/rpi/devices', methods=['GET'])
+def get_all_devices():
+    """Get all paired RPI devices"""
     try:
-        data = request.get_json()
-        device_id = data.get('device_id')
+        devices = RpiDevice.query.filter_by(is_paired=True).all()
         
-        if not device_id:
-            return jsonify({'success': False, 'message': 'Device ID required'}), 400
-        
-        # Find the device
-        device = RpiDevice.query.filter_by(device_id=device_id).first()
-        if not device:
-            return jsonify({'success': False, 'message': 'Device not found'}), 404
-        
-        if not device.is_paired:
-            return jsonify({'success': False, 'message': 'Device not paired'}), 403
-        
-        # Update heartbeat and status
-        device.last_heartbeat = datetime.utcnow()
-        device.is_online = True
-        device.ip_address = request.environ.get('HTTP_X_FORWARDED_FOR', request.environ['REMOTE_ADDR'])
+        # Update online status based on heartbeat
+        for device in devices:
+            device.is_online = device.is_heartbeat_recent(timeout_minutes=5)
         
         db.session.commit()
         
         return jsonify({
             'success': True,
-            'message': 'Heartbeat received',
-            'device': device.to_dict(),
-            'server_time': datetime.utcnow().isoformat()
+            'devices': [d.to_dict() for d in devices],
+            'count': len(devices)
         }), 200
         
     except Exception as e:
         db.session.rollback()
-        print(f"Error processing heartbeat: {e}")
-        return jsonify({'success': False, 'message': 'Failed to process heartbeat', 'error': str(e)}), 500
-
-@rpi_management_bp.route('/api/rpi/config', methods=['GET'])
-def get_device_config():
-    """RPi device gets its configuration"""
-    try:
-        device_id = request.args.get('device_id')
-        
-        if not device_id:
-            return jsonify({'success': False, 'message': 'Device ID required'}), 400
-        
-        device = RpiDevice.query.filter_by(device_id=device_id).first()
-        if not device:
-            return jsonify({'success': False, 'message': 'Device not found'}), 404
-        
-        if not device.is_paired:
-            return jsonify({'success': False, 'message': 'Device not paired'}), 403
-        
-        if not device.is_enabled:
-            return jsonify({'success': False, 'message': 'Device is disabled'}), 403
-        
-        # Default configuration
-        config = {
-            'scanner_mode': device.scanner_mode,
-            'default_page': 'time-in' if device.scanner_mode == 'time_in' else 'time-in',
-            'auto_switch': device.scanner_mode == 'both',
-            'heartbeat_interval': 30,  # seconds
-            'display_timeout': 5000,  # milliseconds
-            'scanner_timeout': 300,  # milliseconds
-            'backend_url': request.url_root,
-        }
-        
-        # Merge with custom config
-        if device.config_data:
-            config.update(device.config_data)
-        
+        print(f"Error fetching devices: {e}")
         return jsonify({
-            'success': True,
-            'config': config,
-            'device': device.to_dict()
-        }), 200
-        
-    except Exception as e:
-        print(f"Error getting device config: {e}")
-        return jsonify({'success': False, 'message': 'Failed to get device config', 'error': str(e)}), 500
+            'success': False,
+            'message': 'Failed to fetch devices',
+            'error': str(e)
+        }), 500
 
-# Admin endpoints for managing devices and pairing requests
 
 @rpi_management_bp.route('/api/admin/rpi/pairing/requests', methods=['GET'])
 def get_pairing_requests():
-    """Get all pairing requests (admin)"""
+    """Get all pairing requests, optionally filtered by status"""
     try:
-        status_filter = request.args.get('status', 'pending')
+        status = request.args.get('status')
         
         query = PairingRequest.query
-        if status_filter != 'all':
-            query = query.filter_by(status=status_filter)
         
+        if status:
+            query = query.filter_by(status=status)
+        
+        # Order by created_at descending (newest first)
         requests = query.order_by(PairingRequest.created_at.desc()).all()
+        
+        # Filter out expired pending requests
+        valid_requests = []
+        for req in requests:
+            if req.status == 'pending' and req.is_expired():
+                req.status = 'expired'
+                db.session.commit()
+            valid_requests.append(req)
         
         return jsonify({
             'success': True,
-            'requests': [req.to_dict() for req in requests],
-            'count': len(requests)
+            'requests': [r.to_dict() for r in valid_requests],
+            'count': len(valid_requests)
         }), 200
         
     except Exception as e:
-        print(f"Error getting pairing requests: {e}")
-        return jsonify({'success': False, 'message': 'Failed to get pairing requests', 'error': str(e)}), 500
+        db.session.rollback()
+        print(f"Error fetching pairing requests: {e}")
+        return jsonify({
+            'success': False,
+            'message': 'Failed to fetch pairing requests',
+            'error': str(e)
+        }), 500
+
 
 @rpi_management_bp.route('/api/admin/rpi/pairing/approve', methods=['POST'])
-def approve_pairing_request():
-    """Approve a pairing request (admin)"""
+def approve_pairing():
+    """Approve a pairing request and create the device"""
     try:
         data = request.get_json()
         request_id = data.get('request_id')
-        admin_user = data.get('admin_user', 'admin')  # Should come from authentication
+        admin_user = data.get('admin_user', 'admin')
+        scanner_mode = data.get('scanner_mode', 'both')
         
         if not request_id:
-            return jsonify({'success': False, 'message': 'Request ID required'}), 400
+            return jsonify({
+                'success': False,
+                'message': 'Request ID is required'
+            }), 400
         
-        # Get the pairing request
         pairing_request = PairingRequest.query.get(request_id)
+        
         if not pairing_request:
-            return jsonify({'success': False, 'message': 'Pairing request not found'}), 404
+            return jsonify({
+                'success': False,
+                'message': 'Pairing request not found'
+            }), 404
         
         if pairing_request.status != 'pending':
-            return jsonify({'success': False, 'message': 'Request already processed'}), 400
+            return jsonify({
+                'success': False,
+                'message': f'Cannot approve request with status: {pairing_request.status}'
+            }), 400
         
         if pairing_request.is_expired():
-            return jsonify({'success': False, 'message': 'Request has expired'}), 400
+            pairing_request.status = 'expired'
+            db.session.commit()
+            return jsonify({
+                'success': False,
+                'message': 'Pairing request has expired'
+            }), 410
         
-        # Create or update device
-        device = RpiDevice.query.filter_by(device_id=pairing_request.device_id).first()
+        # Create the device
+        device = RpiDevice(
+            device_id=pairing_request.device_id,
+            device_name=pairing_request.device_name,
+            mac_address=pairing_request.mac_address,
+            ip_address=pairing_request.ip_address,
+            location=pairing_request.location,
+            is_paired=True,
+            is_enabled=True,
+            is_online=False,
+            scanner_mode=scanner_mode,
+            paired_at=datetime.utcnow(),
+            paired_by=admin_user,
+            config_data={
+                'default_page': 'time-in',
+                'display_mode': 'fullscreen',
+                'sound_enabled': True,
+                'auto_refresh': True
+            }
+        )
         
-        if not device:
-            device = RpiDevice(
-                device_id=pairing_request.device_id,
-                device_name=pairing_request.device_name,
-                mac_address=pairing_request.mac_address,
-                ip_address=pairing_request.ip_address,
-                location=pairing_request.location
-            )
-            db.session.add(device)
-        
-        # Update device pairing status
-        device.is_paired = True
-        device.paired_at = datetime.utcnow()
-        device.paired_by = admin_user
-        
-        # Update request status
+        # Update pairing request
         pairing_request.status = 'approved'
         pairing_request.reviewed_by = admin_user
         pairing_request.reviewed_at = datetime.utcnow()
         
+        db.session.add(device)
         db.session.commit()
         
         return jsonify({
             'success': True,
-            'message': 'Pairing request approved successfully',
+            'message': 'Pairing approved successfully',
             'device': device.to_dict()
         }), 200
         
     except Exception as e:
         db.session.rollback()
-        print(f"Error approving pairing request: {e}")
-        return jsonify({'success': False, 'message': 'Failed to approve pairing request', 'error': str(e)}), 500
+        print(f"Error approving pairing: {e}")
+        return jsonify({
+            'success': False,
+            'message': 'Failed to approve pairing',
+            'error': str(e)
+        }), 500
+
 
 @rpi_management_bp.route('/api/admin/rpi/pairing/reject', methods=['POST'])
-def reject_pairing_request():
-    """Reject a pairing request (admin)"""
+def reject_pairing():
+    """Reject a pairing request"""
     try:
         data = request.get_json()
         request_id = data.get('request_id')
@@ -315,141 +315,96 @@ def reject_pairing_request():
         admin_user = data.get('admin_user', 'admin')
         
         if not request_id:
-            return jsonify({'success': False, 'message': 'Request ID required'}), 400
+            return jsonify({
+                'success': False,
+                'message': 'Request ID is required'
+            }), 400
         
         pairing_request = PairingRequest.query.get(request_id)
+        
         if not pairing_request:
-            return jsonify({'success': False, 'message': 'Pairing request not found'}), 404
+            return jsonify({
+                'success': False,
+                'message': 'Pairing request not found'
+            }), 404
         
         if pairing_request.status != 'pending':
-            return jsonify({'success': False, 'message': 'Request already processed'}), 400
+            return jsonify({
+                'success': False,
+                'message': f'Cannot reject request with status: {pairing_request.status}'
+            }), 400
         
-        # Update request status
         pairing_request.status = 'rejected'
+        pairing_request.rejection_reason = reason
         pairing_request.reviewed_by = admin_user
         pairing_request.reviewed_at = datetime.utcnow()
-        pairing_request.rejection_reason = reason
         
         db.session.commit()
         
         return jsonify({
             'success': True,
-            'message': 'Pairing request rejected successfully'
+            'message': 'Pairing request rejected'
         }), 200
         
     except Exception as e:
         db.session.rollback()
-        print(f"Error rejecting pairing request: {e}")
-        return jsonify({'success': False, 'message': 'Failed to reject pairing request', 'error': str(e)}), 500
-
-@rpi_management_bp.route('/api/admin/rpi/devices', methods=['GET'])
-def get_devices():
-    """Get all paired devices (admin)"""
-    try:
-        devices = RpiDevice.query.filter_by(is_paired=True).order_by(RpiDevice.device_name).all()
-        
-        # Update online status based on recent heartbeats
-        for device in devices:
-            device.is_online = device.is_heartbeat_recent()
-        
-        db.session.commit()
-        
+        print(f"Error rejecting pairing: {e}")
         return jsonify({
-            'success': True,
-            'devices': [device.to_dict() for device in devices],
-            'count': len(devices)
-        }), 200
-        
-    except Exception as e:
-        print(f"Error getting devices: {e}")
-        return jsonify({'success': False, 'message': 'Failed to get devices', 'error': str(e)}), 500
+            'success': False,
+            'message': 'Failed to reject pairing',
+            'error': str(e)
+        }), 500
 
-@rpi_management_bp.route('/api/admin/rpi/devices/<device_id>/config', methods=['PUT'])
-def update_device_config():
-    """Update device configuration (admin)"""
-    try:
-        device_id = request.view_args['device_id']
-        data = request.get_json()
-        
-        device = RpiDevice.query.filter_by(device_id=device_id).first()
-        if not device:
-            return jsonify({'success': False, 'message': 'Device not found'}), 404
-        
-        # Update basic settings
-        if 'device_name' in data:
-            device.device_name = data['device_name']
-        if 'location' in data:
-            device.location = data['location']
-        if 'scanner_mode' in data:
-            device.scanner_mode = data['scanner_mode']
-        if 'is_enabled' in data:
-            device.is_enabled = data['is_enabled']
-        
-        # Update custom configuration
-        if 'config' in data:
-            device.config_data = data['config']
-        
-        device.updated_at = datetime.utcnow()
-        db.session.commit()
-        
-        return jsonify({
-            'success': True,
-            'message': 'Device configuration updated successfully',
-            'device': device.to_dict()
-        }), 200
-        
-    except Exception as e:
-        db.session.rollback()
-        print(f"Error updating device config: {e}")
-        return jsonify({'success': False, 'message': 'Failed to update device config', 'error': str(e)}), 500
 
 @rpi_management_bp.route('/api/admin/rpi/devices/<device_id>/enable', methods=['POST'])
-def enable_device():
-    """Enable/disable device (admin)"""
+def toggle_device(device_id):
+    """Enable or disable a device"""
     try:
-        device_id = request.view_args['device_id']
         data = request.get_json()
         enabled = data.get('enabled', True)
         
         device = RpiDevice.query.filter_by(device_id=device_id).first()
+        
         if not device:
-            return jsonify({'success': False, 'message': 'Device not found'}), 404
+            return jsonify({
+                'success': False,
+                'message': 'Device not found'
+            }), 404
         
         device.is_enabled = enabled
         device.updated_at = datetime.utcnow()
         db.session.commit()
         
-        action = 'enabled' if enabled else 'disabled'
         return jsonify({
             'success': True,
-            'message': f'Device {action} successfully',
+            'message': f'Device {"enabled" if enabled else "disabled"} successfully',
             'device': device.to_dict()
         }), 200
         
     except Exception as e:
         db.session.rollback()
-        print(f"Error enabling/disabling device: {e}")
-        return jsonify({'success': False, 'message': 'Failed to update device status', 'error': str(e)}), 500
+        print(f"Error toggling device: {e}")
+        return jsonify({
+            'success': False,
+            'message': 'Failed to update device status',
+            'error': str(e)
+        }), 500
+
 
 @rpi_management_bp.route('/api/admin/rpi/devices/<device_id>/unpair', methods=['POST'])
-def unpair_device():
-    """Unpair a device (admin)"""
+def unpair_device(device_id):
+    """Unpair a device"""
     try:
-        device_id = request.view_args['device_id']
-        
         device = RpiDevice.query.filter_by(device_id=device_id).first()
+        
         if not device:
-            return jsonify({'success': False, 'message': 'Device not found'}), 404
+            return jsonify({
+                'success': False,
+                'message': 'Device not found'
+            }), 404
         
-        # Option 1: Just mark as unpaired
-        device.is_paired = False
-        device.is_online = False
-        device.last_heartbeat = None
-        device.updated_at = datetime.utcnow()
-        
-        # Option 2: Delete the device entirely
-        # db.session.delete(device)
-        
+        # Delete the device
+        db.session.delete(device)
         db.session.commit()
         
         return jsonify({
@@ -460,4 +415,145 @@ def unpair_device():
     except Exception as e:
         db.session.rollback()
         print(f"Error unpairing device: {e}")
-        return jsonify({'success': False, 'message': 'Failed to unpair device', 'error': str(e)}), 500
+        return jsonify({
+            'success': False,
+            'message': 'Failed to unpair device',
+            'error': str(e)
+        }), 500
+
+
+@rpi_management_bp.route('/api/admin/rpi/devices/<device_id>/config', methods=['PUT'])
+def update_device_config(device_id):
+    """Update device configuration"""
+    try:
+        data = request.get_json()
+        
+        device = RpiDevice.query.filter_by(device_id=device_id).first()
+        
+        if not device:
+            return jsonify({
+                'success': False,
+                'message': 'Device not found'
+            }), 404
+        
+        # Update fields
+        if 'device_name' in data:
+            device.device_name = data['device_name']
+        if 'location' in data:
+            device.location = data['location']
+        if 'scanner_mode' in data:
+            device.scanner_mode = data['scanner_mode']
+        if 'is_enabled' in data:
+            device.is_enabled = data['is_enabled']
+        if 'config' in data:
+            device.config_data = {**(device.config_data or {}), **data['config']}
+        
+        device.updated_at = datetime.utcnow()
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': 'Device configuration updated',
+            'device': device.to_dict()
+        }), 200
+        
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error updating device config: {e}")
+        return jsonify({
+            'success': False,
+            'message': 'Failed to update device configuration',
+            'error': str(e)
+        }), 500
+
+
+@rpi_management_bp.route('/api/admin/rpi/devices/<device_id>', methods=['GET'])
+def get_device(device_id):
+    """Get a specific device by ID"""
+    try:
+        device = RpiDevice.query.filter_by(device_id=device_id).first()
+        
+        if not device:
+            return jsonify({
+                'success': False,
+                'message': 'Device not found'
+            }), 404
+        
+        # Update online status
+        device.is_online = device.is_heartbeat_recent(timeout_minutes=5)
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'device': device.to_dict()
+        }), 200
+        
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error fetching device: {e}")
+        return jsonify({
+            'success': False,
+            'message': 'Failed to fetch device',
+            'error': str(e)
+        }), 500
+
+
+# ==================== Device Heartbeat Endpoint ====================
+
+@rpi_management_bp.route('/api/rpi/heartbeat', methods=['POST'])
+def device_heartbeat():
+    """Receive heartbeat from a device to track online status"""
+    try:
+        data = request.get_json()
+        device_id = data.get('device_id')
+        
+        if not device_id:
+            return jsonify({
+                'success': False,
+                'message': 'Device ID is required'
+            }), 400
+        
+        device = RpiDevice.query.filter_by(device_id=device_id).first()
+        
+        if not device:
+            return jsonify({
+                'success': False,
+                'message': 'Device not found',
+                'registered': False
+            }), 404
+        
+        if not device.is_paired:
+            return jsonify({
+                'success': False,
+                'message': 'Device not paired',
+                'paired': False
+            }), 403
+        
+        # Update heartbeat
+        device.last_heartbeat = datetime.utcnow()
+        device.is_online = True
+        
+        # Update IP if changed
+        ip_address = request.environ.get('HTTP_X_FORWARDED_FOR', request.environ.get('REMOTE_ADDR', ''))
+        if ip_address:
+            device.ip_address = ip_address
+        
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': 'Heartbeat received',
+            'device': device.to_dict(),
+            'config': device.config_data or {},
+            'enabled': device.is_enabled,
+            'scanner_mode': device.scanner_mode
+        }), 200
+        
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error processing heartbeat: {e}")
+        return jsonify({
+            'success': False,
+            'message': 'Failed to process heartbeat',
+            'error': str(e)
+        }), 500

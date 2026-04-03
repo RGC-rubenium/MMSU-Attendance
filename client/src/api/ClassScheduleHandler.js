@@ -1,6 +1,6 @@
 class ClassScheduleHandler {
     constructor() {
-        this.baseURL = 'http://localhost:5000/api';
+        this.baseURL = '/api';
     }
 
     // Helper method to handle API responses

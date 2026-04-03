@@ -5,8 +5,6 @@
 
 import AuthToken from '../Utils/AuthToken';
 
-const API_BASE = 'http://localhost:5000';
-
 export default class AddFaculty {
     /**
      * Add a new faculty member with optional profile image
@@ -15,7 +13,7 @@ export default class AddFaculty {
      */
     static async addFaculty(formData) {
         try {
-            const response = await AuthToken.fetchWithAuth(`${API_BASE}/api/faculty`, {
+            const response = await AuthToken.fetchWithAuth('/api/faculty', {
                 method: 'POST',
                 body: formData,
                 // Don't set Content-Type header, let the browser set it with boundary for multipart/form-data
@@ -45,7 +43,7 @@ export default class AddFaculty {
                 return true;
             }
             
-            const response = await AuthToken.fetchWithAuth(`${API_BASE}/api/faculty/validate-uid`, {
+            const response = await AuthToken.fetchWithAuth('/api/faculty/validate-uid', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -78,7 +76,7 @@ export default class AddFaculty {
                 return true;
             }
             
-            const response = await AuthToken.fetchWithAuth(`${API_BASE}/api/faculty/validate-id`, {
+            const response = await AuthToken.fetchWithAuth('/api/faculty/validate-id', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -110,7 +108,7 @@ export default class AddFaculty {
             const formData = new FormData();
             formData.append('excel_file', excelFile);
             
-            const response = await AuthToken.fetchWithAuth(`${API_BASE}/api/faculty/bulk-import`, {
+            const response = await AuthToken.fetchWithAuth('/api/faculty/bulk-import', {
                 method: 'POST',
                 body: formData,
                 // Don't set Content-Type header, let the browser set it with boundary

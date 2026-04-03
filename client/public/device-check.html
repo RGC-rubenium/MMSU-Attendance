@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Device Check - MMSU Attendance System</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            overflow: hidden;
+        }
+        
+        .container {
+            text-align: center;
+            padding: 40px;
+            max-width: 600px;
+            width: 90%;
+        }
+        
+        .logo {
+            font-size: 3rem;
+            margin-bottom: 20px;
+        }
+        
+        h1 {
+            font-size: 2rem;
+            margin-bottom: 10px;
+            font-weight: 300;
+        }
+        
+        .subtitle {
+            font-size: 1.1rem;
+            opacity: 0.8;
+            margin-bottom: 40px;
+        }
+        
+        /* Status Card */
+        .status-card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 30px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .status-icon {
+            font-size: 4rem;
+            margin-bottom: 20px;
+        }
+        
+        .status-text {
+            font-size: 1.3rem;
+            margin-bottom: 10px;
+        }
+        
+        .status-detail {
+            font-size: 1rem;
+            opacity: 0.8;
+        }
+        
+        /* Pairing Code Display */
+        .pairing-code-container {
+            background: rgba(79, 172, 254, 0.2);
+            border: 2px dashed #4facfe;
+            border-radius: 15px;
+            padding: 25px;
+            margin: 25px 0;
+        }
+        
+        .pairing-code-label {
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            opacity: 0.8;
+            margin-bottom: 10px;
+        }
+        
+        .pairing-code {
+            font-size: 3rem;
+            font-weight: bold;
+            letter-spacing: 0.2em;
+            color: #4facfe;
+            font-family: 'Courier New', monospace;
+        }
+        
+        .pairing-instructions {
+            font-size: 0.95rem;
+            opacity: 0.9;
+            margin-top: 15px;
+            line-height: 1.6;
+        }
+        
+        /* Device Info */
+        .device-info {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 20px;
+            font-size: 0.9rem;
+            text-align: left;
+        }
+        
+        .device-info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 5px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .device-info-row:last-child {
+            border-bottom: none;
+        }
+        
+        .device-info-label {
+            opacity: 0.7;
+        }
+        
+        .device-info-value {
+            font-family: monospace;
+            color: #4facfe;
+        }
+        
+        /* Loading Spinner */
+        .spinner {
+            width: 60px;
+            height: 60px;
+            border: 4px solid rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            border-top-color: #4facfe;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        /* Progress Bar */
+        .progress-container {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            height: 8px;
+            margin-top: 20px;
+            overflow: hidden;
+        }
+        
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #4facfe, #00f2fe);
+            border-radius: 10px;
+            animation: progress 2s ease-in-out infinite;
+        }
+        
+        @keyframes progress {
+            0% { width: 0%; }
+            50% { width: 100%; }
+            100% { width: 0%; }
+        }
+        
+        /* Buttons */
+        .btn {
+            padding: 15px 30px;
+            font-size: 1rem;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            margin: 5px;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(79, 172, 254, 0.3);
+        }
+        
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+        
+        /* Status Colors */
+        .status-checking .status-icon { color: #4facfe; }
+        .status-pending .status-icon { color: #ffc107; }
+        .status-approved .status-icon { color: #28a745; }
+        .status-rejected .status-icon { color: #dc3545; }
+        .status-disabled .status-icon { color: #6c757d; }
+        .status-error .status-icon { color: #dc3545; }
+        
+        /* Hidden */
+        .hidden { display: none !important; }
+        
+        /* Auto-refresh indicator */
+        .refresh-indicator {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            font-size: 0.8rem;
+            opacity: 0.6;
+        }
+        
+        /* Clock */
+        .clock {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            font-size: 1.2rem;
+            opacity: 0.6;
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body>
+    <div class="refresh-indicator" id="refreshIndicator">
+        Auto-refresh in <span id="countdown">30</span>s
+    </div>
+    
+    <div class="clock" id="clock"></div>
+    
+    <div class="container">
+        <div class="logo">📱</div>
+        <h1>MMSU Attendance System</h1>
+        <p class="subtitle">Scanner Device</p>
+        
+        <!-- Checking Status -->
+        <div class="status-card status-checking" id="statusChecking">
+            <div class="spinner"></div>
+            <div class="status-text">Checking Device Status...</div>
+            <div class="status-detail">Please wait while we verify your device</div>
+            <div class="progress-container">
+                <div class="progress-bar"></div>
+            </div>
+        </div>
+        
+        <!-- Registration Required -->
+        <div class="status-card status-pending hidden" id="statusRegister">
+            <div class="status-icon">📝</div>
+            <div class="status-text">Device Registration Required</div>
+            <div class="status-detail">This device needs to be registered before use</div>
+            <button class="btn btn-primary" onclick="goToRegistration()">Register Device</button>
+        </div>
+        
+        <!-- Pending Approval -->
+        <div class="status-card status-pending hidden" id="statusPending">
+            <div class="status-icon">⏳</div>
+            <div class="status-text">Awaiting Admin Approval</div>
+            <div class="status-detail">Your device registration is being reviewed</div>
+            
+            <div class="pairing-code-container">
+                <div class="pairing-code-label">Your Pairing Code</div>
+                <div class="pairing-code" id="pairingCodeDisplay">------</div>
+                <div class="pairing-instructions">
+                    Share this code with an administrator to approve your device.
+                </div>
+            </div>
+            
+            <div class="device-info">
+                <div class="device-info-row">
+                    <span class="device-info-label">Device ID:</span>
+                    <span class="device-info-value" id="deviceIdDisplay">-</span>
+                </div>
+                <div class="device-info-row">
+                    <span class="device-info-label">Status:</span>
+                    <span class="device-info-value">Pending Approval</span>
+                </div>
+            </div>
+            
+            <button class="btn btn-secondary" onclick="checkStatus()" style="margin-top: 20px;">
+                Refresh Status
+            </button>
+        </div>
+        
+        <!-- Device Disabled -->
+        <div class="status-card status-disabled hidden" id="statusDisabled">
+            <div class="status-icon">🔒</div>
+            <div class="status-text">Device Disabled</div>
+            <div class="status-detail">This device has been disabled by an administrator</div>
+            <p style="margin-top: 20px; opacity: 0.8;">
+                Please contact the system administrator for assistance.
+            </p>
+            <button class="btn btn-secondary" onclick="checkStatus()" style="margin-top: 20px;">
+                Check Again
+            </button>
+        </div>
+        
+        <!-- Device Rejected -->
+        <div class="status-card status-rejected hidden" id="statusRejected">
+            <div class="status-icon">❌</div>
+            <div class="status-text">Registration Rejected</div>
+            <div class="status-detail" id="rejectionReason">Your device registration was not approved</div>
+            <button class="btn btn-primary" onclick="resetAndRegister()" style="margin-top: 20px;">
+                Submit New Request
+            </button>
+        </div>
+        
+        <!-- Error -->
+        <div class="status-card status-error hidden" id="statusError">
+            <div class="status-icon">⚠️</div>
+            <div class="status-text">Connection Error</div>
+            <div class="status-detail" id="errorMessage">Unable to connect to server</div>
+            <button class="btn btn-primary" onclick="checkStatus()" style="margin-top: 20px;">
+                Retry Connection
+            </button>
+        </div>
+        
+        <!-- Approved - Redirecting -->
+        <div class="status-card status-approved hidden" id="statusApproved">
+            <div class="status-icon">✅</div>
+            <div class="status-text">Device Approved!</div>
+            <div class="status-detail">Redirecting to scanner...</div>
+            <div class="progress-container">
+                <div class="progress-bar"></div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Configuration
+        const CONFIG = {
+            checkInterval: 10000,  // Check status every 10 seconds
+            redirectDelay: 2000,   // Delay before redirecting after approval
+        };
+        
+        // State
+        let deviceId = localStorage.getItem('mmsu_device_id');
+        let pairingCode = localStorage.getItem('mmsu_pairing_code');
+        let countdownValue = 30;
+        let countdownInterval = null;
+        
+        // DOM Elements
+        const statusSections = {
+            checking: document.getElementById('statusChecking'),
+            register: document.getElementById('statusRegister'),
+            pending: document.getElementById('statusPending'),
+            disabled: document.getElementById('statusDisabled'),
+            rejected: document.getElementById('statusRejected'),
+            error: document.getElementById('statusError'),
+            approved: document.getElementById('statusApproved')
+        };
+        
+        function hideAllStatuses() {
+            Object.values(statusSections).forEach(section => {
+                section.classList.add('hidden');
+            });
+        }
+        
+        function showStatus(status) {
+            hideAllStatuses();
+            if (statusSections[status]) {
+                statusSections[status].classList.remove('hidden');
+            }
+        }
+        
+        function updateClock() {
+            const now = new Date();
+            document.getElementById('clock').textContent = now.toLocaleTimeString();
+        }
+        
+        function startCountdown() {
+            countdownValue = 30;
+            document.getElementById('countdown').textContent = countdownValue;
+            
+            if (countdownInterval) clearInterval(countdownInterval);
+            
+            countdownInterval = setInterval(() => {
+                countdownValue--;
+                document.getElementById('countdown').textContent = countdownValue;
+                
+                if (countdownValue <= 0) {
+                    countdownValue = 30;
+                    checkStatus();
+                }
+            }, 1000);
+        }
+        
+        async function checkStatus() {
+            showStatus('checking');
+            startCountdown();
+            
+            try {
+                // First check if we have a device ID
+                if (!deviceId) {
+                    // Need to register
+                    showStatus('register');
+                    return;
+                }
+                
+                // Check eligibility
+                const response = await fetch(`/api/device/check-eligibility?device_id=${deviceId}`);
+                const data = await response.json();
+                
+                if (data.eligible) {
+                    // Device is approved and eligible
+                    showStatus('approved');
+                    
+                    // Redirect to scanner
+                    setTimeout(() => {
+                        const redirectUrl = data.redirect || '/scanner/time-in';
+                        window.location.href = `${redirectUrl}?device_id=${deviceId}`;
+                    }, CONFIG.redirectDelay);
+                    
+                } else {
+                    // Handle different reasons
+                    switch (data.reason) {
+                        case 'no_device_id':
+                        case 'not_registered':
+                            showStatus('register');
+                            break;
+                            
+                        case 'pending_approval':
+                            showStatus('pending');
+                            document.getElementById('pairingCodeDisplay').textContent = pairingCode || data.pairing_code || '------';
+                            document.getElementById('deviceIdDisplay').textContent = deviceId;
+                            break;
+                            
+                        case 'disabled':
+                            showStatus('disabled');
+                            break;
+                            
+                        case 'not_paired':
+                            // Check if there's a pending request
+                            const statusResponse = await fetch(`/api/device/status/${deviceId}`);
+                            const statusData = await statusResponse.json();
+                            
+                            if (statusData.status === 'pending') {
+                                showStatus('pending');
+                                document.getElementById('pairingCodeDisplay').textContent = statusData.pairing_code || pairingCode || '------';
+                                document.getElementById('deviceIdDisplay').textContent = deviceId;
+                            } else if (statusData.status === 'rejected') {
+                                showStatus('rejected');
+                                document.getElementById('rejectionReason').textContent = 
+                                    statusData.reason || 'Your device registration was not approved';
+                            } else {
+                                showStatus('register');
+                            }
+                            break;
+                            
+                        default:
+                            showStatus('error');
+                            document.getElementById('errorMessage').textContent = data.message || 'Unknown error';
+                    }
+                }
+                
+            } catch (error) {
+                console.error('Error checking status:', error);
+                showStatus('error');
+                document.getElementById('errorMessage').textContent = 
+                    'Unable to connect to server. Please check your network connection.';
+            }
+        }
+        
+        function goToRegistration() {
+            window.location.href = '/pairing';
+        }
+        
+        function resetAndRegister() {
+            localStorage.removeItem('mmsu_device_id');
+            localStorage.removeItem('mmsu_pairing_code');
+            deviceId = null;
+            pairingCode = null;
+            window.location.href = '/pairing';
+        }
+        
+        // Get device ID from URL if provided
+        function getDeviceIdFromUrl() {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get('device_id');
+        }
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            // Check for device ID in URL
+            const urlDeviceId = getDeviceIdFromUrl();
+            if (urlDeviceId) {
+                deviceId = urlDeviceId;
+                localStorage.setItem('mmsu_device_id', deviceId);
+            }
+            
+            // Update clock every second
+            updateClock();
+            setInterval(updateClock, 1000);
+            
+            // Start checking status
+            checkStatus();
+        });
+    </script>
+</body>
+</html>

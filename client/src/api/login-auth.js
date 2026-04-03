@@ -3,14 +3,12 @@
 // stores returned JWT in localStorage via `AuthToken`, and returns parsed JSON.
 import * as AuthToken from '../Utils/AuthToken'
 
-const API_BASE = 'http://localhost:5000'
-
 export async function login({ email, password }) {
 	if (!email || !password) {
 		throw new Error('Email and password are required')
 	}
 
-	const url = `${API_BASE.replace(/\/$/, '')}/api/login`
+	const url = '/api/login'
 
 	const res = await fetch(url, {
 		method: 'POST',

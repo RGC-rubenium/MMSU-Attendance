@@ -3,8 +3,6 @@
  * Handles student creation with profile image upload
  */
 
-const API_BASE = 'http://localhost:5000';
-
 class AddStudentHandler {
     /**
      * Add a new student with optional profile image
@@ -28,7 +26,7 @@ class AddStudentHandler {
                 formData.append('profile_image', profileImage);
             }
             
-            const response = await fetch(`${API_BASE}/api/students`, {
+            const response = await fetch('/api/students', {
                 method: 'POST',
                 body: formData,
             });
@@ -57,7 +55,7 @@ class AddStudentHandler {
                 return true;
             }
             
-            const response = await fetch(`${API_BASE}/api/students/validate-id`, {
+            const response = await fetch('/api/students/validate-id', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -203,7 +201,7 @@ AddStudentHandler.prototype.bulkImportStudents = async function(excelFile) {
         const formData = new FormData();
         formData.append('excel_file', excelFile);
         
-        const response = await fetch(`${API_BASE}/api/students/bulk-import`, {
+        const response = await fetch('/api/students/bulk-import', {
             method: 'POST',
             body: formData,
             // Don't set Content-Type header, let the browser set it with boundary
