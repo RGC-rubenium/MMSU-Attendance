@@ -1,6 +1,8 @@
 """
 RPI Device Management API
 Handles device registration, pairing, approval, and configuration
+Includes SSH-based remote management (reboot, shutdown, time sync)
+Server-side scheduled auto-shutdown using SSH
 """
 
 from flask import Blueprint, request, jsonify
@@ -10,8 +12,176 @@ from datetime import datetime, timedelta
 import uuid
 import random
 import string
+import threading
+import time as time_module
+
+# SSH functionality using paramiko
+try:
+    import paramiko
+    PARAMIKO_AVAILABLE = True
+except ImportError:
+    PARAMIKO_AVAILABLE = False
+    print("Warning: paramiko not installed. SSH remote management disabled.")
 
 rpi_management_bp = Blueprint('rpi_management', __name__)
+
+# Global scheduler thread reference
+_scheduler_thread = None
+_scheduler_running = False
+
+
+# ==================== SSH Helper Functions ====================
+
+def execute_ssh_command(ip_address, username, password, command, port=22, timeout=30):
+    """Execute SSH command on a remote device"""
+    if not PARAMIKO_AVAILABLE:
+        return {'success': False, 'error': 'paramiko not installed'}
+    
+    try:
+        client = paramiko.SSHClient()
+        client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        client.connect(
+            hostname=ip_address,
+            port=port,
+            username=username,
+            password=password,
+            timeout=timeout,
+            allow_agent=False,
+            look_for_keys=False
+        )
+        
+        stdin, stdout, stderr = client.exec_command(command, timeout=timeout)
+        output = stdout.read().decode('utf-8').strip()
+        error = stderr.read().decode('utf-8').strip()
+        exit_code = stdout.channel.recv_exit_status()
+        
+        client.close()
+        
+        return {
+            'success': exit_code == 0,
+            'output': output,
+            'error': error,
+            'exit_code': exit_code
+        }
+    except paramiko.AuthenticationException:
+        return {'success': False, 'error': 'Authentication failed. Check username/password.'}
+    except paramiko.SSHException as e:
+        return {'success': False, 'error': f'SSH error: {str(e)}'}
+    except Exception as e:
+        return {'success': False, 'error': str(e)}
+
+
+def execute_ssh_command_async(ip_address, username, password, command, port=22):
+    """Execute SSH command asynchronously (for reboot/shutdown which close connection)"""
+    if not PARAMIKO_AVAILABLE:
+        return {'success': False, 'error': 'paramiko not installed'}
+    
+    try:
+        client = paramiko.SSHClient()
+        client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        client.connect(
+            hostname=ip_address,
+            port=port,
+            username=username,
+            password=password,
+            timeout=10,
+            allow_agent=False,
+            look_for_keys=False
+        )
+        
+        # Execute command without waiting for response (for reboot/shutdown)
+        client.exec_command(command, timeout=5)
+        
+        # Brief delay to allow command to start
+        time_module.sleep(0.5)
+        
+        client.close()
+        return {'success': True, 'output': 'Command sent successfully'}
+    except paramiko.AuthenticationException:
+        return {'success': False, 'error': 'Authentication failed. Check username/password.'}
+    except paramiko.SSHException as e:
+        return {'success': False, 'error': f'SSH error: {str(e)}'}
+    except Exception as e:
+        # Connection might close during reboot/shutdown - this is expected
+        if 'reboot' in command.lower() or 'shutdown' in command.lower() or 'poweroff' in command.lower():
+            return {'success': True, 'output': 'Command sent (connection closed as expected)'}
+        return {'success': False, 'error': str(e)}
+
+
+# ==================== Auto-Shutdown Scheduler ====================
+
+def check_and_execute_scheduled_shutdowns(app):
+    """Check all devices for scheduled shutdowns and execute via SSH"""
+    global _scheduler_running
+    
+    while _scheduler_running:
+        try:
+            with app.app_context():
+                current_time = datetime.now().strftime('%H:%M')
+                
+                # Find devices with auto-shutdown enabled at current time
+                devices = RpiDevice.query.filter_by(
+                    is_paired=True,
+                    auto_shutdown_enabled=True,
+                    auto_shutdown_time=current_time
+                ).all()
+                
+                for device in devices:
+                    # Only shutdown if device has SSH credentials and IP
+                    if device.ssh_username and device.ssh_password and device.ip_address:
+                        print(f"[Auto-Shutdown] Executing scheduled shutdown for {device.device_name} at {current_time}")
+                        
+                        result = execute_ssh_command_async(
+                            device.ip_address,
+                            device.ssh_username,
+                            device.ssh_password,
+                            'sudo shutdown -h now',
+                            device.ssh_port or 22
+                        )
+                        
+                        if result['success']:
+                            device.pending_command = 'scheduled_shutdown'
+                            device.command_issued_at = datetime.utcnow()
+                            device.command_issued_by = 'auto_scheduler'
+                            print(f"[Auto-Shutdown] Successfully sent shutdown to {device.device_name}")
+                        else:
+                            print(f"[Auto-Shutdown] Failed to shutdown {device.device_name}: {result.get('error')}")
+                    else:
+                        print(f"[Auto-Shutdown] Skipping {device.device_name} - no SSH credentials configured")
+                
+                if devices:
+                    db.session.commit()
+                    
+        except Exception as e:
+            print(f"[Auto-Shutdown] Scheduler error: {e}")
+        
+        # Sleep for 60 seconds before next check
+        time_module.sleep(60)
+
+
+def start_auto_shutdown_scheduler(app):
+    """Start the auto-shutdown scheduler thread"""
+    global _scheduler_thread, _scheduler_running
+    
+    if _scheduler_thread is not None and _scheduler_thread.is_alive():
+        print("[Auto-Shutdown] Scheduler already running")
+        return
+    
+    _scheduler_running = True
+    _scheduler_thread = threading.Thread(
+        target=check_and_execute_scheduled_shutdowns,
+        args=(app,),
+        daemon=True
+    )
+    _scheduler_thread.start()
+    print("[Auto-Shutdown] Scheduler started")
+
+
+def stop_auto_shutdown_scheduler():
+    """Stop the auto-shutdown scheduler thread"""
+    global _scheduler_running
+    _scheduler_running = False
+    print("[Auto-Shutdown] Scheduler stopped")
 
 
 def generate_device_id():
@@ -472,6 +642,14 @@ def update_device_config(device_id):
             else:
                 device.auto_shutdown_time = None
         
+        # SSH credentials
+        if 'ssh_username' in data:
+            device.ssh_username = data['ssh_username'] if data['ssh_username'] else None
+        if 'ssh_password' in data:
+            device.ssh_password = data['ssh_password'] if data['ssh_password'] else None
+        if 'ssh_port' in data:
+            device.ssh_port = int(data['ssh_port']) if data['ssh_port'] else 22
+        
         device.updated_at = datetime.utcnow()
         db.session.commit()
         
@@ -634,5 +812,485 @@ def get_device_stats():
         return jsonify({
             'success': False,
             'message': 'Failed to fetch statistics',
+            'error': str(e)
+        }), 500
+
+
+# ==================== SSH Remote Management Endpoints ====================
+
+@rpi_management_bp.route('/api/admin/rpi/devices/<device_id>/ssh/credentials', methods=['PUT'])
+def update_ssh_credentials(device_id):
+    """Update SSH credentials for a device"""
+    try:
+        data = request.get_json()
+        
+        device = RpiDevice.query.filter_by(device_id=device_id).first()
+        
+        if not device:
+            return jsonify({
+                'success': False,
+                'message': 'Device not found'
+            }), 404
+        
+        # Update SSH credentials
+        if 'ssh_username' in data:
+            device.ssh_username = data['ssh_username'] if data['ssh_username'] else None
+        if 'ssh_password' in data:
+            device.ssh_password = data['ssh_password'] if data['ssh_password'] else None
+        if 'ssh_port' in data:
+            device.ssh_port = int(data['ssh_port']) if data['ssh_port'] else 22
+        
+        device.updated_at = datetime.utcnow()
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': 'SSH credentials updated',
+            'has_ssh_credentials': bool(device.ssh_username and device.ssh_password)
+        }), 200
+        
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error updating SSH credentials: {e}")
+        return jsonify({
+            'success': False,
+            'message': 'Failed to update SSH credentials',
+            'error': str(e)
+        }), 500
+
+
+@rpi_management_bp.route('/api/admin/rpi/devices/<device_id>/ssh/reboot', methods=['POST'])
+def reboot_device(device_id):
+    """Reboot a device via SSH"""
+    try:
+        if not PARAMIKO_AVAILABLE:
+            return jsonify({
+                'success': False,
+                'message': 'SSH functionality not available. Install paramiko.'
+            }), 503
+        
+        device = RpiDevice.query.filter_by(device_id=device_id).first()
+        
+        if not device:
+            return jsonify({
+                'success': False,
+                'message': 'Device not found'
+            }), 404
+        
+        if not device.ip_address:
+            return jsonify({
+                'success': False,
+                'message': 'Device IP address not available'
+            }), 400
+        
+        if not device.ssh_username or not device.ssh_password:
+            return jsonify({
+                'success': False,
+                'message': 'SSH credentials not configured for this device'
+            }), 400
+        
+        # Execute reboot command
+        result = execute_ssh_command_async(
+            device.ip_address,
+            device.ssh_username,
+            device.ssh_password,
+            'sudo reboot',
+            device.ssh_port or 22
+        )
+        
+        if result['success']:
+            device.pending_command = 'reboot'
+            device.command_issued_at = datetime.utcnow()
+            device.command_issued_by = request.get_json().get('admin_user', 'admin')
+            db.session.commit()
+        
+        return jsonify({
+            'success': result['success'],
+            'message': 'Reboot command sent' if result['success'] else result.get('error', 'Failed to send reboot command'),
+            'device_id': device_id
+        }), 200 if result['success'] else 500
+        
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error rebooting device: {e}")
+        return jsonify({
+            'success': False,
+            'message': 'Failed to reboot device',
+            'error': str(e)
+        }), 500
+
+
+@rpi_management_bp.route('/api/admin/rpi/devices/<device_id>/ssh/shutdown', methods=['POST'])
+def shutdown_device(device_id):
+    """Shutdown a device via SSH"""
+    try:
+        if not PARAMIKO_AVAILABLE:
+            return jsonify({
+                'success': False,
+                'message': 'SSH functionality not available. Install paramiko.'
+            }), 503
+        
+        device = RpiDevice.query.filter_by(device_id=device_id).first()
+        
+        if not device:
+            return jsonify({
+                'success': False,
+                'message': 'Device not found'
+            }), 404
+        
+        if not device.ip_address:
+            return jsonify({
+                'success': False,
+                'message': 'Device IP address not available'
+            }), 400
+        
+        if not device.ssh_username or not device.ssh_password:
+            return jsonify({
+                'success': False,
+                'message': 'SSH credentials not configured for this device'
+            }), 400
+        
+        # Execute shutdown command
+        result = execute_ssh_command_async(
+            device.ip_address,
+            device.ssh_username,
+            device.ssh_password,
+            'sudo shutdown -h now',
+            device.ssh_port or 22
+        )
+        
+        if result['success']:
+            device.pending_command = 'shutdown'
+            device.command_issued_at = datetime.utcnow()
+            device.command_issued_by = request.get_json().get('admin_user', 'admin')
+            db.session.commit()
+        
+        return jsonify({
+            'success': result['success'],
+            'message': 'Shutdown command sent' if result['success'] else result.get('error', 'Failed to send shutdown command'),
+            'device_id': device_id
+        }), 200 if result['success'] else 500
+        
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error shutting down device: {e}")
+        return jsonify({
+            'success': False,
+            'message': 'Failed to shutdown device',
+            'error': str(e)
+        }), 500
+
+
+@rpi_management_bp.route('/api/admin/rpi/devices/<device_id>/ssh/sync-time', methods=['POST'])
+def sync_device_time(device_id):
+    """Sync server time to device via SSH"""
+    try:
+        if not PARAMIKO_AVAILABLE:
+            return jsonify({
+                'success': False,
+                'message': 'SSH functionality not available. Install paramiko.'
+            }), 503
+        
+        device = RpiDevice.query.filter_by(device_id=device_id).first()
+        
+        if not device:
+            return jsonify({
+                'success': False,
+                'message': 'Device not found'
+            }), 404
+        
+        if not device.ip_address:
+            return jsonify({
+                'success': False,
+                'message': 'Device IP address not available'
+            }), 400
+        
+        if not device.ssh_username or not device.ssh_password:
+            return jsonify({
+                'success': False,
+                'message': 'SSH credentials not configured for this device'
+            }), 400
+        
+        # Get current server time and sync to device
+        server_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        
+        # Set system time on device using timedatectl or date command
+        sync_command = f'sudo timedatectl set-time "{server_time}" || sudo date -s "{server_time}"'
+        
+        result = execute_ssh_command(
+            device.ip_address,
+            device.ssh_username,
+            device.ssh_password,
+            sync_command,
+            device.ssh_port or 22
+        )
+        
+        return jsonify({
+            'success': result['success'],
+            'message': f'Time synced to {server_time}' if result['success'] else result.get('error', 'Failed to sync time'),
+            'server_time': server_time,
+            'device_id': device_id
+        }), 200 if result['success'] else 500
+        
+    except Exception as e:
+        print(f"Error syncing device time: {e}")
+        return jsonify({
+            'success': False,
+            'message': 'Failed to sync device time',
+            'error': str(e)
+        }), 500
+
+
+# ==================== Bulk SSH Operations ====================
+
+@rpi_management_bp.route('/api/admin/rpi/bulk/reboot', methods=['POST'])
+def bulk_reboot_devices():
+    """Reboot multiple devices via SSH"""
+    try:
+        if not PARAMIKO_AVAILABLE:
+            return jsonify({
+                'success': False,
+                'message': 'SSH functionality not available. Install paramiko.'
+            }), 503
+        
+        data = request.get_json()
+        device_ids = data.get('device_ids', [])
+        admin_user = data.get('admin_user', 'admin')
+        
+        if not device_ids:
+            return jsonify({
+                'success': False,
+                'message': 'No device IDs provided'
+            }), 400
+        
+        results = []
+        success_count = 0
+        skip_count = 0
+        fail_count = 0
+        
+        for device_id in device_ids:
+            device = RpiDevice.query.filter_by(device_id=device_id).first()
+            
+            if not device:
+                results.append({'device_id': device_id, 'status': 'not_found', 'message': 'Device not found'})
+                fail_count += 1
+                continue
+            
+            if not device.ip_address:
+                results.append({'device_id': device_id, 'status': 'skipped', 'message': 'No IP address'})
+                skip_count += 1
+                continue
+            
+            if not device.ssh_username or not device.ssh_password:
+                results.append({'device_id': device_id, 'status': 'skipped', 'message': 'No SSH credentials'})
+                skip_count += 1
+                continue
+            
+            result = execute_ssh_command_async(
+                device.ip_address,
+                device.ssh_username,
+                device.ssh_password,
+                'sudo reboot',
+                device.ssh_port or 22
+            )
+            
+            if result['success']:
+                device.pending_command = 'reboot'
+                device.command_issued_at = datetime.utcnow()
+                device.command_issued_by = admin_user
+                results.append({'device_id': device_id, 'status': 'success', 'message': 'Reboot command sent'})
+                success_count += 1
+            else:
+                results.append({'device_id': device_id, 'status': 'failed', 'message': result.get('error', 'Failed')})
+                fail_count += 1
+        
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': f'Bulk reboot completed: {success_count} success, {skip_count} skipped, {fail_count} failed',
+            'results': results,
+            'summary': {
+                'total': len(device_ids),
+                'success': success_count,
+                'skipped': skip_count,
+                'failed': fail_count
+            }
+        }), 200
+        
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error in bulk reboot: {e}")
+        return jsonify({
+            'success': False,
+            'message': 'Failed to perform bulk reboot',
+            'error': str(e)
+        }), 500
+
+
+@rpi_management_bp.route('/api/admin/rpi/bulk/shutdown', methods=['POST'])
+def bulk_shutdown_devices():
+    """Shutdown multiple devices via SSH"""
+    try:
+        if not PARAMIKO_AVAILABLE:
+            return jsonify({
+                'success': False,
+                'message': 'SSH functionality not available. Install paramiko.'
+            }), 503
+        
+        data = request.get_json()
+        device_ids = data.get('device_ids', [])
+        admin_user = data.get('admin_user', 'admin')
+        
+        if not device_ids:
+            return jsonify({
+                'success': False,
+                'message': 'No device IDs provided'
+            }), 400
+        
+        results = []
+        success_count = 0
+        skip_count = 0
+        fail_count = 0
+        
+        for device_id in device_ids:
+            device = RpiDevice.query.filter_by(device_id=device_id).first()
+            
+            if not device:
+                results.append({'device_id': device_id, 'status': 'not_found', 'message': 'Device not found'})
+                fail_count += 1
+                continue
+            
+            if not device.ip_address:
+                results.append({'device_id': device_id, 'status': 'skipped', 'message': 'No IP address'})
+                skip_count += 1
+                continue
+            
+            if not device.ssh_username or not device.ssh_password:
+                results.append({'device_id': device_id, 'status': 'skipped', 'message': 'No SSH credentials'})
+                skip_count += 1
+                continue
+            
+            result = execute_ssh_command_async(
+                device.ip_address,
+                device.ssh_username,
+                device.ssh_password,
+                'sudo shutdown -h now',
+                device.ssh_port or 22
+            )
+            
+            if result['success']:
+                device.pending_command = 'shutdown'
+                device.command_issued_at = datetime.utcnow()
+                device.command_issued_by = admin_user
+                results.append({'device_id': device_id, 'status': 'success', 'message': 'Shutdown command sent'})
+                success_count += 1
+            else:
+                results.append({'device_id': device_id, 'status': 'failed', 'message': result.get('error', 'Failed')})
+                fail_count += 1
+        
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': f'Bulk shutdown completed: {success_count} success, {skip_count} skipped, {fail_count} failed',
+            'results': results,
+            'summary': {
+                'total': len(device_ids),
+                'success': success_count,
+                'skipped': skip_count,
+                'failed': fail_count
+            }
+        }), 200
+        
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error in bulk shutdown: {e}")
+        return jsonify({
+            'success': False,
+            'message': 'Failed to perform bulk shutdown',
+            'error': str(e)
+        }), 500
+
+
+@rpi_management_bp.route('/api/admin/rpi/bulk/sync-time', methods=['POST'])
+def bulk_sync_time():
+    """Sync server time to multiple devices via SSH"""
+    try:
+        if not PARAMIKO_AVAILABLE:
+            return jsonify({
+                'success': False,
+                'message': 'SSH functionality not available. Install paramiko.'
+            }), 503
+        
+        data = request.get_json()
+        device_ids = data.get('device_ids', [])
+        
+        if not device_ids:
+            return jsonify({
+                'success': False,
+                'message': 'No device IDs provided'
+            }), 400
+        
+        results = []
+        success_count = 0
+        skip_count = 0
+        fail_count = 0
+        
+        # Get server time once for all devices
+        server_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        sync_command = f'sudo timedatectl set-time "{server_time}" || sudo date -s "{server_time}"'
+        
+        for device_id in device_ids:
+            device = RpiDevice.query.filter_by(device_id=device_id).first()
+            
+            if not device:
+                results.append({'device_id': device_id, 'status': 'not_found', 'message': 'Device not found'})
+                fail_count += 1
+                continue
+            
+            if not device.ip_address:
+                results.append({'device_id': device_id, 'status': 'skipped', 'message': 'No IP address'})
+                skip_count += 1
+                continue
+            
+            if not device.ssh_username or not device.ssh_password:
+                results.append({'device_id': device_id, 'status': 'skipped', 'message': 'No SSH credentials'})
+                skip_count += 1
+                continue
+            
+            result = execute_ssh_command(
+                device.ip_address,
+                device.ssh_username,
+                device.ssh_password,
+                sync_command,
+                device.ssh_port or 22
+            )
+            
+            if result['success']:
+                results.append({'device_id': device_id, 'status': 'success', 'message': f'Time synced to {server_time}'})
+                success_count += 1
+            else:
+                results.append({'device_id': device_id, 'status': 'failed', 'message': result.get('error', 'Failed')})
+                fail_count += 1
+        
+        return jsonify({
+            'success': True,
+            'message': f'Bulk time sync completed: {success_count} success, {skip_count} skipped, {fail_count} failed',
+            'server_time': server_time,
+            'results': results,
+            'summary': {
+                'total': len(device_ids),
+                'success': success_count,
+                'skipped': skip_count,
+                'failed': fail_count
+            }
+        }), 200
+        
+    except Exception as e:
+        print(f"Error in bulk time sync: {e}")
+        return jsonify({
+            'success': False,
+            'message': 'Failed to perform bulk time sync',
             'error': str(e)
         }), 500

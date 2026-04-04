@@ -240,6 +240,11 @@ class RpiDevice(db.Model):
     auto_shutdown_enabled = db.Column(db.Boolean, default=False)
     auto_shutdown_time = db.Column(db.String(5), nullable=True)  # Format: 'HH:MM' (24-hour)
     
+    # SSH credentials for remote management
+    ssh_username = db.Column(db.String(50), nullable=True)  # SSH username for device
+    ssh_password = db.Column(db.String(255), nullable=True)  # SSH password (encrypted)
+    ssh_port = db.Column(db.Integer, default=22)  # SSH port (default 22)
+    
     # Power control - command queue for device
     pending_command = db.Column(db.String(50), nullable=True)  # 'reboot', 'shutdown', 'restart_kiosk', None
     command_issued_at = db.Column(db.DateTime, nullable=True)
@@ -267,6 +272,9 @@ class RpiDevice(db.Model):
             'scanner_mode': self.scanner_mode,
             'auto_shutdown_enabled': self.auto_shutdown_enabled,
             'auto_shutdown_time': self.auto_shutdown_time,
+            'ssh_username': self.ssh_username,
+            'ssh_port': self.ssh_port or 22,
+            'has_ssh_credentials': bool(self.ssh_username and self.ssh_password),
             'pending_command': self.pending_command,
             'command_issued_at': self.command_issued_at.isoformat() if self.command_issued_at else None,
             'command_issued_by': self.command_issued_by,

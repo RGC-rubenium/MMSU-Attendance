@@ -87,4 +87,9 @@ if __name__ == '__main__':
 			db.create_all()
 		except Exception:
 			pass
+	
+	# Start the auto-shutdown scheduler
+	from api.rpi_management import start_auto_shutdown_scheduler
+	start_auto_shutdown_scheduler(app)
+	
 	app.run(host='0.0.0.0', port=5000, debug=True)

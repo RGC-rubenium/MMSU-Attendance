@@ -12,7 +12,13 @@ import {
     MdCancel,
     MdRefresh,
     MdEdit,
-    MdAccessTime
+    MdAccessTime,
+    MdRestartAlt,
+    MdSync,
+    MdSelectAll,
+    MdCheckBox,
+    MdCheckBoxOutlineBlank,
+    MdVpnKey
 } from 'react-icons/md';
 import './RpiManagement.css';
 import LoadingScreen from '../common/LoadingScreen';
@@ -25,6 +31,10 @@ const RpiManagement = () => {
     const [editingDevice, setEditingDevice] = useState(null);
     const [showConfigModal, setShowConfigModal] = useState(false);
     const [stats, setStats] = useState({ total: 0, online: 0, enabled: 0, pending_commands: 0 });
+    
+    // Selection state for bulk actions
+    const [selectedDevices, setSelectedDevices] = useState(new Set());
+    const [actionLoading, setActionLoading] = useState(false);
     
     // Confirmation modal state
     const [confirmModal, setConfirmModal] = useState({
@@ -90,8 +100,12 @@ const RpiManagement = () => {
             const response = await fetch('/api/admin/rpi/devices');
             const data = await response.json();
             
+            console.log('Devices API response:', data);
+            
             if (data.success) {
                 setDevices(data.devices);
+            } else {
+                console.error('Failed to fetch devices:', data.message);
             }
         } catch (error) {
             console.error('Error fetching devices:', error);
@@ -248,6 +262,235 @@ const RpiManagement = () => {
         }
     };
 
+    // ==================== SSH Remote Actions ====================
+    
+    const rebootDevice = async (deviceId, deviceName) => {
+        showConfirmation(
+            'Reboot Device',
+            `Are you sure you want to reboot "${deviceName}"? This will temporarily disconnect the device.`,
+            async () => {
+                setActionLoading(true);
+                try {
+                    const response = await fetch(`/api/admin/rpi/devices/${deviceId}/ssh/reboot`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ admin_user: 'admin' })
+                    });
+                    const data = await response.json();
+                    if (data.success) {
+                        alert('Reboot command sent successfully');
+                        fetchDevices();
+                    } else {
+                        alert(`Error: ${data.message}`);
+                    }
+                } catch (error) {
+                    console.error('Error rebooting device:', error);
+                    alert('Error sending reboot command');
+                } finally {
+                    setActionLoading(false);
+                }
+            },
+            'Reboot',
+            'btn-warning'
+        );
+    };
+
+    const shutdownDevice = async (deviceId, deviceName) => {
+        showConfirmation(
+            'Shutdown Device',
+            `Are you sure you want to shutdown "${deviceName}"? The device will need to be manually powered on.`,
+            async () => {
+                setActionLoading(true);
+                try {
+                    const response = await fetch(`/api/admin/rpi/devices/${deviceId}/ssh/shutdown`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ admin_user: 'admin' })
+                    });
+                    const data = await response.json();
+                    if (data.success) {
+                        alert('Shutdown command sent successfully');
+                        fetchDevices();
+                    } else {
+                        alert(`Error: ${data.message}`);
+                    }
+                } catch (error) {
+                    console.error('Error shutting down device:', error);
+                    alert('Error sending shutdown command');
+                } finally {
+                    setActionLoading(false);
+                }
+            },
+            'Shutdown',
+            'btn-danger'
+        );
+    };
+
+    const syncDeviceTime = async (deviceId, deviceName) => {
+        setActionLoading(true);
+        try {
+            const response = await fetch(`/api/admin/rpi/devices/${deviceId}/ssh/sync-time`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            });
+            const data = await response.json();
+            if (data.success) {
+                alert(`Time synced successfully to ${data.server_time}`);
+            } else {
+                alert(`Error: ${data.message}`);
+            }
+        } catch (error) {
+            console.error('Error syncing device time:', error);
+            alert('Error syncing device time');
+        } finally {
+            setActionLoading(false);
+        }
+    };
+
+    // ==================== Selection Functions ====================
+    
+    const toggleDeviceSelection = (deviceId) => {
+        setSelectedDevices(prev => {
+            const newSet = new Set(prev);
+            if (newSet.has(deviceId)) {
+                newSet.delete(deviceId);
+            } else {
+                newSet.add(deviceId);
+            }
+            return newSet;
+        });
+    };
+
+    const selectAllDevices = () => {
+        if (selectedDevices.size === devices.length) {
+            setSelectedDevices(new Set());
+        } else {
+            setSelectedDevices(new Set(devices.map(d => d.device_id)));
+        }
+    };
+
+    const selectDevicesWithSSH = () => {
+        const sshDevices = devices.filter(d => d.has_ssh_credentials).map(d => d.device_id);
+        setSelectedDevices(new Set(sshDevices));
+    };
+
+    // ==================== Bulk Actions ====================
+    
+    const bulkReboot = () => {
+        const selectedCount = selectedDevices.size;
+        const devicesWithSSH = devices.filter(d => selectedDevices.has(d.device_id) && d.has_ssh_credentials);
+        
+        showConfirmation(
+            'Bulk Reboot',
+            `Are you sure you want to reboot ${selectedCount} device(s)? ${devicesWithSSH.length} device(s) with SSH credentials will be rebooted.`,
+            async () => {
+                setActionLoading(true);
+                try {
+                    const response = await fetch('/api/admin/rpi/bulk/reboot', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            device_ids: Array.from(selectedDevices),
+                            admin_user: 'admin'
+                        })
+                    });
+                    const data = await response.json();
+                    if (data.success) {
+                        const { success, skipped, failed } = data.summary;
+                        alert(`Bulk reboot: ${success} success, ${skipped} skipped (no SSH), ${failed} failed`);
+                        setSelectedDevices(new Set());
+                        fetchDevices();
+                    } else {
+                        alert(`Error: ${data.message}`);
+                    }
+                } catch (error) {
+                    console.error('Error in bulk reboot:', error);
+                    alert('Error performing bulk reboot');
+                } finally {
+                    setActionLoading(false);
+                }
+            },
+            'Reboot All',
+            'btn-warning'
+        );
+    };
+
+    const bulkShutdown = () => {
+        const selectedCount = selectedDevices.size;
+        const devicesWithSSH = devices.filter(d => selectedDevices.has(d.device_id) && d.has_ssh_credentials);
+        
+        showConfirmation(
+            'Bulk Shutdown',
+            `Are you sure you want to shutdown ${selectedCount} device(s)? ${devicesWithSSH.length} device(s) with SSH credentials will be shut down. They will need to be manually powered on.`,
+            async () => {
+                setActionLoading(true);
+                try {
+                    const response = await fetch('/api/admin/rpi/bulk/shutdown', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            device_ids: Array.from(selectedDevices),
+                            admin_user: 'admin'
+                        })
+                    });
+                    const data = await response.json();
+                    if (data.success) {
+                        const { success, skipped, failed } = data.summary;
+                        alert(`Bulk shutdown: ${success} success, ${skipped} skipped (no SSH), ${failed} failed`);
+                        setSelectedDevices(new Set());
+                        fetchDevices();
+                    } else {
+                        alert(`Error: ${data.message}`);
+                    }
+                } catch (error) {
+                    console.error('Error in bulk shutdown:', error);
+                    alert('Error performing bulk shutdown');
+                } finally {
+                    setActionLoading(false);
+                }
+            },
+            'Shutdown All',
+            'btn-danger'
+        );
+    };
+
+    const bulkSyncTime = async () => {
+        const selectedCount = selectedDevices.size;
+        const devicesWithSSH = devices.filter(d => selectedDevices.has(d.device_id) && d.has_ssh_credentials);
+        
+        showConfirmation(
+            'Bulk Time Sync',
+            `Sync server time to ${selectedCount} device(s)? ${devicesWithSSH.length} device(s) with SSH credentials will be synced.`,
+            async () => {
+                setActionLoading(true);
+                try {
+                    const response = await fetch('/api/admin/rpi/bulk/sync-time', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            device_ids: Array.from(selectedDevices)
+                        })
+                    });
+                    const data = await response.json();
+                    if (data.success) {
+                        const { success, skipped, failed } = data.summary;
+                        alert(`Time sync: ${success} success, ${skipped} skipped (no SSH), ${failed} failed. Server time: ${data.server_time}`);
+                        setSelectedDevices(new Set());
+                    } else {
+                        alert(`Error: ${data.message}`);
+                    }
+                } catch (error) {
+                    console.error('Error in bulk time sync:', error);
+                    alert('Error performing bulk time sync');
+                } finally {
+                    setActionLoading(false);
+                }
+            },
+            'Sync Time',
+            'btn-info'
+        );
+    };
+
     const getStatusIcon = (device) => {
         if (!device.is_enabled) {
             return <MdPowerSettingsNew className="status-icon disabled" title="Disabled" />;
@@ -318,10 +561,49 @@ const RpiManagement = () => {
                     className="btn btn-outline"
                     onClick={() => { fetchDevices(); fetchStats(); }}
                     title="Refresh device list"
+                    disabled={actionLoading}
                 >
                     <MdRefresh /> Refresh
                 </button>
             </div>
+
+            {/* Bulk Action Bar - Show when devices are selected */}
+            {selectedDevices.size > 0 && activeTab === 'devices' && (
+                <div className="bulk-action-bar">
+                    <div className="bulk-info">
+                        <span className="selected-count">{selectedDevices.size} device(s) selected</span>
+                        <button className="btn btn-sm btn-outline" onClick={() => setSelectedDevices(new Set())}>
+                            Clear Selection
+                        </button>
+                    </div>
+                    <div className="bulk-actions">
+                        <button 
+                            className="btn btn-warning" 
+                            onClick={bulkReboot}
+                            disabled={actionLoading}
+                            title="Reboot selected devices"
+                        >
+                            <MdRestartAlt /> Reboot All
+                        </button>
+                        <button 
+                            className="btn btn-danger" 
+                            onClick={bulkShutdown}
+                            disabled={actionLoading}
+                            title="Shutdown selected devices"
+                        >
+                            <MdPowerSettingsNew /> Shutdown All
+                        </button>
+                        <button 
+                            className="btn btn-info" 
+                            onClick={bulkSyncTime}
+                            disabled={actionLoading}
+                            title="Sync time to selected devices"
+                        >
+                            <MdSync /> Sync Time All
+                        </button>
+                    </div>
+                </div>
+            )}
 
             <div className="tabs">
                 <button 
@@ -339,79 +621,149 @@ const RpiManagement = () => {
             </div>
 
             {activeTab === 'devices' && (
-                <div className="devices-list">
-                    {devices.length === 0 ? (
-                        <div className="empty-state">
-                            <MdDevices />
-                            <h3>No Devices Paired</h3>
-                            <p>No Raspberry Pi devices have been paired yet.</p>
+                <div className="devices-section">
+                    {/* Selection Controls */}
+                    {devices.length > 0 && (
+                        <div className="selection-controls">
+                            <button 
+                                className="btn btn-sm btn-outline"
+                                onClick={selectAllDevices}
+                            >
+                                {selectedDevices.size === devices.length ? <MdCheckBox /> : <MdCheckBoxOutlineBlank />}
+                                {selectedDevices.size === devices.length ? 'Deselect All' : 'Select All'}
+                            </button>
+                            <button 
+                                className="btn btn-sm btn-outline"
+                                onClick={selectDevicesWithSSH}
+                                title="Select only devices with SSH credentials configured"
+                            >
+                                <MdVpnKey /> Select SSH-enabled
+                            </button>
                         </div>
-                    ) : (
-                        devices.map(device => (
-                            <div key={device.id} className={`device-card ${device.is_online ? 'online' : 'offline'} ${!device.is_enabled ? 'disabled' : ''}`}>
-                                <div className="device-header">
-                                    <div className="device-info">
-                                        {getStatusIcon(device)}
-                                        <div className="device-details">
-                                            <h3>{device.device_name}</h3>
-                                            <p className="device-id">ID: {device.device_id}</p>
-                                        </div>
-                                    </div>
-                                    <div className="device-actions">
-                                        <button
-                                            className="btn-icon"
-                                            onClick={() => setEditingDevice(device)}
-                                            title="Edit Configuration"
-                                        >
-                                            <MdEdit />
-                                        </button>
-                                        <button
-                                            className={`btn-icon ${device.is_enabled ? 'enabled' : 'disabled'}`}
-                                            onClick={() => toggleDevice(device.device_id, !device.is_enabled)}
-                                            title={device.is_enabled ? 'Disable Device' : 'Enable Device'}
-                                        >
-                                            <MdPowerSettingsNew />
-                                        </button>
-                                        <button
-                                            className="btn-icon danger"
-                                            onClick={() => unpairDevice(device.device_id, device.device_name)}
-                                            title="Unpair Device"
-                                        >
-                                            <MdDelete />
-                                        </button>
-                                    </div>
-                                </div>
-
-                                <div className="device-meta">
-                                    {device.location && (
-                                        <div className="meta-item">
-                                            <MdLocationOn />
-                                            <span>{device.location}</span>
-                                        </div>
-                                    )}
-                                    <div className="meta-item">
-                                        <MdSchedule />
-                                        <span>Last seen: {getLastSeen(device.last_heartbeat)}</span>
-                                    </div>
-                                    <div className="meta-item">
-                                        <MdSettings />
-                                        <span>Mode: {device.scanner_mode}</span>
-                                    </div>
-                                    {device.ip_address && (
-                                        <div className="meta-item">
-                                            <span>IP: {device.ip_address}</span>
-                                        </div>
-                                    )}
-                                    {device.auto_shutdown_enabled && device.auto_shutdown_time && (
-                                        <div className="meta-item auto-shutdown">
-                                            <MdAccessTime />
-                                            <span>Auto-off: {device.auto_shutdown_time}</span>
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-                        ))
                     )}
+                    
+                    <div className="devices-list">
+                        {devices.length === 0 ? (
+                            <div className="empty-state">
+                                <MdDevices />
+                                <h3>No Devices Paired</h3>
+                                <p>No Raspberry Pi devices have been paired yet.</p>
+                            </div>
+                        ) : (
+                            devices.map(device => (
+                                <div key={device.id} className={`device-card ${device.is_online ? 'online' : 'offline'} ${!device.is_enabled ? 'disabled' : ''} ${selectedDevices.has(device.device_id) ? 'selected' : ''}`}>
+                                    <div className="device-header">
+                                        <div className="device-info">
+                                            <button 
+                                                className="selection-checkbox"
+                                                onClick={() => toggleDeviceSelection(device.device_id)}
+                                            >
+                                                {selectedDevices.has(device.device_id) ? <MdCheckBox /> : <MdCheckBoxOutlineBlank />}
+                                            </button>
+                                            {getStatusIcon(device)}
+                                            <div className="device-details">
+                                                <h3>
+                                                    {device.device_name}
+                                                    {device.has_ssh_credentials && (
+                                                        <span className="ssh-badge" title="SSH credentials configured">
+                                                            <MdVpnKey />
+                                                        </span>
+                                                    )}
+                                                </h3>
+                                                <p className="device-id">ID: {device.device_id}</p>
+                                            </div>
+                                        </div>
+                                        <div className="device-actions">
+                                            {/* SSH Actions - only show if device has SSH credentials */}
+                                            {device.has_ssh_credentials && device.ip_address && (
+                                                <>
+                                                    <button
+                                                        className="btn-icon"
+                                                        onClick={() => syncDeviceTime(device.device_id, device.device_name)}
+                                                        title="Sync Server Time"
+                                                        disabled={actionLoading}
+                                                    >
+                                                        <MdSync />
+                                                    </button>
+                                                    <button
+                                                        className="btn-icon warning"
+                                                        onClick={() => rebootDevice(device.device_id, device.device_name)}
+                                                        title="Reboot Device"
+                                                        disabled={actionLoading}
+                                                    >
+                                                        <MdRestartAlt />
+                                                    </button>
+                                                    <button
+                                                        className="btn-icon danger"
+                                                        onClick={() => shutdownDevice(device.device_id, device.device_name)}
+                                                        title="Shutdown Device"
+                                                        disabled={actionLoading}
+                                                    >
+                                                        <MdPowerSettingsNew />
+                                                    </button>
+                                                </>
+                                            )}
+                                            <button
+                                                className="btn-icon"
+                                                onClick={() => setEditingDevice(device)}
+                                                title="Edit Configuration"
+                                            >
+                                                <MdEdit />
+                                            </button>
+                                            <button
+                                                className={`btn-icon ${device.is_enabled ? 'enabled' : 'disabled'}`}
+                                                onClick={() => toggleDevice(device.device_id, !device.is_enabled)}
+                                                title={device.is_enabled ? 'Disable Device' : 'Enable Device'}
+                                            >
+                                                <MdPowerSettingsNew />
+                                            </button>
+                                            <button
+                                                className="btn-icon danger"
+                                                onClick={() => unpairDevice(device.device_id, device.device_name)}
+                                                title="Unpair Device"
+                                            >
+                                                <MdDelete />
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <div className="device-meta">
+                                        {device.location && (
+                                            <div className="meta-item">
+                                                <MdLocationOn />
+                                                <span>{device.location}</span>
+                                            </div>
+                                        )}
+                                        <div className="meta-item">
+                                            <MdSchedule />
+                                            <span>Last seen: {getLastSeen(device.last_heartbeat)}</span>
+                                        </div>
+                                        <div className="meta-item">
+                                            <MdSettings />
+                                            <span>Mode: {device.scanner_mode}</span>
+                                        </div>
+                                        {device.ip_address && (
+                                            <div className="meta-item">
+                                                <span>IP: {device.ip_address}</span>
+                                            </div>
+                                        )}
+                                        {device.auto_shutdown_enabled && device.auto_shutdown_time && (
+                                            <div className="meta-item auto-shutdown">
+                                                <MdAccessTime />
+                                                <span>Auto-off: {device.auto_shutdown_time}</span>
+                                            </div>
+                                        )}
+                                        {!device.has_ssh_credentials && (
+                                            <div className="meta-item no-ssh">
+                                                <MdVpnKey />
+                                                <span>No SSH credentials</span>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            ))
+                        )}
+                    </div>
                 </div>
             )}
 
@@ -526,16 +878,26 @@ const DeviceConfigModal = ({ device, onSave, onClose }) => {
         is_enabled: device.is_enabled,
         auto_shutdown_enabled: device.auto_shutdown_enabled || false,
         auto_shutdown_time: device.auto_shutdown_time || '',
+        ssh_username: device.ssh_username || '',
+        ssh_password: '', // Don't pre-fill password for security
+        ssh_port: device.ssh_port || 22,
         config: device.config_data || {}
     });
+    
+    const [showPassword, setShowPassword] = useState(false);
 
     const handleSave = () => {
-        onSave(device.device_id, config);
+        // Only include ssh_password if it was changed (not empty)
+        const saveConfig = { ...config };
+        if (!saveConfig.ssh_password) {
+            delete saveConfig.ssh_password;
+        }
+        onSave(device.device_id, saveConfig);
     };
 
     return (
         <div className="modal-overlay">
-            <div className="modal">
+            <div className="modal modal-large">
                 <div className="modal-header">
                     <h2>Configure Device: {device.device_name}</h2>
                     <button className="close-btn" onClick={onClose}>×</button>
@@ -581,6 +943,60 @@ const DeviceConfigModal = ({ device, onSave, onClose }) => {
                             />
                             Device Enabled
                         </label>
+                    </div>
+
+                    {/* SSH Credentials Section */}
+                    <div className="form-section">
+                        <h3><MdVpnKey /> SSH Remote Management</h3>
+                        <p className="form-description">
+                            Configure SSH credentials to enable remote reboot, shutdown, and time sync. 
+                            {device.has_ssh_credentials && <span className="ssh-configured"> ✓ Credentials configured</span>}
+                        </p>
+                        
+                        <div className="form-row">
+                            <div className="form-group">
+                                <label>SSH Username</label>
+                                <input
+                                    type="text"
+                                    value={config.ssh_username}
+                                    onChange={(e) => setConfig({...config, ssh_username: e.target.value})}
+                                    placeholder="e.g., pi"
+                                />
+                            </div>
+                            <div className="form-group">
+                                <label>SSH Port</label>
+                                <input
+                                    type="number"
+                                    value={config.ssh_port}
+                                    onChange={(e) => setConfig({...config, ssh_port: parseInt(e.target.value) || 22})}
+                                    placeholder="22"
+                                    min="1"
+                                    max="65535"
+                                />
+                            </div>
+                        </div>
+                        
+                        <div className="form-group">
+                            <label>SSH Password {device.has_ssh_credentials && '(leave blank to keep existing)'}</label>
+                            <div className="password-input-wrapper">
+                                <input
+                                    type={showPassword ? 'text' : 'password'}
+                                    value={config.ssh_password}
+                                    onChange={(e) => setConfig({...config, ssh_password: e.target.value})}
+                                    placeholder={device.has_ssh_credentials ? '••••••••' : 'Enter password'}
+                                />
+                                <button 
+                                    type="button"
+                                    className="toggle-password"
+                                    onClick={() => setShowPassword(!showPassword)}
+                                >
+                                    {showPassword ? 'Hide' : 'Show'}
+                                </button>
+                            </div>
+                            <span className="form-hint">
+                                Required for remote reboot, shutdown, and time sync operations
+                            </span>
+                        </div>
                     </div>
 
                     <div className="form-section">
