@@ -538,6 +538,14 @@ def device_heartbeat():
         if ip_address:
             device.ip_address = ip_address
         
+        # Check for pending commands
+        pending_command = device.pending_command
+        if pending_command:
+            # Clear the command after sending it
+            device.pending_command = None
+            device.command_issued_at = None
+            device.command_issued_by = None
+        
         db.session.commit()
         
         return jsonify({
@@ -546,7 +554,8 @@ def device_heartbeat():
             'device': device.to_dict(),
             'config': device.config_data or {},
             'enabled': device.is_enabled,
-            'scanner_mode': device.scanner_mode
+            'scanner_mode': device.scanner_mode,
+            'command': pending_command  # Send any pending command to device
         }), 200
         
     except Exception as e:
@@ -555,5 +564,178 @@ def device_heartbeat():
         return jsonify({
             'success': False,
             'message': 'Failed to process heartbeat',
+            'error': str(e)
+        }), 500
+
+
+# ==================== Power Control Endpoints ====================
+
+@rpi_management_bp.route('/api/admin/rpi/devices/<device_id>/command', methods=['POST'])
+def send_device_command(device_id):
+    """Send a command to a specific device (reboot, shutdown, restart_kiosk)"""
+    try:
+        data = request.get_json()
+        command = data.get('command')
+        admin_user = data.get('admin_user', 'admin')
+        
+        valid_commands = ['reboot', 'shutdown', 'restart_kiosk']
+        if command not in valid_commands:
+            return jsonify({
+                'success': False,
+                'message': f'Invalid command. Valid commands: {", ".join(valid_commands)}'
+            }), 400
+        
+        device = RpiDevice.query.filter_by(device_id=device_id).first()
+        
+        if not device:
+            return jsonify({
+                'success': False,
+                'message': 'Device not found'
+            }), 404
+        
+        # Queue the command
+        device.pending_command = command
+        device.command_issued_at = datetime.utcnow()
+        device.command_issued_by = admin_user
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': f'Command "{command}" queued for device {device.device_name}',
+            'device': device.to_dict()
+        }), 200
+        
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error sending command: {e}")
+        return jsonify({
+            'success': False,
+            'message': 'Failed to send command',
+            'error': str(e)
+        }), 500
+
+
+@rpi_management_bp.route('/api/admin/rpi/devices/bulk/command', methods=['POST'])
+def send_bulk_command():
+    """Send a command to all online devices"""
+    try:
+        data = request.get_json()
+        command = data.get('command')
+        admin_user = data.get('admin_user', 'admin')
+        target = data.get('target', 'online')  # 'online', 'all', 'enabled'
+        
+        valid_commands = ['reboot', 'shutdown', 'restart_kiosk']
+        if command not in valid_commands:
+            return jsonify({
+                'success': False,
+                'message': f'Invalid command. Valid commands: {", ".join(valid_commands)}'
+            }), 400
+        
+        # Get devices based on target
+        query = RpiDevice.query.filter_by(is_paired=True)
+        
+        if target == 'online':
+            # Only devices with recent heartbeat
+            devices = query.all()
+            devices = [d for d in devices if d.is_heartbeat_recent(timeout_minutes=5)]
+        elif target == 'enabled':
+            devices = query.filter_by(is_enabled=True).all()
+        else:  # 'all'
+            devices = query.all()
+        
+        # Queue command for each device
+        count = 0
+        for device in devices:
+            device.pending_command = command
+            device.command_issued_at = datetime.utcnow()
+            device.command_issued_by = admin_user
+            count += 1
+        
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': f'Command "{command}" queued for {count} devices',
+            'affected_devices': count
+        }), 200
+        
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error sending bulk command: {e}")
+        return jsonify({
+            'success': False,
+            'message': 'Failed to send bulk command',
+            'error': str(e)
+        }), 500
+
+
+@rpi_management_bp.route('/api/admin/rpi/devices/bulk/enable', methods=['POST'])
+def bulk_enable_devices():
+    """Enable or disable all devices"""
+    try:
+        data = request.get_json()
+        enabled = data.get('enabled', True)
+        
+        devices = RpiDevice.query.filter_by(is_paired=True).all()
+        
+        count = 0
+        for device in devices:
+            device.is_enabled = enabled
+            device.updated_at = datetime.utcnow()
+            count += 1
+        
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': f'{"Enabled" if enabled else "Disabled"} {count} devices',
+            'affected_devices': count
+        }), 200
+        
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error bulk updating devices: {e}")
+        return jsonify({
+            'success': False,
+            'message': 'Failed to update devices',
+            'error': str(e)
+        }), 500
+
+
+@rpi_management_bp.route('/api/admin/rpi/stats', methods=['GET'])
+def get_device_stats():
+    """Get overall device statistics"""
+    try:
+        devices = RpiDevice.query.filter_by(is_paired=True).all()
+        
+        # Update online status
+        for device in devices:
+            device.is_online = device.is_heartbeat_recent(timeout_minutes=5)
+        
+        db.session.commit()
+        
+        total = len(devices)
+        online = sum(1 for d in devices if d.is_online)
+        enabled = sum(1 for d in devices if d.is_enabled)
+        pending_commands = sum(1 for d in devices if d.pending_command)
+        
+        return jsonify({
+            'success': True,
+            'stats': {
+                'total': total,
+                'online': online,
+                'offline': total - online,
+                'enabled': enabled,
+                'disabled': total - enabled,
+                'pending_commands': pending_commands
+            }
+        }), 200
+        
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error fetching stats: {e}")
+        return jsonify({
+            'success': False,
+            'message': 'Failed to fetch statistics',
             'error': str(e)
         }), 500

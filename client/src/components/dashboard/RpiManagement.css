@@ -262,6 +262,35 @@
     background: #545b62;
 }
 
+.btn-warning {
+    background: #ffc107;
+    color: #212529;
+}
+
+.btn-warning:hover {
+    background: #e0a800;
+}
+
+.btn-info {
+    background: #17a2b8;
+    color: white;
+}
+
+.btn-info:hover {
+    background: #138496;
+}
+
+.btn-outline {
+    background: transparent;
+    color: #333;
+    border: 1px solid #ddd;
+}
+
+.btn-outline:hover {
+    background: #f8f9fa;
+    border-color: #ccc;
+}
+
 /* Device Meta Information */
 .device-meta,
 .request-meta {
@@ -444,4 +473,212 @@
         width: 95%;
         margin: 10px;
     }
+
+    .bulk-controls {
+        flex-direction: column;
+    }
+
+    .device-power-controls {
+        justify-content: center;
+    }
+}
+
+/* Bulk Controls Panel */
+.bulk-controls {
+    display: flex;
+    gap: 15px;
+    background: #f8f9fa;
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+}
+
+.bulk-control-section {
+    flex: 1;
+    min-width: 250px;
+}
+
+.bulk-control-section h3 {
+    margin: 0 0 12px 0;
+    font-size: 0.95rem;
+    color: #444;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.bulk-control-section h3 svg {
+    font-size: 1.2rem;
+}
+
+.bulk-control-section h4 {
+    margin: 0 0 12px 0;
+    font-size: 0.9rem;
+    color: #666;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.bulk-control-section .bulk-buttons {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.bulk-control-section .btn {
+    flex: 1;
+    min-width: 100px;
+    justify-content: center;
+}
+
+/* Device Power Controls */
+.device-power-controls {
+    display: flex;
+    gap: 8px;
+    padding-top: 15px;
+    border-top: 1px solid #e9ecef;
+    margin-top: 15px;
+    flex-wrap: wrap;
+}
+
+.btn-sm {
+    padding: 6px 12px;
+    border: none;
+    border-radius: 6px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.8rem;
+}
+
+.btn-sm:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.btn-sm.btn-warning {
+    background: #fff3cd;
+    color: #856404;
+}
+
+.btn-sm.btn-warning:hover:not(:disabled) {
+    background: #ffc107;
+    color: #212529;
+}
+
+.btn-sm.btn-info {
+    background: #d1ecf1;
+    color: #0c5460;
+}
+
+.btn-sm.btn-info:hover:not(:disabled) {
+    background: #17a2b8;
+    color: white;
+}
+
+.btn-sm.btn-danger {
+    background: #f8d7da;
+    color: #721c24;
+}
+
+.btn-sm.btn-danger:hover:not(:disabled) {
+    background: #dc3545;
+    color: white;
+}
+
+/* Pending Command Badge */
+.device-card.has-pending-command {
+    border-left: 4px solid #ffc107;
+}
+
+.pending-command-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: #fff3cd;
+    color: #856404;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    animation: pulse-badge 2s ease-in-out infinite;
+}
+
+@keyframes pulse-badge {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+}
+
+/* Device Stats Badge */
+.stats-summary {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+.stats-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.stats-badge.online {
+    background: #d4edda;
+    color: #155724;
+}
+
+.stats-badge.offline {
+    background: #f8d7da;
+    color: #721c24;
+}
+
+.stats-badge.pending {
+    background: #fff3cd;
+    color: #856404;
+}
+
+/* Confirmation Modal Styles */
+.confirm-modal {
+    max-width: 450px;
+}
+
+.confirm-modal .modal-body {
+    text-align: center;
+    padding: 30px 20px;
+}
+
+.confirm-modal .modal-body p {
+    margin: 0;
+    font-size: 1rem;
+    color: #333;
+    line-height: 1.6;
+}
+
+.confirm-modal .modal-footer {
+    justify-content: center;
+    gap: 15px;
+}
+
+.confirm-modal .modal-footer .btn {
+    min-width: 120px;
+    padding: 10px 20px;
+}
+
+/* Button variant for warning */
+.btn-warning {
+    background: #ffc107;
+    color: #212529;
+}
+
+.btn-warning:hover {
+    background: #e0a800;
 }

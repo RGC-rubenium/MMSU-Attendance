@@ -452,6 +452,7 @@ cat > "${INSTALL_DIR}/heartbeat.sh" << 'HEARTBEAT_SCRIPT'
 # ============================================================
 # MMSU Attendance Device Heartbeat
 # Sends periodic heartbeat to server to indicate device is online
+# Also receives and executes commands from the server
 # ============================================================
 
 CONFIG_FILE="/home/$(whoami)/attendance/device_config.json"
@@ -459,6 +460,46 @@ LOG_FILE="/home/$(whoami)/attendance/heartbeat.log"
 
 log() {
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" >> "$LOG_FILE"
+}
+
+execute_command() {
+    local COMMAND="$1"
+    log "Executing command: $COMMAND"
+    
+    case "$COMMAND" in
+        "restart_kiosk")
+            log "Restarting kiosk browser..."
+            pkill -f chromium
+            sleep 2
+            # The kiosk service will automatically restart Chromium
+            systemctl --user restart kiosk 2>/dev/null || {
+                # Fallback: start Chromium manually
+                SERVER_URL=$(jq -r '.server_url' "$CONFIG_FILE")
+                DEVICE_ID=$(jq -r '.device_id' "$CONFIG_FILE")
+                DISPLAY=:0 chromium --kiosk --noerrdialogs --disable-infobars \
+                    --disable-translate --no-first-run --fast --fast-start \
+                    --disable-features=TranslateUI \
+                    --disk-cache-size=1 --media-cache-size=1 \
+                    "${SERVER_URL}/device?id=${DEVICE_ID}" &
+            }
+            log "Kiosk restart completed"
+            ;;
+        "reboot")
+            log "Rebooting device..."
+            sync
+            sleep 2
+            sudo reboot
+            ;;
+        "shutdown")
+            log "Shutting down device..."
+            sync
+            sleep 2
+            sudo shutdown -h now
+            ;;
+        *)
+            log "Unknown command: $COMMAND"
+            ;;
+    esac
 }
 
 send_heartbeat() {
@@ -487,6 +528,15 @@ send_heartbeat() {
     
     if [ $? -eq 0 ]; then
         log "Heartbeat sent successfully: $RESPONSE"
+        
+        # Check if server returned a command to execute
+        if echo "$RESPONSE" | jq -e '.command' > /dev/null 2>&1; then
+            COMMAND=$(echo "$RESPONSE" | jq -r '.command')
+            if [ -n "$COMMAND" ] && [ "$COMMAND" != "null" ]; then
+                log "Received command from server: $COMMAND"
+                execute_command "$COMMAND"
+            fi
+        fi
     else
         log "ERROR: Failed to send heartbeat"
     fi
@@ -495,6 +545,12 @@ send_heartbeat() {
 # Main loop
 log "Heartbeat service started"
 INTERVAL=$(jq -r '.heartbeat_interval // 30' "$CONFIG_FILE")
+
+# Use shorter interval for more responsive command handling (10 seconds)
+if [ "$INTERVAL" -gt 10 ]; then
+    INTERVAL=10
+    log "Using reduced heartbeat interval (10s) for faster command response"
+fi
 
 while true; do
     send_heartbeat

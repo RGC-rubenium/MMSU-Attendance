@@ -236,6 +236,11 @@ class RpiDevice(db.Model):
     is_enabled = db.Column(db.Boolean, default=True)
     scanner_mode = db.Column(db.String(20), default='both')  # 'time_in', 'time_out', 'both'
     
+    # Power control - command queue for device
+    pending_command = db.Column(db.String(50), nullable=True)  # 'reboot', 'shutdown', 'restart_kiosk', None
+    command_issued_at = db.Column(db.DateTime, nullable=True)
+    command_issued_by = db.Column(db.String(50), nullable=True)
+    
     # Metadata
     paired_at = db.Column(db.DateTime, nullable=True)
     paired_by = db.Column(db.String(50), nullable=True)  # Admin who approved pairing
@@ -256,6 +261,9 @@ class RpiDevice(db.Model):
             'config_data': self.config_data,
             'is_enabled': self.is_enabled,
             'scanner_mode': self.scanner_mode,
+            'pending_command': self.pending_command,
+            'command_issued_at': self.command_issued_at.isoformat() if self.command_issued_at else None,
+            'command_issued_by': self.command_issued_by,
             'paired_at': self.paired_at.isoformat() if self.paired_at else None,
             'paired_by': self.paired_by,
             'created_at': self.created_at.isoformat() if self.created_at else None,

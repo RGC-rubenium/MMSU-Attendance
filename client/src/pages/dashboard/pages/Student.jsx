@@ -9,6 +9,7 @@ import StudentHandler from '../../../api/StudentHandler';
 import AddStudent from '../../../components/dashboard/AddStudent';
 import BulkImportStudents from '../../../components/dashboard/BulkImportStudents';
 import UserAvatar from '../../../components/UserAvatar';
+import ConfirmModal from '../../../components/common/ConfirmModal';
 
 // Constants
 const DEFAULT_PER_PAGE = 20;
@@ -78,6 +79,13 @@ export default function Student() {
         showAddStudent: false,
         showBulkImport: false,
         meta: { total: 0, page: 1, totalPages: 0, hasNext: false, hasPrev: false }
+    });
+
+    // Delete confirmation modal state
+    const [deleteModal, setDeleteModal] = useState({
+        show: false,
+        isDeleteAll: false,
+        count: 0
     });
 
     const [localFilters, setLocalFilters] = useState(() => {
@@ -342,24 +350,22 @@ export default function Student() {
         return localQuery !== urlQuery;
     }, [localQuery, searchParams]);
 
-    // Delete handlers
-    const handleDeleteSelected = useCallback(async () => {
+    // Show delete confirmation modal
+    const handleDeleteSelected = useCallback(() => {
         if (state.selectedIds.length === 0) return;
 
         const isDeleteAll = state.allStudentIds.length > 0 && state.allStudentIds.every(id => state.selectedIds.includes(id));
         
-        let confirmMessage;
-        if (isDeleteAll) {
-            confirmMessage = `⚠️ DELETE ALL STUDENTS\n\nYou are about to delete ALL ${state.meta.total} students matching current filters.\n\nThis action CANNOT be undone!\n\nType "DELETE ALL" to confirm:`;
-            const userInput = window.prompt(confirmMessage);
-            if (userInput !== "DELETE ALL") {
-                return; // User cancelled or didn't type the exact phrase
-            }
-        } else {
-            confirmMessage = `Are you sure you want to delete ${state.selectedIds.length} selected student${state.selectedIds.length !== 1 ? 's' : ''}?\n\nThis action cannot be undone.`;
-            if (!window.confirm(confirmMessage)) return;
-        }
+        setDeleteModal({
+            show: true,
+            isDeleteAll,
+            count: isDeleteAll ? state.meta.total : state.selectedIds.length
+        });
+    }, [state.selectedIds, state.allStudentIds, state.meta.total]);
 
+    // Execute the actual delete
+    const executeDelete = useCallback(async () => {
+        setDeleteModal({ show: false, isDeleteAll: false, count: 0 });
         setState(prev => ({ ...prev, loading: true, error: '' }));
 
         try {
@@ -392,7 +398,7 @@ export default function Student() {
                 loading: false 
             }));
         }
-    }, [state.selectedIds, state.allStudentIds, state.meta.total, apiParams, fetchStudents]);
+    }, [state.selectedIds, apiParams, fetchStudents]);
 
     // AddStudent modal handlers
     const handleAddStudent = useCallback(() => {
@@ -632,6 +638,23 @@ export default function Student() {
                 isOpen={state.showBulkImport}
                 onClose={handleCloseBulkImport}
                 onSuccess={handleBulkImportSuccess}
+            />
+
+            {/* Delete Confirmation Modal */}
+            <ConfirmModal
+                show={deleteModal.show}
+                title={deleteModal.isDeleteAll ? "⚠️ Delete All Students" : "Delete Students"}
+                message={deleteModal.isDeleteAll 
+                    ? `You are about to delete ALL ${deleteModal.count} students matching current filters.\n\nThis action CANNOT be undone!`
+                    : `Are you sure you want to delete ${deleteModal.count} selected student${deleteModal.count !== 1 ? 's' : ''}?\n\nThis action cannot be undone.`
+                }
+                onConfirm={executeDelete}
+                onCancel={() => setDeleteModal({ show: false, isDeleteAll: false, count: 0 })}
+                confirmText={deleteModal.isDeleteAll ? "Delete All" : "Delete"}
+                confirmClass="btn-danger"
+                requireInput={deleteModal.isDeleteAll}
+                requiredInputValue="DELETE ALL"
+                inputPlaceholder="Type DELETE ALL to confirm"
             />
         </>
     );
