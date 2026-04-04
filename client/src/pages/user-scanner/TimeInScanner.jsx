@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { 
     MdRadar, 
     MdPerson, 
@@ -12,6 +12,19 @@ import {
 import ScannerAPI from '../../api/ScannerAPI';
 import './Scanner.css';
 
+// Detect low-end device based on screen size or navigator hints
+const isLowEndDevice = () => {
+    const width = window.innerWidth;
+    const height = window.innerHeight;
+    // Pi Zero typically runs at 800x600 or lower
+    if (width <= 800 || height <= 600) return true;
+    // Check for device memory if available (Chrome)
+    if (navigator.deviceMemory && navigator.deviceMemory < 2) return true;
+    // Check for hardware concurrency (low CPU cores)
+    if (navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 2) return true;
+    return false;
+};
+
 const TimeInScanner = () => {
     const [scanInput, setScanInput] = useState('');
     const [lastScanResult, setLastScanResult] = useState(null);
@@ -19,34 +32,129 @@ const TimeInScanner = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [networkStatus, setNetworkStatus] = useState('online');
     
+    // Memoize low-end device check
+    const lowEndMode = useMemo(() => isLowEndDevice(), []);
+    
     const scanInputRef = useRef(null);
     const scanTimeoutRef = useRef(null);
     const displayTimeoutRef = useRef(null);
+    const keyBufferRef = useRef('');
+    const keyTimeoutRef = useRef(null);
 
-    // Live clock update
+    // Live clock update - slower interval on low-end devices
     useEffect(() => {
+        const clockInterval = lowEndMode ? 5000 : 1000; // 5s for Pi Zero, 1s for normal
         const timer = setInterval(() => {
             setCurrentTime(new Date());
-        }, 1000);
+        }, clockInterval);
         
         return () => clearInterval(timer);
-    }, []);
+    }, [lowEndMode]);
+
+    // Global keyboard capture for kiosk mode - captures input even without focus
+    useEffect(() => {
+        const handleGlobalKeyDown = (e) => {
+            // Ignore if loading or if typing in an actual input field (other than our hidden one)
+            if (isLoading) return;
+            if (e.target.tagName === 'INPUT' && e.target !== scanInputRef.current) return;
+            if (e.target.tagName === 'TEXTAREA') return;
+            
+            // Handle Enter key - process buffer immediately
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                if (keyBufferRef.current.length >= 8) {
+                    handleTimeInScan(keyBufferRef.current);
+                    keyBufferRef.current = '';
+                    setScanInput('');
+                }
+                return;
+            }
+            
+            // Only capture alphanumeric characters for RFID
+            if (e.key.length === 1 && /[a-zA-Z0-9]/.test(e.key)) {
+                e.preventDefault();
+                keyBufferRef.current += e.key;
+                setScanInput(keyBufferRef.current);
+                
+                // Clear previous timeout
+                if (keyTimeoutRef.current) {
+                    clearTimeout(keyTimeoutRef.current);
+                }
+                
+                // Auto-submit after brief pause (RFID scanners send data quickly)
+                if (keyBufferRef.current.length >= 8) {
+                    keyTimeoutRef.current = setTimeout(() => {
+                        if (keyBufferRef.current.length >= 8) {
+                            handleTimeInScan(keyBufferRef.current);
+                            keyBufferRef.current = '';
+                            setScanInput('');
+                        }
+                    }, 300);
+                }
+            }
+        };
+        
+        // Add global listener
+        window.addEventListener('keydown', handleGlobalKeyDown, true);
+        
+        return () => {
+            window.removeEventListener('keydown', handleGlobalKeyDown, true);
+            if (keyTimeoutRef.current) {
+                clearTimeout(keyTimeoutRef.current);
+            }
+        };
+    }, [isLoading]);
 
     // Auto-focus input when component mounts and keep it focused
     useEffect(() => {
-        if (scanInputRef.current && !isLoading) {
-            scanInputRef.current.focus();
-        }
-        
-        // Keep input focused at all times (except when processing)
-        const focusInterval = setInterval(() => {
-            if (scanInputRef.current && !isLoading && document.activeElement !== scanInputRef.current) {
+        // Immediate focus on mount
+        const focusInput = () => {
+            if (scanInputRef.current && !isLoading) {
                 scanInputRef.current.focus();
             }
-        }, 100);
+        };
         
-        return () => clearInterval(focusInterval);
-    }, [isLoading]);
+        // Focus immediately
+        focusInput();
+        
+        // Also focus after a short delay (for initial page load)
+        const initialFocusTimeout = setTimeout(focusInput, 100);
+        const secondFocusTimeout = setTimeout(focusInput, 500);
+        
+        // Keep input focused - less frequent on low-end devices
+        const focusIntervalTime = lowEndMode ? 500 : 100;
+        const focusInterval = setInterval(focusInput, focusIntervalTime);
+        
+        // Handle window focus events (when user clicks on browser window)
+        const handleWindowFocus = () => {
+            setTimeout(focusInput, 50);
+        };
+        
+        // Handle visibility change (when tab becomes active)
+        const handleVisibilityChange = () => {
+            if (!document.hidden) {
+                setTimeout(focusInput, 50);
+            }
+        };
+        
+        // Handle click anywhere on document to refocus
+        const handleDocumentClick = () => {
+            setTimeout(focusInput, 10);
+        };
+        
+        window.addEventListener('focus', handleWindowFocus);
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+        document.addEventListener('click', handleDocumentClick);
+        
+        return () => {
+            clearInterval(focusInterval);
+            clearTimeout(initialFocusTimeout);
+            clearTimeout(secondFocusTimeout);
+            window.removeEventListener('focus', handleWindowFocus);
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
+            document.removeEventListener('click', handleDocumentClick);
+        };
+    }, [isLoading, lowEndMode]);
 
     // Cleanup pending scan timeouts when loading state changes
     useEffect(() => {
@@ -450,7 +558,7 @@ const TimeInScanner = () => {
             {/* Loading State */}
             {isLoading && (
                 <div className="loading-state time-in">
-                    <div className="loading-spinner time-in"></div>
+                    <div className="loading-spinner time-in"><span></span></div>
                     <h2>Processing Time-In...</h2>
                     <p>Please wait while we record your arrival</p>
                 </div>

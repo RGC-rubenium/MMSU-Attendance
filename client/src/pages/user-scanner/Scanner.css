@@ -291,8 +291,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    min-height: 300px;
-    max-height: 60vh;
+    min-height: 0;
     overflow-y: auto;
 }
 
@@ -329,6 +328,10 @@
     background: #ffffff;
     border: 2px solid rgba(220, 53, 69, 0.1);
     padding: 35px;
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .scan-result-content {
@@ -618,7 +621,7 @@
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    min-height: 300px;
+    min-height: 0;
 }
 
 /* Time-In Default Message Theme */
@@ -707,7 +710,7 @@
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    min-height: 300px;
+    min-height: 0;
 }
 
 /* Time-In Loading State Theme */
@@ -723,26 +726,59 @@
 }
 
 .loading-spinner {
-    width: clamp(50px, 8vw, 80px);
-    height: clamp(50px, 8vw, 80px);
-    border: clamp(4px, 1vw, 8px) solid #e9ecef;
-    border-top: clamp(4px, 1vw, 8px) solid #0d6efd;
+    width: auto;
+    height: 60px;
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    gap: 12px;
+    margin: 0 auto 25px;
+    /* Reset any inherited styles */
+    border: none;
+    animation: none;
+}
+
+.loading-spinner::before,
+.loading-spinner::after,
+.loading-spinner span {
+    content: '';
+    width: 16px;
+    height: 16px;
+    background: #6c757d;
     border-radius: 50%;
-    animation: spin 1s linear infinite;
-    margin: 0 auto clamp(20px, 4vw, 35px);
+    animation: pulse-dot 1.2s ease-in-out infinite;
 }
 
-.loading-spinner.time-in {
-    border-top-color: #198754;
+.loading-spinner::after {
+    animation-delay: 0.2s;
 }
 
-.loading-spinner.time-out {
-    border-top-color: #fd7e14;
+.loading-spinner span {
+    animation-delay: 0.4s;
 }
 
-@keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
+.loading-spinner.time-in::before,
+.loading-spinner.time-in::after,
+.loading-spinner.time-in span {
+    background: #198754;
+}
+
+.loading-spinner.time-out::before,
+.loading-spinner.time-out::after,
+.loading-spinner.time-out span {
+    background: #fd7e14;
+}
+
+@keyframes pulse-dot {
+    0%, 80%, 100% {
+        transform: scale(0.6);
+        opacity: 0.5;
+    }
+    40% {
+        transform: scale(1);
+        opacity: 1;
+    }
 }
 
 .loading-state h2 {
@@ -973,6 +1009,7 @@
         flex-direction: column;
         text-align: center;
         gap: 20px;
+        height: auto;
     }
     
     .user-profile {
@@ -1029,6 +1066,387 @@
         border: 3px solid #000000;
     }
 }
+
+/* ============================================================
+   LOW-END DEVICE OPTIMIZATIONS (Pi Zero 2W, low resolution)
+   Targets screens <= 800px width or reduced motion preference
+   ============================================================ */
+
+/* Disable all animations for reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+
+/* Low resolution / low-end device optimizations */
+@media (max-width: 800px), (max-height: 600px) {
+    /* Disable GPU-intensive effects */
+    * {
+        text-shadow: none !important;
+        -webkit-backdrop-filter: none !important;
+        backdrop-filter: none !important;
+    }
+    
+    /* Replace gradients with solid colors for performance */
+    .scanner-container {
+        background: #f8f9fa !important;
+        padding: 10px;
+        gap: 10px;
+    }
+    
+    .scanner-container.time-in-scanner {
+        background: #e8f5e8 !important;
+    }
+    
+    .scanner-container.time-out-scanner {
+        background: #fff3cd !important;
+    }
+    
+    /* Simplified header */
+    .scanner-header {
+        background: #0d6efd !important;
+        box-shadow: none !important;
+        border-radius: 8px;
+        padding: 15px;
+        min-height: auto;
+    }
+    
+    .time-in-scanner .scanner-header {
+        background: #198754 !important;
+    }
+    
+    .time-out-scanner .scanner-header {
+        background: #fd7e14 !important;
+    }
+    
+    .school-info h1 {
+        font-size: 1.4rem;
+        margin-bottom: 2px;
+    }
+    
+    .school-info p {
+        font-size: 0.9rem;
+    }
+    
+    /* Disable clock animation */
+    .clock-icon {
+        animation: none !important;
+    }
+    
+    .time-display {
+        font-size: 1.6rem;
+        gap: 5px;
+    }
+    
+    .date-display {
+        font-size: 0.85rem;
+    }
+    
+    /* Simplified status area */
+    .scanner-status {
+        padding: 12px 15px;
+        border-radius: 8px;
+        min-height: auto;
+        box-shadow: none;
+    }
+    
+    /* Disable radar rotation animation */
+    .radar-icon {
+        animation: none !important;
+    }
+    
+    .status-indicator {
+        font-size: 1rem;
+        gap: 8px;
+    }
+    
+    /* Simplified scan result */
+    .scan-result {
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
+        animation: none !important;
+        min-height: 0;
+    }
+    
+    .scan-result.success,
+    .scan-result.success.time-in,
+    .scan-result.success.time-out {
+        background: #ffffff !important;
+    }
+    
+    .scan-result-content {
+        gap: 15px;
+    }
+    
+    .result-icon {
+        font-size: 2.5rem;
+        padding: 12px;
+        width: 60px;
+        height: 60px;
+    }
+    
+    .result-info h2 {
+        font-size: 1.5rem;
+        margin-bottom: 10px;
+    }
+    
+    /* Simplified user profile */
+    .user-profile,
+    .user-profile.enhanced {
+        padding: 12px;
+        border-radius: 10px;
+        gap: 12px;
+        box-shadow: none !important;
+        background: rgba(0, 0, 0, 0.03) !important;
+        -webkit-backdrop-filter: none !important;
+        backdrop-filter: none !important;
+    }
+    
+    .user-avatar-large {
+        width: 70px;
+        height: 70px;
+        box-shadow: none !important;
+        background: #6c757d !important;
+        border-width: 2px;
+    }
+    
+    .user-avatar-large .avatar-placeholder {
+        font-size: 2rem;
+    }
+    
+    /* Disable image hover effects */
+    .user-avatar-large img.profile-photo:hover {
+        transform: none !important;
+    }
+    
+    .user-details h3 {
+        font-size: 1.2rem;
+        margin-bottom: 5px;
+    }
+    
+    .user-details p,
+    .user-details .user-id,
+    .user-details .user-department {
+        font-size: 0.9rem;
+        margin: 2px 0;
+    }
+    
+    .user-type-badge {
+        padding: 4px 8px;
+        font-size: 0.75rem;
+        background: #198754 !important;
+        box-shadow: none !important;
+    }
+    
+    .user-type-badge.faculty {
+        background: #0d6efd !important;
+    }
+    
+    .scan-time {
+        font-size: 0.95rem;
+        margin-top: 8px;
+    }
+    
+    /* Simplified default message */
+    .default-message,
+    .default-message.time-in,
+    .default-message.time-out {
+        padding: 30px 15px;
+        background: #ffffff !important;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08) !important;
+        border-radius: 10px;
+        min-height: 0;
+    }
+    
+    .scanning-icon {
+        font-size: 3rem;
+        animation: none !important;
+        margin-bottom: 10px;
+    }
+    
+    .default-message h2 {
+        font-size: 1.4rem;
+        margin-bottom: 5px;
+    }
+    
+    .default-message p {
+        font-size: 1rem;
+    }
+    
+    .instruction-text {
+        padding: 10px 15px;
+        margin-top: 10px;
+    }
+    
+    /* Simplified loading state */
+    .loading-state,
+    .loading-state.time-in,
+    .loading-state.time-out {
+        padding: 30px 15px;
+        background: #ffffff !important;
+        min-height: 0;
+    }
+    
+    .loading-spinner {
+        width: auto;
+        height: 40px;
+        gap: 10px;
+        margin-bottom: 15px;
+    }
+    
+    .loading-spinner::before,
+    .loading-spinner::after,
+    .loading-spinner span {
+        width: 12px;
+        height: 12px;
+    }
+    
+    .loading-state h2 {
+        font-size: 1.4rem;
+    }
+    
+    .loading-state p {
+        font-size: 1rem;
+    }
+    
+    /* Error states simplified */
+    .error-message {
+        padding: 0;
+    }
+    
+    .main-error {
+        font-size: 1.2rem;
+        padding: 15px;
+    }
+    
+    .error-details,
+    .user-brief {
+        padding: 12px;
+        margin-top: 10px;
+    }
+    
+    .user-avatar-small {
+        width: 40px;
+        height: 40px;
+        box-shadow: none !important;
+    }
+    
+    .user-avatar-small .avatar-placeholder {
+        font-size: 1.2rem;
+    }
+    
+    /* Simplified mode indicator (when visible) */
+    .scanner-mode {
+        padding: 10px 15px;
+        border-radius: 8px;
+        box-shadow: none;
+    }
+    
+    .mode-indicator {
+        padding: 8px 12px;
+        font-size: 0.9rem;
+        box-shadow: none !important;
+        background: #198754 !important;
+    }
+    
+    .mode-indicator.time-out {
+        background: #fd7e14 !important;
+    }
+    
+    .mode-indicator .mode-icon {
+        font-size: 1.2rem;
+    }
+    
+    .switch-mode-btn {
+        padding: 8px 12px;
+        font-size: 0.85rem;
+    }
+    
+    .switch-mode-btn:hover {
+        transform: none !important;
+        box-shadow: none !important;
+    }
+}
+
+/* Extra small screens (640x480 VGA) */
+@media (max-width: 640px) {
+    .scanner-container {
+        padding: 8px;
+        gap: 8px;
+    }
+    
+    .scanner-header {
+        padding: 10px;
+        flex-direction: column;
+        gap: 8px;
+    }
+    
+    .school-info h1 {
+        font-size: 1.2rem;
+    }
+    
+    .school-info p {
+        font-size: 0.8rem;
+    }
+    
+    .time-display {
+        font-size: 1.4rem;
+    }
+    
+    .date-display {
+        font-size: 0.75rem;
+    }
+    
+    .scan-result {
+        padding: 15px;
+        min-height: 0;
+    }
+    
+    .result-icon {
+        width: 50px;
+        height: 50px;
+        font-size: 2rem;
+        padding: 8px;
+    }
+    
+    .result-info h2 {
+        font-size: 1.3rem;
+    }
+    
+    .user-avatar-large {
+        width: 55px;
+        height: 55px;
+    }
+    
+    .user-details h3 {
+        font-size: 1.1rem;
+    }
+    
+    .default-message,
+    .loading-state {
+        padding: 20px 10px;
+        min-height: 0;
+    }
+    
+    .scanning-icon {
+        font-size: 2.5rem;
+    }
+    
+    .default-message h2,
+    .loading-state h2 {
+        font-size: 1.2rem;
+    }
+    
+    .default-message p,
+    .loading-state p {
+        font-size: 0.9rem;
+    }
+}
+
 /* Print styles */
 @media print {
     .scanner-container {
