@@ -14,6 +14,7 @@ import random
 import string
 import threading
 import time as time_module
+import socket
 
 # SSH functionality using paramiko
 try:
@@ -28,6 +29,50 @@ rpi_management_bp = Blueprint('rpi_management', __name__)
 # Global scheduler thread reference
 _scheduler_thread = None
 _scheduler_running = False
+
+
+# ==================== Socket Connectivity Check ====================
+
+def is_device_online(ip_address, port=22, timeout=2):
+    """
+    Check if a device is online by attempting to open a socket connection.
+    Uses SSH port (22) by default as it's commonly open on RPi devices.
+    
+    Args:
+        ip_address: The IP address of the device
+        port: The port to check (default 22 for SSH)
+        timeout: Connection timeout in seconds
+    
+    Returns:
+        bool: True if device is reachable, False otherwise
+    """
+    if not ip_address:
+        return False
+    
+    try:
+        with socket.create_connection((ip_address, port), timeout=timeout):
+            return True
+    except (socket.timeout, ConnectionRefusedError, OSError):
+        return False
+
+
+def check_device_online_status(device):
+    """
+    Check and update a device's online status using socket connectivity.
+    Uses the device's configured SSH port if available.
+    
+    Args:
+        device: RpiDevice model instance
+    
+    Returns:
+        bool: True if device is online, False otherwise
+    """
+    port = device.ssh_port if device.ssh_port else 22
+    online = is_device_online(device.ip_address, port=port, timeout=2)
+    device.is_online = online
+    if online:
+        device.last_heartbeat = datetime.utcnow()
+    return online
 
 
 # ==================== SSH Helper Functions ====================
@@ -333,9 +378,9 @@ def get_all_devices():
     try:
         devices = RpiDevice.query.filter_by(is_paired=True).all()
         
-        # Update online status based on heartbeat
+        # Update online status using socket connectivity check
         for device in devices:
-            device.is_online = device.is_heartbeat_recent(timeout_minutes=5)
+            check_device_online_status(device)
         
         db.session.commit()
         
@@ -681,8 +726,8 @@ def get_device(device_id):
                 'message': 'Device not found'
             }), 404
         
-        # Update online status
-        device.is_online = device.is_heartbeat_recent(timeout_minutes=5)
+        # Update online status using socket connectivity check
+        check_device_online_status(device)
         db.session.commit()
         
         return jsonify({
@@ -785,9 +830,9 @@ def get_device_stats():
     try:
         devices = RpiDevice.query.filter_by(is_paired=True).all()
         
-        # Update online status
+        # Update online status using socket connectivity check
         for device in devices:
-            device.is_online = device.is_heartbeat_recent(timeout_minutes=5)
+            check_device_online_status(device)
         
         db.session.commit()
         
