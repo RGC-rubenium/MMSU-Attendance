@@ -332,27 +332,66 @@ Clears the device registration (requires re-pairing).
 
 ### View Logs
 ```bash
+# Kiosk logs
+attendance-logs
+
+# Heartbeat service logs
+attendance-heartbeat-logs
+
 # Real-time logs
-tail -f /var/log/mmsu-attendance/launcher.log
+tail -f /var/log/mmsu-attendance/heartbeat.log
 
 # Service logs
-sudo journalctl -u mmsu-scanner.service -f
+sudo journalctl -u attendance-heartbeat.service -f
+```
+
+### Restart Heartbeat Service
+```bash
+attendance-heartbeat-restart
 ```
 
 ### Manual Service Control
 ```bash
 # Stop service
-sudo systemctl stop mmsu-scanner.service
+sudo systemctl stop attendance-kiosk.service
 
 # Start service
-sudo systemctl start mmsu-scanner.service
+sudo systemctl start attendance-kiosk.service
 
 # Disable auto-start
-sudo systemctl disable mmsu-scanner.service
+sudo systemctl disable attendance-kiosk.service
 
 # Enable auto-start
-sudo systemctl enable mmsu-scanner.service
+sudo systemctl enable attendance-kiosk.service
+
+# Heartbeat service (for remote commands)
+sudo systemctl status attendance-heartbeat.service
+sudo systemctl restart attendance-heartbeat.service
 ```
+
+---
+
+## 🔌 Remote Power Control
+
+The system supports remote power control from the admin dashboard. Administrators can:
+
+### Available Commands
+- **Restart Kiosk**: Restarts the Chromium browser without rebooting the device
+- **Reboot**: Safely reboots the entire Raspberry Pi
+- **Shutdown**: Safely shuts down the Raspberry Pi
+
+### How It Works
+1. The `attendance-heartbeat.service` runs in the background (every 10 seconds)
+2. When a heartbeat is sent, the server responds with any pending command
+3. The device executes the command and clears it from the queue
+
+### Admin Dashboard
+Navigate to **RPi Device Management** in the admin dashboard to:
+- View all connected devices and their online status
+- Send individual power commands to specific devices
+- Use bulk controls to manage all devices at once
+
+**Note**: Devices must be online (have sent a recent heartbeat) for commands to be delivered.
 
 ---
 
@@ -361,24 +400,32 @@ sudo systemctl enable mmsu-scanner.service
 After installation, the following files are created:
 
 ```
-/opt/mmsu-attendance/
-├── device.conf          # Main configuration file
-├── launcher.sh          # Kiosk launcher script
-├── offline.html         # Offline fallback page
-├── heartbeat.pid        # Heartbeat process ID
-└── browser.pid          # Browser process ID
+/home/<user>/attendance/
+├── device_config.json     # Main configuration file
+├── start_kiosk.sh        # Kiosk launcher script
+├── heartbeat.sh          # Heartbeat/command service script
+├── wait_for_input.sh     # Input device wait script
+└── kiosk.log             # Kiosk runtime logs
 
 /var/log/mmsu-attendance/
-├── launcher.log         # Main launcher logs
-└── device_manager.log   # Device manager logs
+└── heartbeat.log          # Heartbeat service logs
 
 /etc/systemd/system/
-└── mmsu-scanner.service # Systemd service file
+├── attendance-kiosk.service     # Kiosk systemd service
+└── attendance-heartbeat.service # Heartbeat systemd service
+
+/etc/sudoers.d/
+└── mmsu-attendance        # Passwordless sudo for power commands
 
 /usr/local/bin/
-├── mmsu-status          # Status command
-├── mmsu-restart         # Restart command
-└── mmsu-reset           # Reset command
+├── attendance-restart           # Restart kiosk command
+├── attendance-logs              # View kiosk logs
+├── attendance-heartbeat-logs    # View heartbeat logs
+├── attendance-heartbeat-restart # Restart heartbeat service
+├── attendance-config            # View configuration
+├── attendance-reset             # Reset device pairing
+├── attendance-check-input       # Check input devices
+└── attendance-rotate            # Change screen rotation
 ```
 
 ---

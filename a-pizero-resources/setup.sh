@@ -456,45 +456,65 @@ cat > "${INSTALL_DIR}/heartbeat.sh" << 'HEARTBEAT_SCRIPT'
 # ============================================================
 
 CONFIG_FILE="/home/$(whoami)/attendance/device_config.json"
-LOG_FILE="/home/$(whoami)/attendance/heartbeat.log"
+LOG_FILE="/var/log/mmsu-attendance/heartbeat.log"
+
+# Ensure log directory exists
+mkdir -p "$(dirname "$LOG_FILE")" 2>/dev/null || true
 
 log() {
-    echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" >> "$LOG_FILE"
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" >> "$LOG_FILE" 2>/dev/null || \
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1"
 }
 
 execute_command() {
     local COMMAND="$1"
-    log "Executing command: $COMMAND"
+    log "=========================================="
+    log "EXECUTING COMMAND: $COMMAND"
+    log "=========================================="
     
     case "$COMMAND" in
         "restart_kiosk")
             log "Restarting kiosk browser..."
-            pkill -f chromium
-            sleep 2
-            # The kiosk service will automatically restart Chromium
-            systemctl --user restart kiosk 2>/dev/null || {
+            # Kill all chromium processes
+            pkill -9 -f chromium 2>/dev/null || true
+            sleep 3
+            
+            # Try to restart via systemd first
+            if systemctl restart attendance-kiosk.service 2>/dev/null; then
+                log "Kiosk restarted via systemd"
+            else
                 # Fallback: start Chromium manually
+                log "Systemd restart failed, starting manually..."
                 SERVER_URL=$(jq -r '.server_url' "$CONFIG_FILE")
                 DEVICE_ID=$(jq -r '.device_id' "$CONFIG_FILE")
-                DISPLAY=:0 chromium --kiosk --noerrdialogs --disable-infobars \
-                    --disable-translate --no-first-run --fast --fast-start \
+                SCREEN_WIDTH=$(jq -r '.screen_width // 800' "$CONFIG_FILE")
+                SCREEN_HEIGHT=$(jq -r '.screen_height // 600' "$CONFIG_FILE")
+                
+                DISPLAY=:0 chromium \
+                    --kiosk \
+                    --window-size=${SCREEN_WIDTH},${SCREEN_HEIGHT} \
+                    --noerrdialogs \
+                    --disable-infobars \
+                    --disable-translate \
+                    --no-first-run \
                     --disable-features=TranslateUI \
-                    --disk-cache-size=1 --media-cache-size=1 \
-                    "${SERVER_URL}/device?id=${DEVICE_ID}" &
-            }
+                    --disable-gpu \
+                    --disable-software-rasterizer \
+                    "${SERVER_URL}/device-check.html?device_id=${DEVICE_ID}" &
+            fi
             log "Kiosk restart completed"
             ;;
         "reboot")
-            log "Rebooting device..."
+            log "Rebooting device in 3 seconds..."
             sync
-            sleep 2
-            sudo reboot
+            sleep 3
+            /usr/bin/sudo /sbin/reboot
             ;;
         "shutdown")
-            log "Shutting down device..."
+            log "Shutting down device in 3 seconds..."
             sync
-            sleep 2
-            sudo shutdown -h now
+            sleep 3
+            /usr/bin/sudo /sbin/shutdown -h now
             ;;
         *)
             log "Unknown command: $COMMAND"
@@ -504,53 +524,75 @@ execute_command() {
 
 send_heartbeat() {
     if [ ! -f "$CONFIG_FILE" ]; then
-        log "ERROR: Config file not found"
+        log "ERROR: Config file not found: $CONFIG_FILE"
         return 1
     fi
     
-    SERVER_URL=$(jq -r '.server_url' "$CONFIG_FILE")
-    DEVICE_ID=$(jq -r '.device_id' "$CONFIG_FILE")
+    SERVER_URL=$(jq -r '.server_url' "$CONFIG_FILE" 2>/dev/null)
+    DEVICE_ID=$(jq -r '.device_id' "$CONFIG_FILE" 2>/dev/null)
     
-    if [ -z "$DEVICE_ID" ] || [ "$DEVICE_ID" = "null" ]; then
-        log "No device ID configured yet"
+    if [ -z "$SERVER_URL" ] || [ "$SERVER_URL" = "null" ]; then
+        log "ERROR: Server URL not configured"
+        return 1
+    fi
+    
+    if [ -z "$DEVICE_ID" ] || [ "$DEVICE_ID" = "null" ] || [ "$DEVICE_ID" = "" ]; then
+        log "No device ID configured yet, skipping heartbeat"
         return 1
     fi
     
     # Get current IP address
-    IP_ADDRESS=$(hostname -I | awk '{print $1}')
+    IP_ADDRESS=$(hostname -I 2>/dev/null | awk '{print $1}')
     
-    # Send heartbeat
+    # Ensure SERVER_URL has http:// prefix
+    if [[ ! "$SERVER_URL" =~ ^https?:// ]]; then
+        SERVER_URL="http://${SERVER_URL}"
+    fi
+    
+    # Send heartbeat and capture response
     RESPONSE=$(curl -s -X POST "${SERVER_URL}/api/rpi/heartbeat" \
         -H "Content-Type: application/json" \
         -d "{\"device_id\": \"${DEVICE_ID}\", \"ip_address\": \"${IP_ADDRESS}\"}" \
         --connect-timeout 10 \
-        --max-time 30)
+        --max-time 30 2>/dev/null)
     
-    if [ $? -eq 0 ]; then
-        log "Heartbeat sent successfully: $RESPONSE"
+    CURL_EXIT=$?
+    
+    if [ $CURL_EXIT -eq 0 ] && [ -n "$RESPONSE" ]; then
+        # Use Python for reliable JSON parsing (jq may not be available or may fail)
+        COMMAND=$(echo "$RESPONSE" | python3 -c "
+import sys, json
+try:
+    data = json.load(sys.stdin)
+    cmd = data.get('command', '')
+    if cmd and cmd != 'null':
+        print(cmd)
+except:
+    pass
+" 2>/dev/null)
         
-        # Check if server returned a command to execute
-        if echo "$RESPONSE" | jq -e '.command' > /dev/null 2>&1; then
-            COMMAND=$(echo "$RESPONSE" | jq -r '.command')
-            if [ -n "$COMMAND" ] && [ "$COMMAND" != "null" ]; then
-                log "Received command from server: $COMMAND"
-                execute_command "$COMMAND"
+        if [ -n "$COMMAND" ]; then
+            log "Received command from server: $COMMAND"
+            execute_command "$COMMAND"
+        else
+            # Only log occasionally to reduce log spam
+            if [ $((RANDOM % 6)) -eq 0 ]; then
+                log "Heartbeat OK (no pending command)"
             fi
         fi
     else
-        log "ERROR: Failed to send heartbeat"
+        log "ERROR: Failed to send heartbeat (curl exit: $CURL_EXIT)"
     fi
 }
 
 # Main loop
-log "Heartbeat service started"
-INTERVAL=$(jq -r '.heartbeat_interval // 30' "$CONFIG_FILE")
+log "=========================================="
+log "MMSU Heartbeat Service Started"
+log "Config: $CONFIG_FILE"
+log "=========================================="
 
-# Use shorter interval for more responsive command handling (10 seconds)
-if [ "$INTERVAL" -gt 10 ]; then
-    INTERVAL=10
-    log "Using reduced heartbeat interval (10s) for faster command response"
-fi
+# Use 10 second interval for responsive command handling
+INTERVAL=10
 
 while true; do
     send_heartbeat
@@ -658,9 +700,30 @@ print_success "Systemd service created."
 # ============================================================
 print_status "Creating heartbeat service..."
 
+# Create log directory
+mkdir -p /var/log/mmsu-attendance
+chown ${CURRENT_USER}:${CURRENT_USER} /var/log/mmsu-attendance
+chmod 755 /var/log/mmsu-attendance
+print_success "Log directory created: /var/log/mmsu-attendance"
+
+# Configure passwordless sudo for reboot/shutdown commands
+print_status "Configuring passwordless sudo for power commands..."
+cat > "/etc/sudoers.d/mmsu-attendance" << EOF
+# Allow attendance user to run power commands without password
+${CURRENT_USER} ALL=(ALL) NOPASSWD: /sbin/reboot
+${CURRENT_USER} ALL=(ALL) NOPASSWD: /sbin/shutdown
+${CURRENT_USER} ALL=(ALL) NOPASSWD: /sbin/poweroff
+${CURRENT_USER} ALL=(ALL) NOPASSWD: /usr/sbin/reboot
+${CURRENT_USER} ALL=(ALL) NOPASSWD: /usr/sbin/shutdown
+${CURRENT_USER} ALL=(ALL) NOPASSWD: /usr/sbin/poweroff
+EOF
+chmod 440 /etc/sudoers.d/mmsu-attendance
+print_success "Passwordless sudo configured for power commands"
+
 cat > "/etc/systemd/system/attendance-heartbeat.service" << EOF
 [Unit]
 Description=MMSU Attendance Heartbeat Service
+Documentation=https://github.com/RGC-rubenium/MMSU-Attendance
 After=network-online.target
 Wants=network-online.target
 
@@ -669,7 +732,9 @@ Type=simple
 User=${CURRENT_USER}
 ExecStart=/home/${CURRENT_USER}/attendance/heartbeat.sh
 Restart=always
-RestartSec=30
+RestartSec=10
+StandardOutput=append:/var/log/mmsu-attendance/heartbeat.log
+StandardError=append:/var/log/mmsu-attendance/heartbeat.log
 
 [Install]
 WantedBy=multi-user.target
@@ -746,9 +811,27 @@ chmod +x /usr/local/bin/attendance-restart
 # View logs command
 cat > "/usr/local/bin/attendance-logs" << 'EOF'
 #!/bin/bash
+echo "=== Kiosk Logs ==="
 tail -f /home/$(logname)/attendance/kiosk.log
 EOF
 chmod +x /usr/local/bin/attendance-logs
+
+# View heartbeat logs command
+cat > "/usr/local/bin/attendance-heartbeat-logs" << 'EOF'
+#!/bin/bash
+echo "=== Heartbeat Logs ==="
+tail -f /var/log/mmsu-attendance/heartbeat.log
+EOF
+chmod +x /usr/local/bin/attendance-heartbeat-logs
+
+# Restart heartbeat service command
+cat > "/usr/local/bin/attendance-heartbeat-restart" << 'EOF'
+#!/bin/bash
+echo "Restarting heartbeat service..."
+sudo systemctl restart attendance-heartbeat.service
+sudo systemctl status attendance-heartbeat.service
+EOF
+chmod +x /usr/local/bin/attendance-heartbeat-restart
 
 # View config command
 cat > "/usr/local/bin/attendance-config" << 'EOF'
@@ -855,11 +938,17 @@ print_success "Installation directory: ${INSTALL_DIR}"
 print_success "Configuration file: ${CONFIG_FILE}"
 echo ""
 echo "Management Commands:"
-echo "  attendance-restart     - Restart the kiosk"
-echo "  attendance-logs        - View kiosk logs"
-echo "  attendance-config      - View current configuration"
-echo "  attendance-reset       - Reset device pairing"
-echo "  attendance-check-input - Check input devices status"
+echo "  attendance-restart          - Restart the kiosk"
+echo "  attendance-logs             - View kiosk logs"
+echo "  attendance-heartbeat-logs   - View heartbeat service logs"
+echo "  attendance-heartbeat-restart- Restart heartbeat service"
+echo "  attendance-config           - View current configuration"
+echo "  attendance-reset            - Reset device pairing"
+echo "  attendance-check-input      - Check input devices status"
+echo ""
+echo "Services:"
+echo "  attendance-kiosk.service    - Kiosk browser service"
+echo "  attendance-heartbeat.service- Background heartbeat (for remote commands)"
 echo ""
 print_warning "The system will now reboot to apply changes."
 echo ""

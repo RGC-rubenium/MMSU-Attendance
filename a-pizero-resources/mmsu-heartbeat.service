@@ -1,0 +1,24 @@
+[Unit]
+Description=MMSU Attendance Heartbeat Service
+Documentation=https://github.com/RGC-rubenium/MMSU-Attendance
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/opt/mmsu-attendance/heartbeat.sh
+Restart=always
+RestartSec=10
+User=root
+Environment=HOME=/root
+
+# Logging
+StandardOutput=append:/var/log/mmsu-attendance/heartbeat.log
+StandardError=append:/var/log/mmsu-attendance/heartbeat.log
+
+# Security hardening
+NoNewPrivileges=no
+ProtectSystem=false
+
+[Install]
+WantedBy=multi-user.target

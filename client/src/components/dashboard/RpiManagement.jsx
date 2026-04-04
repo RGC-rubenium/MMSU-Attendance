@@ -11,12 +11,7 @@ import {
     MdCheckCircle,
     MdCancel,
     MdRefresh,
-    MdEdit,
-    MdRestartAlt,
-    MdPower,
-    MdPowerOff,
-    MdPlayArrow,
-    MdStop
+    MdEdit
 } from 'react-icons/md';
 import './RpiManagement.css';
 import LoadingScreen from '../common/LoadingScreen';
@@ -226,173 +221,6 @@ const RpiManagement = () => {
         );
     };
 
-    // Execute the actual command API call
-    const executeDeviceCommand = async (deviceId, command, deviceName, isOnline) => {
-        const commandNames = {
-            'reboot': 'Reboot',
-            'shutdown': 'Shutdown',
-            'restart_kiosk': 'Restart Kiosk'
-        };
-        
-        try {
-            const response = await fetch(`/api/admin/rpi/devices/${deviceId}/command`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ 
-                    command,
-                    admin_user: 'admin'
-                })
-            });
-
-            const data = await response.json();
-            
-            if (data.success) {
-                const statusMsg = isOnline 
-                    ? `Command "${commandNames[command]}" sent to ${deviceName}`
-                    : `Command "${commandNames[command]}" queued for ${deviceName} (will execute when online)`;
-                alert(statusMsg);
-                fetchDevices();
-                fetchStats();
-            } else {
-                alert(`Error: ${data.message}`);
-            }
-        } catch (error) {
-            console.error('Error sending command:', error);
-            alert('Error sending command: ' + error.message);
-        }
-    };
-
-    // Send command to a single device - shows confirmation modal
-    const sendDeviceCommand = (deviceId, command, deviceName) => {
-        const commandNames = {
-            'reboot': 'Reboot',
-            'shutdown': 'Shutdown',
-            'restart_kiosk': 'Restart Kiosk'
-        };
-        
-        // Find the device to check if it's online
-        const device = devices.find(d => d.device_id === deviceId);
-        const isOnline = device?.is_online;
-        
-        const confirmMessage = isOnline 
-            ? `Are you sure you want to ${commandNames[command]} "${deviceName}"?`
-            : `Device "${deviceName}" is offline. Queue ${commandNames[command]} command? It will execute when the device comes online.`;
-        
-        const confirmClass = command === 'shutdown' ? 'btn-danger' : 
-                            command === 'reboot' ? 'btn-warning' : 'btn-primary';
-        
-        showConfirmation(
-            commandNames[command],
-            confirmMessage,
-            () => executeDeviceCommand(deviceId, command, deviceName, isOnline),
-            isOnline ? 'Execute' : 'Queue Command',
-            confirmClass
-        );
-    };
-
-    // Execute bulk command API call
-    const executeBulkCommand = async (command, target) => {
-        const commandNames = {
-            'reboot': 'Reboot',
-            'shutdown': 'Shutdown',
-            'restart_kiosk': 'Restart Kiosk'
-        };
-        
-        try {
-            const response = await fetch('/api/admin/rpi/devices/bulk/command', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ 
-                    command,
-                    target,
-                    admin_user: 'admin'
-                })
-            });
-
-            const data = await response.json();
-            
-            if (data.success) {
-                alert(`Command "${commandNames[command]}" sent to ${data.affected_devices} devices`);
-                fetchDevices();
-                fetchStats();
-            } else {
-                alert(`Error: ${data.message}`);
-            }
-        } catch (error) {
-            console.error('Error sending bulk command:', error);
-            alert('Error sending bulk command');
-        }
-    };
-
-    // Send command to all devices - shows confirmation modal
-    const sendBulkCommand = (command, target = 'online') => {
-        const commandNames = {
-            'reboot': 'Reboot',
-            'shutdown': 'Shutdown',
-            'restart_kiosk': 'Restart Kiosk'
-        };
-        
-        const targetNames = {
-            'online': 'all ONLINE',
-            'enabled': 'all ENABLED',
-            'all': 'ALL'
-        };
-        
-        const confirmClass = command === 'shutdown' ? 'btn-danger' : 
-                            command === 'reboot' ? 'btn-warning' : 'btn-primary';
-        
-        showConfirmation(
-            `${commandNames[command]} All Devices`,
-            `Are you sure you want to ${commandNames[command]} ${targetNames[target]} devices?`,
-            () => executeBulkCommand(command, target),
-            'Execute',
-            confirmClass
-        );
-    };
-
-    // Execute bulk enable/disable API call
-    const executeBulkEnable = async (enabled) => {
-        try {
-            const response = await fetch('/api/admin/rpi/devices/bulk/enable', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ enabled })
-            });
-
-            const data = await response.json();
-            
-            if (data.success) {
-                alert(`${enabled ? 'Enabled' : 'Disabled'} ${data.affected_devices} devices`);
-                fetchDevices();
-                fetchStats();
-            } else {
-                alert(`Error: ${data.message}`);
-            }
-        } catch (error) {
-            console.error('Error bulk updating devices:', error);
-            alert('Error updating devices');
-        }
-    };
-
-    // Enable or disable all devices - shows confirmation modal
-    const bulkEnableDevices = (enabled) => {
-        const action = enabled ? 'Enable' : 'Disable';
-        
-        showConfirmation(
-            `${action} All Devices`,
-            `Are you sure you want to ${action.toLowerCase()} ALL devices?`,
-            () => executeBulkEnable(enabled),
-            action,
-            enabled ? 'btn-success' : 'btn-secondary'
-        );
-    };
-
     const saveDeviceConfig = async (deviceId, config) => {
         try {
             const response = await fetch(`/api/admin/rpi/devices/${deviceId}/config`, {
@@ -484,63 +312,14 @@ const RpiManagement = () => {
                 </div>
             </div>
 
-            {/* Bulk Control Panel */}
-            <div className="bulk-controls">
-                <div className="bulk-control-section">
-                    <h3><MdPower /> Power Control (All Online Devices)</h3>
-                    <div className="bulk-buttons">
-                        <button 
-                            className="btn btn-warning"
-                            onClick={() => sendBulkCommand('restart_kiosk', 'online')}
-                            disabled={stats.online === 0}
-                            title="Restart kiosk on all online devices"
-                        >
-                            <MdRefresh /> Restart Kiosk
-                        </button>
-                        <button 
-                            className="btn btn-info"
-                            onClick={() => sendBulkCommand('reboot', 'online')}
-                            disabled={stats.online === 0}
-                            title="Reboot all online devices"
-                        >
-                            <MdRestartAlt /> Reboot All
-                        </button>
-                        <button 
-                            className="btn btn-danger"
-                            onClick={() => sendBulkCommand('shutdown', 'online')}
-                            disabled={stats.online === 0}
-                            title="Shutdown all online devices"
-                        >
-                            <MdPowerOff /> Shutdown All
-                        </button>
-                    </div>
-                </div>
-                <div className="bulk-control-section">
-                    <h3><MdPowerSettingsNew /> Enable/Disable All</h3>
-                    <div className="bulk-buttons">
-                        <button 
-                            className="btn btn-success"
-                            onClick={() => bulkEnableDevices(true)}
-                            title="Enable all devices"
-                        >
-                            <MdPlayArrow /> Enable All
-                        </button>
-                        <button 
-                            className="btn btn-secondary"
-                            onClick={() => bulkEnableDevices(false)}
-                            title="Disable all devices"
-                        >
-                            <MdStop /> Disable All
-                        </button>
-                        <button 
-                            className="btn btn-outline"
-                            onClick={() => { fetchDevices(); fetchStats(); }}
-                            title="Refresh device list"
-                        >
-                            <MdRefresh /> Refresh
-                        </button>
-                    </div>
-                </div>
+            <div className="header-actions">
+                <button 
+                    className="btn btn-outline"
+                    onClick={() => { fetchDevices(); fetchStats(); }}
+                    title="Refresh device list"
+                >
+                    <MdRefresh /> Refresh
+                </button>
             </div>
 
             <div className="tabs">
@@ -575,11 +354,6 @@ const RpiManagement = () => {
                                         <div className="device-details">
                                             <h3>{device.device_name}</h3>
                                             <p className="device-id">ID: {device.device_id}</p>
-                                            {device.pending_command && (
-                                                <p className="pending-command">
-                                                    ⏳ Pending: {device.pending_command}
-                                                </p>
-                                            )}
                                         </div>
                                     </div>
                                     <div className="device-actions">
@@ -627,34 +401,6 @@ const RpiManagement = () => {
                                             <span>IP: {device.ip_address}</span>
                                         </div>
                                     )}
-                                </div>
-                                
-                                {/* Device Power Controls */}
-                                <div className="device-power-controls">
-                                    <button
-                                        className="btn-sm btn-warning"
-                                        onClick={() => sendDeviceCommand(device.device_id, 'restart_kiosk', device.device_name)}
-                                        disabled={!device.is_enabled}
-                                        title={device.is_online ? "Restart Kiosk" : "Queue restart (device offline)"}
-                                    >
-                                        <MdRefresh /> Restart Kiosk
-                                    </button>
-                                    <button
-                                        className="btn-sm btn-info"
-                                        onClick={() => sendDeviceCommand(device.device_id, 'reboot', device.device_name)}
-                                        disabled={!device.is_enabled}
-                                        title={device.is_online ? "Reboot Device" : "Queue reboot (device offline)"}
-                                    >
-                                        <MdRestartAlt /> Reboot
-                                    </button>
-                                    <button
-                                        className="btn-sm btn-danger"
-                                        onClick={() => sendDeviceCommand(device.device_id, 'shutdown', device.device_name)}
-                                        disabled={!device.is_enabled}
-                                        title={device.is_online ? "Shutdown Device" : "Queue shutdown (device offline)"}
-                                    >
-                                        <MdPowerOff /> Shutdown
-                                    </button>
                                 </div>
                             </div>
                         ))
