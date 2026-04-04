@@ -448,6 +448,30 @@ def update_device_config(device_id):
         if 'config' in data:
             device.config_data = {**(device.config_data or {}), **data['config']}
         
+        # Auto-shutdown settings
+        if 'auto_shutdown_enabled' in data:
+            device.auto_shutdown_enabled = data['auto_shutdown_enabled']
+        if 'auto_shutdown_time' in data:
+            # Validate time format HH:MM
+            shutdown_time = data['auto_shutdown_time']
+            if shutdown_time:
+                try:
+                    hours, minutes = map(int, shutdown_time.split(':'))
+                    if 0 <= hours <= 23 and 0 <= minutes <= 59:
+                        device.auto_shutdown_time = shutdown_time
+                    else:
+                        return jsonify({
+                            'success': False,
+                            'message': 'Invalid shutdown time. Use HH:MM format (00:00-23:59)'
+                        }), 400
+                except (ValueError, AttributeError):
+                    return jsonify({
+                        'success': False,
+                        'message': 'Invalid shutdown time format. Use HH:MM'
+                    }), 400
+            else:
+                device.auto_shutdown_time = None
+        
         device.updated_at = datetime.utcnow()
         db.session.commit()
         
@@ -496,6 +520,18 @@ def get_device(device_id):
             'message': 'Failed to fetch device',
             'error': str(e)
         }), 500
+
+
+# ==================== Time Sync Endpoint ====================
+
+@rpi_management_bp.route('/api/rpi/time', methods=['GET'])
+def get_server_time():
+    """Get current server time for device time synchronization"""
+    return jsonify({
+        'success': True,
+        'server_time': datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S'),
+        'server_timezone': 'UTC'
+    }), 200
 
 
 # ==================== Device Heartbeat Endpoint ====================
@@ -548,7 +584,11 @@ def device_heartbeat():
             'device': device.to_dict(),
             'config': device.config_data or {},
             'enabled': device.is_enabled,
-            'scanner_mode': device.scanner_mode
+            'scanner_mode': device.scanner_mode,
+            'auto_shutdown_enabled': device.auto_shutdown_enabled,
+            'auto_shutdown_time': device.auto_shutdown_time,
+            'server_time': datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S'),
+            'server_timezone': 'UTC'
         }), 200
         
     except Exception as e:

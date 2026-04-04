@@ -325,6 +325,95 @@ log() {
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" >> "$LOG_FILE"
 }
 
+# Function to sync time with server
+sync_time_on_startup() {
+    log "Attempting to sync time with server..."
+    
+    if [ ! -f "$CONFIG_FILE" ]; then
+        log "TIME SYNC: Config file not found, skipping"
+        return
+    fi
+    
+    local SERVER_URL=$(jq -r '.server_url' "$CONFIG_FILE" 2>/dev/null)
+    local DEVICE_ID=$(jq -r '.device_id' "$CONFIG_FILE" 2>/dev/null)
+    
+    if [ -z "$SERVER_URL" ] || [ "$SERVER_URL" = "null" ]; then
+        log "TIME SYNC: Server URL not configured, skipping"
+        return
+    fi
+    
+    # Ensure SERVER_URL has http:// prefix
+    if [[ ! "$SERVER_URL" =~ ^https?:// ]]; then
+        SERVER_URL="http://${SERVER_URL}"
+    fi
+    
+    # Try to get server time via a simple API call
+    local RESPONSE=""
+    if [ -n "$DEVICE_ID" ] && [ "$DEVICE_ID" != "null" ]; then
+        # If we have a device ID, use heartbeat endpoint
+        RESPONSE=$(curl -s -X POST "${SERVER_URL}/api/rpi/heartbeat" \
+            -H "Content-Type: application/json" \
+            -d "{\"device_id\": \"${DEVICE_ID}\", \"ip_address\": \"$(hostname -I | awk '{print $1}')\"}" \
+            --connect-timeout 10 \
+            --max-time 15 2>/dev/null)
+    else
+        # Otherwise, try a simple time endpoint or use heartbeat with empty device
+        RESPONSE=$(curl -s "${SERVER_URL}/api/rpi/time" --connect-timeout 10 --max-time 15 2>/dev/null)
+    fi
+    
+    if [ -z "$RESPONSE" ]; then
+        log "TIME SYNC: Could not reach server, skipping time sync"
+        return
+    fi
+    
+    # Parse server time from response
+    local SERVER_TIME=$(echo "$RESPONSE" | python3 -c "
+import sys, json
+try:
+    data = json.load(sys.stdin)
+    server_time = data.get('server_time', '')
+    if server_time:
+        print(server_time)
+except:
+    pass
+" 2>/dev/null)
+    
+    if [ -z "$SERVER_TIME" ]; then
+        log "TIME SYNC: No server time in response, skipping"
+        return
+    fi
+    
+    # Get local UTC time
+    local LOCAL_TIME=$(date -u '+%Y-%m-%d %H:%M:%S')
+    
+    # Calculate time difference
+    local LOCAL_EPOCH=$(date -u -d "$LOCAL_TIME" +%s 2>/dev/null || date +%s)
+    local SERVER_EPOCH=$(date -u -d "$SERVER_TIME" +%s 2>/dev/null)
+    
+    if [ -z "$SERVER_EPOCH" ]; then
+        log "TIME SYNC: Could not parse server time: $SERVER_TIME"
+        return
+    fi
+    
+    local TIME_DIFF=$((SERVER_EPOCH - LOCAL_EPOCH))
+    local ABS_DIFF=${TIME_DIFF#-}
+    
+    log "TIME SYNC: Local=$LOCAL_TIME, Server=$SERVER_TIME, Diff=${TIME_DIFF}s"
+    
+    # Sync if difference is more than 10 seconds
+    if [ $ABS_DIFF -gt 10 ]; then
+        log "TIME SYNC: Synchronizing system clock..."
+        if /usr/bin/sudo /bin/date -u -s "$SERVER_TIME" > /dev/null 2>&1; then
+            log "TIME SYNC: System time synchronized to $SERVER_TIME UTC"
+            /usr/bin/sudo /sbin/hwclock -w 2>/dev/null || true
+        else
+            log "TIME SYNC: Failed to set system time"
+        fi
+    else
+        log "TIME SYNC: Time is already in sync (diff: ${ABS_DIFF}s)"
+    fi
+}
+
 log "Starting kiosk launcher..."
 
 # Wait for input devices to be ready
@@ -346,6 +435,9 @@ if [[ ! "$SERVER_URL" =~ ^https?:// ]]; then
     SERVER_URL="http://${SERVER_URL}"
     log "Added http:// prefix to server URL"
 fi
+
+# Sync time with server before launching browser
+sync_time_on_startup
 
 # Determine the URL to open
 if [ -z "$DEVICE_ID" ] || [ "$DEVICE_ID" = "null" ] || [ "$DEVICE_ID" = "" ]; then
@@ -446,157 +538,229 @@ print_success "Kiosk launcher created."
 # ============================================================
 print_status "Creating heartbeat script..."
 
-cat > "${INSTALL_DIR}/heartbeat.sh" << 'HEARTBEAT_SCRIPT'
+# Prepare the config file path for the heartbeat script
+HEARTBEAT_CONFIG_PATH="${INSTALL_DIR}/device_config.json"
+
+cat > "${INSTALL_DIR}/heartbeat.sh" << HEARTBEAT_SCRIPT
 #!/bin/bash
 
 # ============================================================
 # MMSU Attendance Device Heartbeat
 # Sends periodic heartbeat to server to indicate device is online
-# Also receives and executes commands from the server
+# Checks for scheduled auto-shutdown time
 # ============================================================
 
-CONFIG_FILE="/home/$(whoami)/attendance/device_config.json"
+CONFIG_FILE="${HEARTBEAT_CONFIG_PATH}"
 LOG_FILE="/var/log/mmsu-attendance/heartbeat.log"
+SHUTDOWN_EXECUTED_FILE="/tmp/mmsu_shutdown_executed_today"
+LAST_TIME_SYNC_FILE="/tmp/mmsu_last_time_sync"
+TIME_SYNC_INTERVAL=3600  # Sync time every hour (in seconds)
 
 # Ensure log directory exists
-mkdir -p "$(dirname "$LOG_FILE")" 2>/dev/null || true
+mkdir -p "\$(dirname "\$LOG_FILE")" 2>/dev/null || true
 
 log() {
-    echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" >> "$LOG_FILE" 2>/dev/null || \
-    echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1"
+    echo "[\$(date '+%Y-%m-%d %H:%M:%S')] \$1" >> "\$LOG_FILE" 2>/dev/null || \
+    echo "[\$(date '+%Y-%m-%d %H:%M:%S')] \$1"
 }
 
-execute_command() {
-    local COMMAND="$1"
-    log "=========================================="
-    log "EXECUTING COMMAND: $COMMAND"
-    log "=========================================="
+sync_time_with_server() {
+    local SERVER_TIME="\$1"
     
-    case "$COMMAND" in
-        "restart_kiosk")
-            log "Restarting kiosk browser..."
-            # Kill all chromium processes
-            pkill -9 -f chromium 2>/dev/null || true
-            sleep 3
-            
-            # Try to restart via systemd first
-            if systemctl restart attendance-kiosk.service 2>/dev/null; then
-                log "Kiosk restarted via systemd"
-            else
-                # Fallback: start Chromium manually
-                log "Systemd restart failed, starting manually..."
-                SERVER_URL=$(jq -r '.server_url' "$CONFIG_FILE")
-                DEVICE_ID=$(jq -r '.device_id' "$CONFIG_FILE")
-                SCREEN_WIDTH=$(jq -r '.screen_width // 800' "$CONFIG_FILE")
-                SCREEN_HEIGHT=$(jq -r '.screen_height // 600' "$CONFIG_FILE")
-                
-                DISPLAY=:0 chromium \
-                    --kiosk \
-                    --window-size=${SCREEN_WIDTH},${SCREEN_HEIGHT} \
-                    --noerrdialogs \
-                    --disable-infobars \
-                    --disable-translate \
-                    --no-first-run \
-                    --disable-features=TranslateUI \
-                    --disable-gpu \
-                    --disable-software-rasterizer \
-                    "${SERVER_URL}/device-check.html?device_id=${DEVICE_ID}" &
-            fi
-            log "Kiosk restart completed"
-            ;;
-        "reboot")
-            log "Rebooting device in 3 seconds..."
-            sync
-            sleep 3
-            /usr/bin/sudo /sbin/reboot
-            ;;
-        "shutdown")
-            log "Shutting down device in 3 seconds..."
-            sync
-            sleep 3
-            /usr/bin/sudo /sbin/shutdown -h now
-            ;;
-        *)
-            log "Unknown command: $COMMAND"
-            ;;
-    esac
+    # Skip if no server time provided
+    if [ -z "\$SERVER_TIME" ] || [ "\$SERVER_TIME" = "null" ] || [ "\$SERVER_TIME" = "None" ]; then
+        return
+    fi
+    
+    # Check if we should sync (once per hour to avoid too frequent changes)
+    local CURRENT_EPOCH=\$(date +%s)
+    if [ -f "\$LAST_TIME_SYNC_FILE" ]; then
+        local LAST_SYNC=\$(cat "\$LAST_TIME_SYNC_FILE" 2>/dev/null || echo "0")
+        local TIME_SINCE_SYNC=\$((CURRENT_EPOCH - LAST_SYNC))
+        if [ \$TIME_SINCE_SYNC -lt \$TIME_SYNC_INTERVAL ]; then
+            return
+        fi
+    fi
+    
+    # Get local time and server time in comparable format
+    local LOCAL_TIME=\$(date -u '+%Y-%m-%d %H:%M:%S')
+    
+    # Calculate time difference (in seconds)
+    local LOCAL_EPOCH=\$(date -u -d "\$LOCAL_TIME" +%s 2>/dev/null || date +%s)
+    local SERVER_EPOCH=\$(date -u -d "\$SERVER_TIME" +%s 2>/dev/null)
+    
+    if [ -z "\$SERVER_EPOCH" ]; then
+        log "TIME SYNC: Could not parse server time: \$SERVER_TIME"
+        return
+    fi
+    
+    local TIME_DIFF=\$((SERVER_EPOCH - LOCAL_EPOCH))
+    local ABS_DIFF=\${TIME_DIFF#-}  # Absolute value
+    
+    # Only sync if difference is more than 30 seconds
+    if [ \$ABS_DIFF -gt 30 ]; then
+        log "TIME SYNC: Local time differs from server by \${TIME_DIFF}s"
+        log "TIME SYNC: Setting system time to: \$SERVER_TIME UTC"
+        
+        # Set the system time (requires root/sudo)
+        if /usr/bin/sudo /bin/date -u -s "\$SERVER_TIME" > /dev/null 2>&1; then
+            log "TIME SYNC: System time synchronized successfully"
+            # Also sync hardware clock if available
+            /usr/bin/sudo /sbin/hwclock -w 2>/dev/null || true
+        else
+            log "TIME SYNC: Failed to set system time (permission denied?)"
+        fi
+    fi
+    
+    # Record last sync time
+    echo "\$CURRENT_EPOCH" > "\$LAST_TIME_SYNC_FILE"
+}
+
+execute_shutdown() {
+    log "=========================================="
+    log "AUTO-SHUTDOWN: Scheduled shutdown initiated"
+    log "=========================================="
+    sync
+    sleep 3
+    /usr/bin/sudo /sbin/shutdown -h now
+}
+
+check_auto_shutdown() {
+    local SHUTDOWN_ENABLED="\$1"
+    local SHUTDOWN_TIME="\$2"
+    
+    # Skip if auto-shutdown is not enabled
+    if [ "\$SHUTDOWN_ENABLED" != "true" ] && [ "\$SHUTDOWN_ENABLED" != "True" ]; then
+        return
+    fi
+    
+    # Skip if no shutdown time is set
+    if [ -z "\$SHUTDOWN_TIME" ] || [ "\$SHUTDOWN_TIME" = "null" ] || [ "\$SHUTDOWN_TIME" = "None" ]; then
+        return
+    fi
+    
+    # Get current time in HH:MM format
+    CURRENT_TIME=\$(date '+%H:%M')
+    CURRENT_DATE=\$(date '+%Y-%m-%d')
+    
+    # Check if we already executed shutdown today (to prevent multiple shutdowns)
+    if [ -f "\$SHUTDOWN_EXECUTED_FILE" ]; then
+        LAST_SHUTDOWN_DATE=\$(cat "\$SHUTDOWN_EXECUTED_FILE" 2>/dev/null)
+        if [ "\$LAST_SHUTDOWN_DATE" = "\$CURRENT_DATE" ]; then
+            return
+        fi
+    fi
+    
+    # Compare times - shutdown if current time matches or is within 1 minute after scheduled time
+    CURRENT_MINUTES=\$((10#\$(echo \$CURRENT_TIME | cut -d: -f1) * 60 + 10#\$(echo \$CURRENT_TIME | cut -d: -f2)))
+    SHUTDOWN_MINUTES=\$((10#\$(echo \$SHUTDOWN_TIME | cut -d: -f1) * 60 + 10#\$(echo \$SHUTDOWN_TIME | cut -d: -f2)))
+    
+    # Check if current time is within shutdown window (scheduled time to scheduled time + 1 minute)
+    if [ \$CURRENT_MINUTES -ge \$SHUTDOWN_MINUTES ] && [ \$CURRENT_MINUTES -lt \$((SHUTDOWN_MINUTES + 2)) ]; then
+        log "Auto-shutdown time reached: \$SHUTDOWN_TIME (current: \$CURRENT_TIME)"
+        
+        # Mark that we executed shutdown today
+        echo "\$CURRENT_DATE" > "\$SHUTDOWN_EXECUTED_FILE"
+        
+        execute_shutdown
+    fi
 }
 
 send_heartbeat() {
-    if [ ! -f "$CONFIG_FILE" ]; then
-        log "ERROR: Config file not found: $CONFIG_FILE"
+    if [ ! -f "\$CONFIG_FILE" ]; then
+        log "ERROR: Config file not found: \$CONFIG_FILE"
         return 1
     fi
     
-    SERVER_URL=$(jq -r '.server_url' "$CONFIG_FILE" 2>/dev/null)
-    DEVICE_ID=$(jq -r '.device_id' "$CONFIG_FILE" 2>/dev/null)
+    SERVER_URL=\$(jq -r '.server_url' "\$CONFIG_FILE" 2>/dev/null)
+    DEVICE_ID=\$(jq -r '.device_id' "\$CONFIG_FILE" 2>/dev/null)
     
-    if [ -z "$SERVER_URL" ] || [ "$SERVER_URL" = "null" ]; then
+    if [ -z "\$SERVER_URL" ] || [ "\$SERVER_URL" = "null" ]; then
         log "ERROR: Server URL not configured"
         return 1
     fi
     
-    if [ -z "$DEVICE_ID" ] || [ "$DEVICE_ID" = "null" ] || [ "$DEVICE_ID" = "" ]; then
+    if [ -z "\$DEVICE_ID" ] || [ "\$DEVICE_ID" = "null" ] || [ "\$DEVICE_ID" = "" ]; then
         log "No device ID configured yet, skipping heartbeat"
         return 1
     fi
     
     # Get current IP address
-    IP_ADDRESS=$(hostname -I 2>/dev/null | awk '{print $1}')
+    IP_ADDRESS=\$(hostname -I 2>/dev/null | awk '{print \$1}')
     
     # Ensure SERVER_URL has http:// prefix
-    if [[ ! "$SERVER_URL" =~ ^https?:// ]]; then
-        SERVER_URL="http://${SERVER_URL}"
+    if [[ ! "\$SERVER_URL" =~ ^https?:// ]]; then
+        SERVER_URL="http://\${SERVER_URL}"
     fi
     
     # Send heartbeat and capture response
-    RESPONSE=$(curl -s -X POST "${SERVER_URL}/api/rpi/heartbeat" \
+    RESPONSE=\$(curl -s -X POST "\${SERVER_URL}/api/rpi/heartbeat" \
         -H "Content-Type: application/json" \
-        -d "{\"device_id\": \"${DEVICE_ID}\", \"ip_address\": \"${IP_ADDRESS}\"}" \
+        -d "{\"device_id\": \"\${DEVICE_ID}\", \"ip_address\": \"\${IP_ADDRESS}\"}" \
         --connect-timeout 10 \
         --max-time 30 2>/dev/null)
     
-    CURL_EXIT=$?
+    CURL_EXIT=\$?
     
-    if [ $CURL_EXIT -eq 0 ] && [ -n "$RESPONSE" ]; then
-        # Use Python for reliable JSON parsing (jq may not be available or may fail)
-        COMMAND=$(echo "$RESPONSE" | python3 -c "
+    if [ \$CURL_EXIT -eq 0 ] && [ -n "\$RESPONSE" ]; then
+        # Use Python for reliable JSON parsing
+        PARSED=\$(echo "\$RESPONSE" | python3 -c "
 import sys, json
 try:
     data = json.load(sys.stdin)
-    cmd = data.get('command', '')
-    if cmd and cmd != 'null':
-        print(cmd)
-except:
-    pass
+    shutdown_enabled = str(data.get('auto_shutdown_enabled', False))
+    shutdown_time = data.get('auto_shutdown_time', '')
+    server_time = data.get('server_time', '')
+    if shutdown_time is None:
+        shutdown_time = ''
+    if server_time is None:
+        server_time = ''
+    print(f'{shutdown_enabled}|{shutdown_time}|{server_time}')
+except Exception as e:
+    print('False||')
 " 2>/dev/null)
         
-        if [ -n "$COMMAND" ]; then
-            log "Received command from server: $COMMAND"
-            execute_command "$COMMAND"
-        else
-            # Only log occasionally to reduce log spam
-            if [ $((RANDOM % 6)) -eq 0 ]; then
-                log "Heartbeat OK (no pending command)"
+        SHUTDOWN_ENABLED=\$(echo "\$PARSED" | cut -d'|' -f1)
+        SHUTDOWN_TIME=\$(echo "\$PARSED" | cut -d'|' -f2)
+        SERVER_TIME=\$(echo "\$PARSED" | cut -d'|' -f3)
+        
+        # Sync time with server (runs periodically)
+        sync_time_with_server "\$SERVER_TIME"
+        
+        # Check for scheduled auto-shutdown
+        check_auto_shutdown "\$SHUTDOWN_ENABLED" "\$SHUTDOWN_TIME"
+        
+        # Only log occasionally to reduce log spam
+        if [ \$((RANDOM % 6)) -eq 0 ]; then
+            if [ "\$SHUTDOWN_ENABLED" = "True" ] && [ -n "\$SHUTDOWN_TIME" ]; then
+                log "Heartbeat OK (auto-shutdown scheduled: \$SHUTDOWN_TIME)"
+            else
+                log "Heartbeat OK"
             fi
         fi
     else
-        log "ERROR: Failed to send heartbeat (curl exit: $CURL_EXIT)"
+        log "ERROR: Failed to send heartbeat (curl exit: \$CURL_EXIT)"
     fi
 }
 
 # Main loop
 log "=========================================="
 log "MMSU Heartbeat Service Started"
-log "Config: $CONFIG_FILE"
+log "Config: \$CONFIG_FILE"
+log "Auto-shutdown check enabled"
+log "Time sync with server enabled (hourly)"
 log "=========================================="
 
-# Use 10 second interval for responsive command handling
+# Clear old flags on boot
+rm -f "\$SHUTDOWN_EXECUTED_FILE" 2>/dev/null
+rm -f "\$LAST_TIME_SYNC_FILE" 2>/dev/null
+
+# Use 10 second interval for responsive auto-shutdown
 INTERVAL=10
 
 while true; do
     send_heartbeat
-    sleep $INTERVAL
+    sleep \$INTERVAL
 done
 HEARTBEAT_SCRIPT
 
@@ -706,8 +870,8 @@ chown ${CURRENT_USER}:${CURRENT_USER} /var/log/mmsu-attendance
 chmod 755 /var/log/mmsu-attendance
 print_success "Log directory created: /var/log/mmsu-attendance"
 
-# Configure passwordless sudo for reboot/shutdown commands
-print_status "Configuring passwordless sudo for power commands..."
+# Configure passwordless sudo for power commands and time sync
+print_status "Configuring passwordless sudo for power and time commands..."
 cat > "/etc/sudoers.d/mmsu-attendance" << EOF
 # Allow attendance user to run power commands without password
 ${CURRENT_USER} ALL=(ALL) NOPASSWD: /sbin/reboot
@@ -716,9 +880,12 @@ ${CURRENT_USER} ALL=(ALL) NOPASSWD: /sbin/poweroff
 ${CURRENT_USER} ALL=(ALL) NOPASSWD: /usr/sbin/reboot
 ${CURRENT_USER} ALL=(ALL) NOPASSWD: /usr/sbin/shutdown
 ${CURRENT_USER} ALL=(ALL) NOPASSWD: /usr/sbin/poweroff
+# Allow time synchronization
+${CURRENT_USER} ALL=(ALL) NOPASSWD: /bin/date
+${CURRENT_USER} ALL=(ALL) NOPASSWD: /sbin/hwclock
 EOF
 chmod 440 /etc/sudoers.d/mmsu-attendance
-print_success "Passwordless sudo configured for power commands"
+print_success "Passwordless sudo configured for power and time commands"
 
 cat > "/etc/systemd/system/attendance-heartbeat.service" << EOF
 [Unit]
@@ -730,7 +897,9 @@ Wants=network-online.target
 [Service]
 Type=simple
 User=${CURRENT_USER}
-ExecStart=/home/${CURRENT_USER}/attendance/heartbeat.sh
+Group=${CURRENT_USER}
+WorkingDirectory=${INSTALL_DIR}
+ExecStart=/bin/bash ${INSTALL_DIR}/heartbeat.sh
 Restart=always
 RestartSec=10
 StandardOutput=append:/var/log/mmsu-attendance/heartbeat.log
@@ -789,6 +958,15 @@ print_status "Enabling services..."
 
 systemctl daemon-reload
 systemctl enable attendance-heartbeat.service
+systemctl start attendance-heartbeat.service
+
+# Verify heartbeat service started
+sleep 2
+if systemctl is-active --quiet attendance-heartbeat.service; then
+    print_success "Heartbeat service started and running."
+else
+    print_warning "Heartbeat service enabled but may not be running yet (will start on next boot)."
+fi
 
 print_success "Services enabled."
 
@@ -832,6 +1010,38 @@ sudo systemctl restart attendance-heartbeat.service
 sudo systemctl status attendance-heartbeat.service
 EOF
 chmod +x /usr/local/bin/attendance-heartbeat-restart
+
+# Heartbeat status command (for debugging)
+cat > "/usr/local/bin/attendance-heartbeat-status" << 'EOF'
+#!/bin/bash
+echo "=== Heartbeat Service Status ==="
+echo ""
+echo "Service Status:"
+sudo systemctl status attendance-heartbeat.service --no-pager
+echo ""
+echo "=== Last 20 Log Lines ==="
+tail -20 /var/log/mmsu-attendance/heartbeat.log 2>/dev/null || echo "No log file found"
+echo ""
+echo "=== Config File Check ==="
+CONFIG_FILE="/home/$(logname)/attendance/device_config.json"
+if [ -f "$CONFIG_FILE" ]; then
+    echo "Config file exists: $CONFIG_FILE"
+    echo "Contents:"
+    cat "$CONFIG_FILE" | jq . 2>/dev/null || cat "$CONFIG_FILE"
+else
+    echo "ERROR: Config file not found: $CONFIG_FILE"
+fi
+echo ""
+echo "=== Heartbeat Script Check ==="
+SCRIPT_FILE="/home/$(logname)/attendance/heartbeat.sh"
+if [ -f "$SCRIPT_FILE" ]; then
+    echo "Script file exists: $SCRIPT_FILE"
+    echo "Permissions: $(ls -la $SCRIPT_FILE)"
+else
+    echo "ERROR: Script file not found: $SCRIPT_FILE"
+fi
+EOF
+chmod +x /usr/local/bin/attendance-heartbeat-status
 
 # View config command
 cat > "/usr/local/bin/attendance-config" << 'EOF'

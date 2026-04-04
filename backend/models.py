@@ -236,6 +236,10 @@ class RpiDevice(db.Model):
     is_enabled = db.Column(db.Boolean, default=True)
     scanner_mode = db.Column(db.String(20), default='both')  # 'time_in', 'time_out', 'both'
     
+    # Auto-shutdown schedule
+    auto_shutdown_enabled = db.Column(db.Boolean, default=False)
+    auto_shutdown_time = db.Column(db.String(5), nullable=True)  # Format: 'HH:MM' (24-hour)
+    
     # Power control - command queue for device
     pending_command = db.Column(db.String(50), nullable=True)  # 'reboot', 'shutdown', 'restart_kiosk', None
     command_issued_at = db.Column(db.DateTime, nullable=True)
@@ -261,6 +265,8 @@ class RpiDevice(db.Model):
             'config_data': self.config_data,
             'is_enabled': self.is_enabled,
             'scanner_mode': self.scanner_mode,
+            'auto_shutdown_enabled': self.auto_shutdown_enabled,
+            'auto_shutdown_time': self.auto_shutdown_time,
             'pending_command': self.pending_command,
             'command_issued_at': self.command_issued_at.isoformat() if self.command_issued_at else None,
             'command_issued_by': self.command_issued_by,

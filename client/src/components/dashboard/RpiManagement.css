@@ -682,3 +682,66 @@
 .btn-warning:hover {
     background: #e0a800;
 }
+
+/* Auto-shutdown indicator */
+.meta-item.auto-shutdown {
+    background: #e3f2fd;
+    color: #1565c0;
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-weight: 500;
+}
+
+.meta-item.auto-shutdown svg {
+    color: #1565c0;
+}
+
+/* Form Section */
+.form-section {
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid #e0e0e0;
+}
+
+.form-section h3 {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0 0 8px 0;
+    font-size: 1rem;
+    color: #333;
+}
+
+.form-section h3 svg {
+    color: #1565c0;
+}
+
+.form-description {
+    margin: 0 0 15px 0;
+    font-size: 0.85rem;
+    color: #666;
+    line-height: 1.5;
+}
+
+.form-hint {
+    display: block;
+    margin-top: 5px;
+    font-size: 0.8rem;
+    color: #888;
+}
+
+/* Time input styling */
+input[type="time"] {
+    padding: 10px 12px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    font-size: 1rem;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+input[type="time"]:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}

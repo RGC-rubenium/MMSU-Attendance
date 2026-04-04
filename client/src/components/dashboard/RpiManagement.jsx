@@ -11,7 +11,8 @@ import {
     MdCheckCircle,
     MdCancel,
     MdRefresh,
-    MdEdit
+    MdEdit,
+    MdAccessTime
 } from 'react-icons/md';
 import './RpiManagement.css';
 import LoadingScreen from '../common/LoadingScreen';
@@ -401,6 +402,12 @@ const RpiManagement = () => {
                                             <span>IP: {device.ip_address}</span>
                                         </div>
                                     )}
+                                    {device.auto_shutdown_enabled && device.auto_shutdown_time && (
+                                        <div className="meta-item auto-shutdown">
+                                            <MdAccessTime />
+                                            <span>Auto-off: {device.auto_shutdown_time}</span>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         ))
@@ -517,6 +524,8 @@ const DeviceConfigModal = ({ device, onSave, onClose }) => {
         location: device.location || '',
         scanner_mode: device.scanner_mode,
         is_enabled: device.is_enabled,
+        auto_shutdown_enabled: device.auto_shutdown_enabled || false,
+        auto_shutdown_time: device.auto_shutdown_time || '',
         config: device.config_data || {}
     });
 
@@ -572,6 +581,39 @@ const DeviceConfigModal = ({ device, onSave, onClose }) => {
                             />
                             Device Enabled
                         </label>
+                    </div>
+
+                    <div className="form-section">
+                        <h3><MdAccessTime /> Auto-Shutdown Schedule</h3>
+                        <p className="form-description">
+                            Configure automatic shutdown time for this device. The device will shut down daily at the specified time.
+                        </p>
+                        
+                        <div className="form-group">
+                            <label className="checkbox-label">
+                                <input
+                                    type="checkbox"
+                                    checked={config.auto_shutdown_enabled}
+                                    onChange={(e) => setConfig({...config, auto_shutdown_enabled: e.target.checked})}
+                                />
+                                Enable Auto-Shutdown
+                            </label>
+                        </div>
+
+                        {config.auto_shutdown_enabled && (
+                            <div className="form-group">
+                                <label>Shutdown Time (24-hour format)</label>
+                                <input
+                                    type="time"
+                                    value={config.auto_shutdown_time}
+                                    onChange={(e) => setConfig({...config, auto_shutdown_time: e.target.value})}
+                                    required={config.auto_shutdown_enabled}
+                                />
+                                <span className="form-hint">
+                                    Device will automatically shut down at this time daily
+                                </span>
+                            </div>
+                        )}
                     </div>
                 </div>
 
