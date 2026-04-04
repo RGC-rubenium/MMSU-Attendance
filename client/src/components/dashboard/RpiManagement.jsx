@@ -22,6 +22,7 @@ import {
 } from 'react-icons/md';
 import './RpiManagement.css';
 import LoadingScreen from '../common/LoadingScreen';
+import ConfirmModal from '../common/ConfirmModal';
 
 const RpiManagement = () => {
     const [devices, setDevices] = useState([]);
@@ -46,6 +47,9 @@ const RpiManagement = () => {
         confirmClass: 'btn-primary'
     });
 
+    // Notification state
+    const [notification, setNotification] = useState({ show: false, message: '', type: 'info' });
+
     const showConfirmation = (title, message, onConfirm, confirmText = 'Confirm', confirmClass = 'btn-primary') => {
         setConfirmModal({
             show: true,
@@ -66,6 +70,11 @@ const RpiManagement = () => {
             confirmText: 'Confirm',
             confirmClass: 'btn-primary'
         });
+    };
+
+    const showNotification = (message, type = 'info', duration = 3000) => {
+        setNotification({ show: true, message, type });
+        setTimeout(() => setNotification({ show: false, message: '', type: 'info' }), duration);
     };
 
     useEffect(() => {
@@ -143,15 +152,15 @@ const RpiManagement = () => {
             const data = await response.json();
             
             if (data.success) {
-                alert('Pairing request approved successfully!');
+                showNotification('Pairing request approved successfully!', 'success');
                 fetchDevices();
                 fetchPairingRequests();
             } else {
-                alert(`Error: ${data.message}`);
+                showNotification(`Error: ${data.message}`, 'error');
             }
         } catch (error) {
             console.error('Error approving pairing:', error);
-            alert('Error approving pairing request');
+            showNotification('Error approving pairing request', 'error');
         }
     };
 
@@ -174,14 +183,14 @@ const RpiManagement = () => {
             const data = await response.json();
             
             if (data.success) {
-                alert('Pairing request rejected');
+                showNotification('Pairing request rejected', 'success');
                 fetchPairingRequests();
             } else {
-                alert(`Error: ${data.message}`);
+                showNotification(`Error: ${data.message}`, 'error');
             }
         } catch (error) {
             console.error('Error rejecting pairing:', error);
-            alert('Error rejecting pairing request');
+            showNotification('Error rejecting pairing request', 'error');
         }
     };
 
@@ -200,11 +209,11 @@ const RpiManagement = () => {
             if (data.success) {
                 fetchDevices();
             } else {
-                alert(`Error: ${data.message}`);
+                showNotification(`Error: ${data.message}`, 'error');
             }
         } catch (error) {
             console.error('Error toggling device:', error);
-            alert('Error updating device status');
+            showNotification('Error updating device status', 'error');
         }
     };
 
@@ -221,14 +230,14 @@ const RpiManagement = () => {
                     const data = await response.json();
                     
                     if (data.success) {
-                        alert('Device unpaired successfully');
+                        showNotification('Device unpaired successfully', 'success');
                         fetchDevices();
                     } else {
-                        alert(`Error: ${data.message}`);
+                        showNotification(`Error: ${data.message}`, 'error');
                     }
                 } catch (error) {
                     console.error('Error unpairing device:', error);
-                    alert('Error unpairing device');
+                    showNotification('Error unpairing device', 'error');
                 }
             },
             'Unpair',
@@ -252,13 +261,13 @@ const RpiManagement = () => {
                 setEditingDevice(null);
                 setShowConfigModal(false);
                 fetchDevices();
-                alert('Device configuration updated successfully');
+                showNotification('Device configuration updated successfully', 'success');
             } else {
-                alert(`Error: ${data.message}`);
+                showNotification(`Error: ${data.message}`, 'error');
             }
         } catch (error) {
             console.error('Error saving config:', error);
-            alert('Error saving configuration');
+            showNotification('Error saving configuration', 'error');
         }
     };
 
@@ -278,14 +287,14 @@ const RpiManagement = () => {
                     });
                     const data = await response.json();
                     if (data.success) {
-                        alert('Reboot command sent successfully');
+                        showNotification('Reboot command sent successfully', 'success');
                         fetchDevices();
                     } else {
-                        alert(`Error: ${data.message}`);
+                        showNotification(`Error: ${data.message}`, 'error');
                     }
                 } catch (error) {
                     console.error('Error rebooting device:', error);
-                    alert('Error sending reboot command');
+                    showNotification('Error sending reboot command', 'error');
                 } finally {
                     setActionLoading(false);
                 }
@@ -309,14 +318,14 @@ const RpiManagement = () => {
                     });
                     const data = await response.json();
                     if (data.success) {
-                        alert('Shutdown command sent successfully');
+                        showNotification('Shutdown command sent successfully', 'success');
                         fetchDevices();
                     } else {
-                        alert(`Error: ${data.message}`);
+                        showNotification(`Error: ${data.message}`, 'error');
                     }
                 } catch (error) {
                     console.error('Error shutting down device:', error);
-                    alert('Error sending shutdown command');
+                    showNotification('Error sending shutdown command', 'error');
                 } finally {
                     setActionLoading(false);
                 }
@@ -335,13 +344,13 @@ const RpiManagement = () => {
             });
             const data = await response.json();
             if (data.success) {
-                alert(`Time synced successfully to ${data.server_time}`);
+                showNotification(`Time synced successfully to ${data.server_time}`, 'success');
             } else {
-                alert(`Error: ${data.message}`);
+                showNotification(`Error: ${data.message}`, 'error');
             }
         } catch (error) {
             console.error('Error syncing device time:', error);
-            alert('Error syncing device time');
+            showNotification('Error syncing device time', 'error');
         } finally {
             setActionLoading(false);
         }
@@ -397,15 +406,15 @@ const RpiManagement = () => {
                     const data = await response.json();
                     if (data.success) {
                         const { success, skipped, failed } = data.summary;
-                        alert(`Bulk reboot: ${success} success, ${skipped} skipped (no SSH), ${failed} failed`);
+                        showNotification(`Bulk reboot: ${success} success, ${skipped} skipped (no SSH), ${failed} failed`, 'success');
                         setSelectedDevices(new Set());
                         fetchDevices();
                     } else {
-                        alert(`Error: ${data.message}`);
+                        showNotification(`Error: ${data.message}`, 'error');
                     }
                 } catch (error) {
                     console.error('Error in bulk reboot:', error);
-                    alert('Error performing bulk reboot');
+                    showNotification('Error performing bulk reboot', 'error');
                 } finally {
                     setActionLoading(false);
                 }
@@ -436,15 +445,15 @@ const RpiManagement = () => {
                     const data = await response.json();
                     if (data.success) {
                         const { success, skipped, failed } = data.summary;
-                        alert(`Bulk shutdown: ${success} success, ${skipped} skipped (no SSH), ${failed} failed`);
+                        showNotification(`Bulk shutdown: ${success} success, ${skipped} skipped (no SSH), ${failed} failed`, 'success');
                         setSelectedDevices(new Set());
                         fetchDevices();
                     } else {
-                        alert(`Error: ${data.message}`);
+                        showNotification(`Error: ${data.message}`, 'error');
                     }
                 } catch (error) {
                     console.error('Error in bulk shutdown:', error);
-                    alert('Error performing bulk shutdown');
+                    showNotification('Error performing bulk shutdown', 'error');
                 } finally {
                     setActionLoading(false);
                 }
@@ -474,14 +483,14 @@ const RpiManagement = () => {
                     const data = await response.json();
                     if (data.success) {
                         const { success, skipped, failed } = data.summary;
-                        alert(`Time sync: ${success} success, ${skipped} skipped (no SSH), ${failed} failed. Server time: ${data.server_time}`);
+                        showNotification(`Time sync: ${success} success, ${skipped} skipped (no SSH), ${failed} failed. Server time: ${data.server_time}`, 'success');
                         setSelectedDevices(new Set());
                     } else {
-                        alert(`Error: ${data.message}`);
+                        showNotification(`Error: ${data.message}`, 'error');
                     }
                 } catch (error) {
                     console.error('Error in bulk time sync:', error);
-                    alert('Error performing bulk time sync');
+                    showNotification('Error performing bulk time sync', 'error');
                 } finally {
                     setActionLoading(false);
                 }
@@ -863,6 +872,17 @@ const RpiManagement = () => {
                                 {confirmModal.confirmText}
                             </button>
                         </div>
+                    </div>
+                </div>
+            )}
+
+
+            {/* Custom Dialog Notification */}
+            {notification.show && (
+                <div className="custom-dialog-overlay">
+                    <div className="custom-dialog-box">
+                        <div className="custom-dialog-message">{notification.message}</div>
+                        <button className="custom-dialog-ok" onClick={() => setNotification({ show: false, message: '', type: 'info' })}>OK</button>
                     </div>
                 </div>
             )}

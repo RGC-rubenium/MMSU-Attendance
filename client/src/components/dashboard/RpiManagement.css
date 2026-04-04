@@ -1,3 +1,56 @@
+/* Custom Dialog Notification */
+.custom-dialog-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0,0,0,0.55);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+    backdrop-filter: blur(2px);
+}
+
+.custom-dialog-box {
+    background: linear-gradient(135deg, #1e293b, #334155);
+    color: #f1f5f9;
+    border-radius: 14px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.35);
+    padding: 32px 32px 24px 32px;
+    min-width: 320px;
+    max-width: 90vw;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    border: 1px solid rgba(255,255,255,0.09);
+    animation: fadeIn 0.2s;
+}
+
+.custom-dialog-message {
+    font-size: 1.08rem;
+    margin-bottom: 24px;
+    text-align: center;
+    color: #f8fafc;
+}
+
+.custom-dialog-ok {
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 10px 32px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(99,102,241,0.15);
+    transition: background 0.2s, transform 0.2s;
+}
+.custom-dialog-ok:hover {
+    background: linear-gradient(135deg, #4f46e5, #7c3aed);
+    transform: translateY(-2px) scale(1.04);
+}
 /* RPi Management Styles - Dark Theme */
 .rpi-management {
     padding: 18px;
