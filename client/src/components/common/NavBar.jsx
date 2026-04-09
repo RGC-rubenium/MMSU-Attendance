@@ -64,7 +64,7 @@ export default function NavBar({ SideBarData }) {
                                 </>
                             ) : (
                                 <Link to={item.Path}>
-                                    {item.Icon}
+                                    <span className="icon">{item.Icon}</span>
                                     <span>{item.title}</span>
                                 </Link>
                             )}
