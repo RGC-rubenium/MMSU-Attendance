@@ -38,9 +38,7 @@ const AuthToken = {
 	fetchWithAuth,
 	decodeToken,
 	getTokenPayload,
-	getRoles,
-	getExpiry,
-	isTokenExpired,
+	getRoles
 }
 
 export default AuthToken
@@ -87,20 +85,20 @@ export function getRoles() {
 	return []
 }
 
-export function getExpiry() {
-	const p = getTokenPayload()
-	if (!p) return null
-	// exp may be numeric (seconds) or an ISO string depending on server
-	const exp = p.exp
-	if (!exp) return null
-	if (typeof exp === 'number') return new Date(exp * 1000)
-	// try parse string
-	const d = new Date(exp)
-	return isNaN(d.getTime()) ? null : d
-}
+// export function getExpiry() {
+// 	const p = getTokenPayload()
+// 	if (!p) return null
+// 	// exp may be numeric (seconds) or an ISO string depending on server
+// 	const exp = p.exp
+// 	if (!exp) return null
+// 	if (typeof exp === 'number') return new Date(exp * 1000)
+// 	// try parse string
+// 	const d = new Date(exp)
+// 	return isNaN(d.getTime()) ? null : d
+// }
 
-export function isTokenExpired() {
-	const expDate = getExpiry()
-	if (!expDate) return true
-	return Date.now() >= expDate.getTime()
-}
+// export function isTokenExpired() {
+// 	const expDate = getExpiry()
+// 	if (!expDate) return true
+// 	return Date.now() >= expDate.getTime()
+// }

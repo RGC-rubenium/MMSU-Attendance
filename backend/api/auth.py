@@ -20,12 +20,10 @@ def login():
     if not user or not user.check_password(password):
         return jsonify({'message': 'Invalid credentials'}), 401
 
-    expires_at = datetime.utcnow() + timedelta(minutes=config.JWT_EXPIRES_MINUTES)
     token = jwt_utils.create_jwt({'sub': user.username, 'roles': user.get_roles_list()})
     return jsonify({
         'message': 'Login successful',
         'token': token,
-        'expiresAt': expires_at.isoformat(),
         'roles': user.get_roles_list()
     }), 200
 

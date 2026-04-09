@@ -56,30 +56,16 @@ export const SideBarData = [
         cName: 'sidebar-text'
     },
     {
-            title: 'Logs',
-            Path: '/dashboard/logs',
+        title: 'Logs',
+        Path: '/dashboard/logs/attendance',
         Icon: <AiIcons.AiOutlineFileText/>,
-        cName: 'sidebar-dropdown',
-        subNav: [
-            {
-                title: 'Attendance Logs',
-                Path: '/dashboard/logs/attendance',
-                cName: 'sidebar-subtext'
-            }
-        ]
+        cName: 'sidebar-text'
     },
     {
         title: 'Scanner Management',
-        Path: '/dashboard/rpi',
+        Path: '/dashboard/rpi/management',
         Icon: <IoIcons.IoHardwareChip/>,
-        cName: 'sidebar-dropdown',
-        subNav: [
-            {
-                title: 'Device Management',
-                Path: '/dashboard/rpi/management',
-                cName: 'sidebar-subtext'
-            }
-        ]
+        cName: 'sidebar-text'
     },
     {
         title: 'Settings',

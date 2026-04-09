@@ -21,7 +21,7 @@ except Exception:
 
 SECRET_KEY = os.environ.get('JWT_SECRET', key)
 JWT_ALGORITHM = 'HS256'
-JWT_EXPIRES_MINUTES = int(os.environ.get('JWT_EXPIRES_MINUTES', minute))
+# JWT_EXPIRES_MINUTES = int(os.environ.get('JWT_EXPIRES_MINUTES', minute))
 
 # Database URL: prefer DATABASE_URL env var, fallback to sqlite
 SQLALCHEMY_DATABASE_URI = f'postgresql://{username}:{password}@{ip}/{database}'

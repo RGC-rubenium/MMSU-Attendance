@@ -41,7 +41,7 @@ export function AuthProvider({ children }) {
     loading,
     loginComplete,
     logout,
-    isAuthenticated: !!token && !AuthToken.isTokenExpired(),
+    isAuthenticated: !!token,
     hasRole: (r) => (roles || []).includes(r),
   }
 

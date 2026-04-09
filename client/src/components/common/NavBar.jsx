@@ -1,11 +1,10 @@
 import { useState, useEffect } from 'react'
-import { SideBarData } from "./SiderBarData";
 import './NavBar.css'
 import { MdKeyboardArrowDown, MdKeyboardArrowUp } from 'react-icons/md'
 import { Link, useLocation } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
 
-export default function NavBar() {
+export default function NavBar({ SideBarData }) {
     const [openIndex, setOpenIndex] = useState(null)
     const location = useLocation()
 
@@ -72,7 +71,9 @@ export default function NavBar() {
                         </li>
                     )
                 })}
-                <button className="logout-button" type="button" onClick={() => auth && auth.logout ? auth.logout() : null}>Logout</button>
+                {/* Divider for visual separation */}
+                <li style={{width: '90%', margin: '18px auto 0 auto', opacity: 0.5}} />
+                <button className="logout-button" type="button" onClick={() => auth && auth.logout ? auth.logout() : null}>Sign-Out</button>
             </ul>
         </nav>
     )
