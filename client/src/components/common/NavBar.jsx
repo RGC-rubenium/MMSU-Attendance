@@ -34,47 +34,47 @@ export default function NavBar({ SideBarData }) {
 
     return (
         <nav className="sidebar" aria-label="Main navigation">
-            <ul className="sidebar-list">
-                {SideBarData.map((item, index) => {
-                    const hasSub = Array.isArray(item.subNav) && item.subNav.length > 0
-                    return (
-                        <li key={index} className={item.cName}>
-                            {hasSub ? (
-                                <>
-                                    <button
-                                        type="button"
-                                        className="dropdown-btn"
-                                        onClick={() => toggleIndex(index)}
-                                        aria-expanded={openIndex === index}
-                                    >
-                                        <span className="icon">{item.Icon}</span>
-                                        <span className="title">{item.title}</span>
-                                        <span className="dropdown-caret">
-                                            {openIndex === index ? <MdKeyboardArrowUp /> : <MdKeyboardArrowDown />}
-                                        </span>
-                                    </button>
+            <div className="sidebar-content">
+                <ul className="sidebar-list">
+                    {SideBarData.map((item, index) => {
+                        const hasSub = Array.isArray(item.subNav) && item.subNav.length > 0
+                        return (
+                            <li key={index} className={item.cName}>
+                                {hasSub ? (
+                                    <>
+                                        <button
+                                            type="button"
+                                            className="dropdown-btn"
+                                            onClick={() => toggleIndex(index)}
+                                            aria-expanded={openIndex === index}
+                                        >
+                                            <span className="icon">{item.Icon}</span>
+                                            <span className="title">{item.title}</span>
+                                            <span className="dropdown-caret">
+                                                {openIndex === index ? <MdKeyboardArrowUp /> : <MdKeyboardArrowDown />}
+                                            </span>
+                                        </button>
 
-                                    <ul className={`submenu ${openIndex === index ? 'open' : ''}`}>
-                                        {item.subNav.map((sub, sidx) => (
-                                            <li key={sidx} className={sub.cName}>
-                                                <Link to={sub.Path} className="submenu-link">{sub.title}</Link>
-                                            </li>
-                                        ))}
-                                    </ul>
-                                </>
-                            ) : (
-                                <Link to={item.Path}>
-                                    <span className="icon">{item.Icon}</span>
-                                    <span>{item.title}</span>
-                                </Link>
-                            )}
-                        </li>
-                    )
-                })}
-                {/* Divider for visual separation */}
-                <li style={{width: '90%', margin: '18px auto 0 auto', opacity: 0.5}} />
+                                        <ul className={`submenu ${openIndex === index ? 'open' : ''}`}>
+                                            {item.subNav.map((sub, sidx) => (
+                                                <li key={sidx} className={sub.cName}>
+                                                    <Link to={sub.Path} className="submenu-link">{sub.title}</Link>
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    </>
+                                ) : (
+                                    <Link to={item.Path}>
+                                        <span className="icon">{item.Icon}</span>
+                                        <span>{item.title}</span>
+                                    </Link>
+                                )}
+                            </li>
+                        )
+                    })}
+                </ul>
                 <button className="logout-button" type="button" onClick={() => auth && auth.logout ? auth.logout() : null}>Sign-Out</button>
-            </ul>
+            </div>
         </nav>
     )
 }
