@@ -19,6 +19,7 @@ import RpiManagement from './components/dashboard/RpiManagement'
 import DeviceCheck from './pages/device/DeviceCheck'
 import DevicePending from './pages/device/DevicePending'
 import DeviceDisabled from './pages/device/DeviceDisabled'
+import Settings from './pages/dashboard/pages/Settings'
 import './index.css'
 
 
@@ -59,6 +60,7 @@ function App() {
               <Route path="schedule/class-schedule" element={<ClassSchedule />} />
               <Route path="logs/attendance" element={<AttendanceLogs />} />
               <Route path="rpi/management" element={<RpiManagement />} />
+              <Route path="settings" element={<Settings />} />
             </Route>
           </Routes>
         </AuthProvider>
