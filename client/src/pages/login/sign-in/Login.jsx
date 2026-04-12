@@ -1,14 +1,15 @@
 import { useState, useEffect } from 'react'
 import './Login.css'
 import { login } from '../../../api/login-auth'
-import { useNavigate } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../../contexts/AuthContext'
 
 export default function Login({ onModeChange }) {
+  const location = useLocation()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
-  const [success, setSuccess] = useState('')
+  const [success, setSuccess] = useState(location.state?.registrationSuccess || '')
   const [loading, setLoading] = useState(false)
 
   // per-field errors
@@ -31,6 +32,12 @@ export default function Login({ onModeChange }) {
       }
     }
   }, [auth, navigate])
+
+  useEffect(() => {
+    if (location.state?.registrationSuccess) {
+      setSuccess(location.state.registrationSuccess)
+    }
+  }, [location.state])
 
   function validateFields() {
     let valid = true
@@ -150,7 +157,10 @@ export default function Login({ onModeChange }) {
           {loading ? 'Signing in…' : 'Sign in'}
         </button>
 
-        <p className="login-help">Need an account? Contact the administrator.</p>
+        <p className="login-help">
+          Don&apos;t have an account?{' '}
+          <Link to="/register" className="login-link">Create one here</Link>
+        </p>
       </form>
     </div>
   )

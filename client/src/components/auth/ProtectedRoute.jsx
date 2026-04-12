@@ -15,17 +15,17 @@ export default function ProtectedRoute({ allowedRoles = ['admin'], children }) {
       return
     }
 
-    const roles = auth.roles || []
-    const hasAllowed = allowedRoles.length === 0 || roles.some(r => allowedRoles.includes(r))
-    if (!hasAllowed) {
-      if (roles.includes('faculty')) {
-        navigate('/dashboard/faculty', { replace: true })
-      } else if (roles.includes('student')) {
-        navigate('/dashboard/students', { replace: true })
-      } else {
-        navigate('/', { replace: true })
-      }
-    }
+    // const roles = auth.roles || []
+    // const hasAllowed = allowedRoles.length === 0 || roles.some(r => allowedRoles.includes(r))
+    // if (!hasAllowed) {
+    //   if (roles.includes('faculty')) {
+    //     navigate('/dashboard/faculty', { replace: true })
+    //   } else if (roles.includes('student')) {
+    //     navigate('/dashboard/students', { replace: true })
+    //   } else {
+    //     navigate('/', { replace: true })
+    //   }
+    // }
   }, [auth?.isAuthenticated, auth?.roles, navigate, allowedRoles])
 
   // Don't render children if not authenticated

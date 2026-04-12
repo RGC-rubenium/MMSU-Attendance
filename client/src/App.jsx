@@ -1,4 +1,5 @@
 import Login from './pages/login/sign-in/Login'
+import Register from './pages/login/sign-in/Register'
 import AdminDashboard from './pages/dashboard/AdminDashboard'
 import { AuthProvider } from './contexts/AuthContext'
 import Dashboard from './pages/dashboard/pages/DashboardContent'
@@ -46,6 +47,8 @@ function App() {
             
             {/* Auth Routes */}
             <Route path="/" element={<Login />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
             
             {/* Dashboard Routes */}
             <Route path="/dashboard/*" element={<ProtectedRoute allowedRoles={["admin"]}><AdminDashboard /></ProtectedRoute>}>

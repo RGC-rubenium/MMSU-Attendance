@@ -273,7 +273,7 @@ const TimeInScanner = () => {
             } else if (error.status === 404) {
                 errorMessage = 'Service not found. Please contact system administrator.';
             } else if (error.message) {
-                errorMessage = `Network error: ${error.message}`;
+                errorMessage = `${error.message}`;
             }
             
             setLastScanResult({

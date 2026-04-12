@@ -62,6 +62,11 @@
 
 .login-button:hover { filter: brightness(0.95); }
 
+.login-button:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
 .login-error {
   color: #b91c1c;
   background: #fff1f2;
@@ -81,6 +86,23 @@
 .login-help {
   margin: 12px 0 0 0;
   font-size: 13px;
+  color: #7b8794;
+  text-align: center;
+}
+
+.login-link {
+  color: #2563eb;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.login-link:hover {
+  text-decoration: underline;
+}
+
+.login-subtitle {
+  margin: -12px 0 8px 0;
+  font-size: 14px;
   color: #7b8794;
 }
 
