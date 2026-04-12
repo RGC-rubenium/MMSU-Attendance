@@ -40,7 +40,6 @@ const UserAvatar = ({ src, alt, fullName, className = "user-avatar" }) => {
         setImageLoaded(true);
         setImageError(false);
     };
-
     // Show placeholder if no src or image error
     if (!src || imageError) {
         console.log('UserAvatar: Showing placeholder - no src or error');
@@ -63,6 +62,7 @@ const UserAvatar = ({ src, alt, fullName, className = "user-avatar" }) => {
                     </span>
                 </div>
             )}
+            {}
             <img 
                 className={className}
                 src={src}
