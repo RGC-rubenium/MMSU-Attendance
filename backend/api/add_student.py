@@ -40,9 +40,9 @@ def add_student():
 
         # Get form data
         data = request.form.to_dict()
-        
-            # Required fields validation (parent_contact is now optional)
-            required_fields = ['uid', 'id', 'first_name', 'last_name', 'department', 'year_level', 'gender', 'section']
+
+        # Required fields validation (parent_contact is now optional)
+        required_fields = ['uid', 'id', 'first_name', 'last_name', 'department', 'year_level', 'gender', 'section']
         for field in required_fields:
             if not data.get(field):
                 return jsonify({

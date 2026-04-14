@@ -126,6 +126,8 @@ export default function UserProfile() {
             last_name: user.last_name || '',
             department: user.department || '',
             gender: user.gender || '',
+            uid: user.uid || user.Uid || user.card_uid || '',
+            id: user.id || user.student_id || user.employee_id || '',
             ...(userType === 'student' && {
                 year_level: user.year_level || user.yearlevel || '',
                 section: user.section || '',
@@ -477,6 +479,26 @@ export default function UserProfile() {
                         {isEditing ? (
                             <div className="edit-form">
                                 <div className="form-row">
+                                    <div className="form-group">
+                                        <label>UID</label>
+                                        <input
+                                            type="text"
+                                            name="uid"
+                                            value={editData.uid || ''}
+                                            onChange={handleEditChange}
+                                            placeholder="UID (RFID Card)"
+                                        />
+                                    </div>
+                                    <div className="form-group">
+                                        <label>{userType === 'student' ? 'Student ID' : 'Employee ID'}</label>
+                                        <input
+                                            type="text"
+                                            name="id"
+                                            value={editData.id || ''}
+                                            onChange={handleEditChange}
+                                            placeholder={userType === 'student' ? 'Student ID' : 'Employee ID'}
+                                        />
+                                    </div>
                                     <div className="form-group">
                                         <label>First Name</label>
                                         <input

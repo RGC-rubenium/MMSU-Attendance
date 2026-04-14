@@ -39,7 +39,6 @@ def _delete_profile_image(profile_path):
 
 
 @student_update_bp.route('/student/<string:student_id>', methods=['PUT', 'PATCH'])
-@jwt_utils.token_required
 def update_student(student_id):
     """
     Update a student's information
