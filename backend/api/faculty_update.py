@@ -39,7 +39,6 @@ def _delete_profile_image(profile_path):
 
 
 @faculty_update_bp.route('/faculty/<string:faculty_id>', methods=['PUT', 'PATCH'])
-@jwt_utils.token_required
 def update_faculty(faculty_id):
     """
     Update a faculty member's information

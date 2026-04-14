@@ -100,6 +100,7 @@ export default class FacultyHandler {
         
         try {
             const res = await AuthToken.fetchWithAuth(url, { 
+                method: 'DELETE',
                 headers: { 'Accept': 'application/json' },
                 cache: 'no-store'
             })

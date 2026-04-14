@@ -9,7 +9,6 @@ class_schedule_bp = Blueprint('class_schedule', __name__)
 
 
 @class_schedule_bp.route('/class-schedule', methods=['GET'])
-@jwt_utils.token_required
 def get_class_schedules():
     """Get all class schedules with optional filtering"""
     try:
