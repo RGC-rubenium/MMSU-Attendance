@@ -467,16 +467,16 @@ const AddStudent = ({ isOpen, onClose, onSuccess }) => {
                             {errors.gender && <div className="form-error">{errors.gender}</div>}
                         </div>
                         
-                        {/* Parent/Guardian Contact */}
+                        {/* Parent/Guardian Contact (Optional) */}
                         <div className="form-group">
-                            <label className="form-label required">Parent/Guardian Contact</label>
+                            <label className="form-label">Parent/Guardian Contact (Optional)</label>
                             <input
                                 type="tel"
                                 name="parent_contact"
                                 className={`form-input ${errors.parent_contact ? 'error' : ''}`}
                                 value={formData.parent_contact}
                                 onChange={handleInputChange}
-                                placeholder="e.g. 09123456789"
+                                placeholder="e.g. 09123456789 (optional)"
                             />
                             {errors.parent_contact && <div className="form-error">{errors.parent_contact}</div>}
                         </div>

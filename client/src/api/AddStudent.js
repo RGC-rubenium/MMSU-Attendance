@@ -92,8 +92,8 @@ class AddStudentHandler {
             department: 'Department',
             year_level: 'Year Level',
             gender: 'Gender',
-            section: 'Section',
-            parent_contact: 'Parent/Guardian Contact'
+            section: 'Section'
+            // parent_contact is now optional
         };
         
         // Check required fields
@@ -231,7 +231,7 @@ AddStudentHandler.prototype.downloadTemplate = function() {
         'year_level',
         'section',
         'gender',
-        'parent_contact',
+        'parent_contact', // Optional
         'contact_number'
     ];
     
