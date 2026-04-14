@@ -34,6 +34,8 @@ export default function AttendanceLogs() {
     const [meta, setMeta]         = useState({ total: 0, page: 1, totalPages: 1 });
     const [expanded, setExpanded] = useState(null);
 
+    const [deleteLoading, setDeleteLoading] = useState(false);
+
     // Filters
     const [date, setDate]           = useState(todayStr());
     const [userType, setUserType]   = useState('');
@@ -96,6 +98,21 @@ export default function AttendanceLogs() {
     };
 
     const toggleExpand = (id) => setExpanded(prev => prev === id ? null : id);
+
+    // Delete log handler
+    const handleDelete = async (logId) => {
+        if (!window.confirm('Are you sure you want to delete this log?')) return;
+        setDeleteLoading(true);
+        setError('');
+        try {
+            await AttendanceLogsHandler.deleteLog(logId);
+            setLogs((prev) => prev.filter((log) => log.id !== logId));
+        } catch (err) {
+            setError('Failed to delete log.');
+        } finally {
+            setDeleteLoading(false);
+        }
+    };
 
     const statusBadge = (s) => {
         const map = { incomplete: 'badge-incomplete', complete: 'badge-complete' };
@@ -232,6 +249,7 @@ export default function AttendanceLogs() {
                                     <th>Duration</th>
                                     <th>Status</th>
                                     <th>Schedule</th>
+                                    <th>Details</th>
                                     <th></th>
                                 </tr>
                             </thead>
@@ -276,6 +294,16 @@ export default function AttendanceLogs() {
                                                         : <MdIcons.MdExpandMore />}
                                                 </button>
                                             </td>
+                                            <td>
+                                                <button
+                                                    className="alog-delete-btn"
+                                                    onClick={() => handleDelete(log.id)}
+                                                    title="Delete log"
+                                                    disabled={deleteLoading}
+                                                >
+                                                    <MdIcons.MdDelete />
+                                                </button>
+                                            </td>
                                         </tr>
 
                                         {/* Expanded detail row */}
@@ -299,6 +327,10 @@ export default function AttendanceLogs() {
                                                             <div className="detail-item">
                                                                 <span className="detail-label">Notes</span>
                                                                 <span className="detail-value">{log.notes || '—'}</span>
+                                                            </div>
+                                                            <div className="detail-item">
+                                                                <span className="detail-label">IP Address</span>
+                                                                <span className="detail-value">{log.ip_address || '—'}</span>
                                                             </div>
                                                         </div>
 

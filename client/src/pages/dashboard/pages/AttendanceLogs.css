@@ -404,7 +404,8 @@
 .expand-btn:hover { background: rgba(255,255,255,0.06); color: #a5b4fc; }
 
 /* ─── Detail panel ────────────────────────────────── */
-.detail-row td { padding: 0 !important; }
+.detail-row td { padding: 0 !important;
+}
 
 .detail-panel {
     padding: 16px 20px 20px;

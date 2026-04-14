@@ -88,7 +88,7 @@ export default function Login({ onModeChange }) {
       else if (roles.includes('student')) navigate('/dashboard/students', { replace: true })
       else navigate('/dashboard', { replace: true })
     } catch (err) {
-      setError(err?.message || 'Login failed')
+      setError('Invalid username or password')
     } finally {
       setLoading(false)
     }

@@ -1,3 +1,5 @@
+#Not used
+
 from flask import blueprints, jsonify, request
 from models import Student
 import utils.jwt_utils as jwt_utils

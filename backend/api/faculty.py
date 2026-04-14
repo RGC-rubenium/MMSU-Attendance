@@ -10,7 +10,7 @@ faculty_bp = Blueprint('faculty', __name__)
 
 
 @faculty_bp.route('/faculty', methods=['GET'])
-#@jwt_utils.token_required  # Uncomment this line to require authentication
+@jwt_utils.token_required
 def list_faculty():
     """
     Get list of faculty members with optional search, sort, and pagination

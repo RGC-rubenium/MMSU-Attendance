@@ -2,6 +2,7 @@ import os
 import uuid
 from flask import Blueprint, request, jsonify
 from werkzeug.utils import secure_filename
+import utils.jwt_utils as jwt_utils
 from extensions import db
 from models import Faculty
 from datetime import datetime
@@ -28,6 +29,7 @@ def sanitize_filename(name):
     return clean_name.lower()
 
 @add_faculty_bp.route('/api/faculty', methods=['POST'])
+@jwt_utils.token_required
 def add_faculty():
     try:
         # Check if request has file part
@@ -129,6 +131,7 @@ def add_faculty():
         }), 500
 
 @add_faculty_bp.route('/api/faculty/validate-uid', methods=['POST'])
+@jwt_utils.token_required
 def validate_faculty_uid():
     """Validate if UID is available"""
     try:
@@ -148,6 +151,7 @@ def validate_faculty_uid():
         }), 500
 
 @add_faculty_bp.route('/api/faculty/validate-id', methods=['POST'])
+@jwt_utils.token_required
 def validate_faculty_id():
     """Validate if faculty ID is available"""
     try:
@@ -167,6 +171,7 @@ def validate_faculty_id():
         }), 500
 
 @add_faculty_bp.route('/api/faculty/bulk-import', methods=['POST'])
+@jwt_utils.token_required
 def bulk_import_faculty():
     """Import faculty from Excel file"""
     temp_file_path = None

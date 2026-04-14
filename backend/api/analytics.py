@@ -3,6 +3,7 @@ from datetime import datetime, timedelta
 from sqlalchemy import func, desc
 from models import db, Student, Faculty, AttendanceLog
 import logging
+import utils.jwt_utils as jwt_utils
 
 analytics_bp = Blueprint('analytics', __name__)
 

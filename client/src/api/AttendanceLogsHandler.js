@@ -19,6 +19,14 @@ const AttendanceLogsHandler = {
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         return res.json();
     },
+    async deleteLog(logId) {
+        const res = await fetch(`${BASE}/${logId}`, {
+            method: 'DELETE',
+            headers: { Authorization: `Bearer ${AuthToken.getToken()}` },
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.json();
+    },
 };
 
 export default AttendanceLogsHandler;

@@ -1,6 +1,7 @@
 import os
 import re
 from flask import Blueprint, request, jsonify
+import utils.jwt_utils as jwt_utils
 from werkzeug.utils import secure_filename
 from extensions import db
 from models import Faculty
@@ -38,6 +39,7 @@ def _delete_profile_image(profile_path):
 
 
 @faculty_update_bp.route('/faculty/<string:faculty_id>', methods=['PUT', 'PATCH'])
+@jwt_utils.token_required
 def update_faculty(faculty_id):
     """
     Update a faculty member's information

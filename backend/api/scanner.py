@@ -1,3 +1,4 @@
+# Old file
 from models import Student, Faculty, event_schedule
 from extensions import db
 import utils.jwt_utils as jwt_utils

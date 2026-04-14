@@ -1,5 +1,6 @@
 from flask import Blueprint, jsonify, request
 from models import Faculty
+import utils.jwt_utils as jwt_utils
 from extensions import db
 import os
 
@@ -29,7 +30,6 @@ faculty_delete_bp = Blueprint('faculty_delete', __name__)
 print("DEBUG: faculty_delete_bp routes being registered:")
 
 @faculty_delete_bp.route('/faculty/bulk-delete', methods=['DELETE'])
-#@jwt_utils.token_required  # Temporarily disabled for testing
 def bulk_delete_faculty():
     """
     Delete multiple faculty members by their faculty IDs
@@ -73,7 +73,6 @@ def bulk_delete_faculty():
         return jsonify({'error': 'Failed to delete faculty members'}), 500
 
 @faculty_delete_bp.route('/faculty/<string:faculty_id>', methods=['DELETE'])
-#@jwt_utils.token_required  # Temporarily disabled for testing
 def delete_faculty(faculty_id):
     """
     Delete a single faculty member by faculty ID

@@ -99,9 +99,9 @@ export default class FacultyHandler {
         const url = `${FacultyHandler.getBase()}/faculty/${encodeURIComponent(uid)}`
         
         try {
-            const res = await fetch(url, {
-                method: 'DELETE',
-                headers: { 'Accept': 'application/json' }
+            const res = await AuthToken.fetchWithAuth(url, { 
+                headers: { 'Accept': 'application/json' },
+                cache: 'no-store'
             })
             
             if (!res.ok) {

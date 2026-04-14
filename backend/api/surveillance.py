@@ -5,6 +5,7 @@ from flask import Blueprint, request, jsonify, Response
 from datetime import datetime
 from models import Camera
 from extensions import db
+import utils.jwt_utils as jwt_utils
 import cv2
 import threading
 import time

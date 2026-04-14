@@ -144,7 +144,7 @@ export default function Dashboard() {
             <header className="dashboard-top">
                 <div className="dashboard-header-content">
                     <div>
-                        <h1 id="dashboard-title">Dashboard</h1>
+                        <h1 id="dashboard-title">Overview</h1>
                         <p className="dashboard-sub">Real-time attendance analytics and system overview</p>
                     </div>
                     <div className="dashboard-refresh-info">

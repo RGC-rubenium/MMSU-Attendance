@@ -7,7 +7,7 @@ from datetime import datetime
 event_schedule_bp = Blueprint('event_schedule', __name__)
 
 @event_schedule_bp.route('/event-schedule', methods=['GET'])
-#@jwt_utils.token_required  # Temporarily disabled for testing
+@jwt_utils.token_required
 def get_event_schedules():
     """
     Get list of event schedules with optional filtering

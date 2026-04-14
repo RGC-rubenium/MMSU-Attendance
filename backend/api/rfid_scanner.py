@@ -1,6 +1,7 @@
 from flask import Blueprint, request, jsonify
 from datetime import datetime, date, time as datetime_time
 import json
+import utils.jwt_utils as jwt_utils
 from models import Student, Faculty, EventSchedule, ClassSchedule, AttendanceLog
 from extensions import db
 from sqlalchemy import and_, or_
@@ -841,6 +842,7 @@ def handle_time_out():
         }), 500
 
 @rfid_scanner_bp.route('/api/scanner/attendance-logs', methods=['GET'])
+@jwt_utils.token_required
 def get_attendance_logs():
     """Get attendance logs with filtering, search, and pagination"""
     try:
@@ -962,3 +964,13 @@ def test_avatar_url():
             'message': 'Failed to test avatar URL',
             'error': str(e)
         }), 500
+        
+@rfid_scanner_bp.route('/api/scanner/attendance-logs/<int:log_id>', methods=['DELETE'])
+@jwt_utils.token_required
+def delete_attendance_log(log_id):
+    log = AttendanceLog.query.get(log_id)
+    if not log:
+        return jsonify({'success': False, 'message': 'Log not found'})
+    db.session.delete(log)
+    db.session.commit()
+    return jsonify({'success': True, 'message': 'Log deleted'})

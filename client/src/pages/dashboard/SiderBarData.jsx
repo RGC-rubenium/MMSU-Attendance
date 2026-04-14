@@ -7,7 +7,7 @@ import * as RiIcons from "react-icons/ri";
 
 export const SideBarData = [
     {
-        title: 'Dashboard',
+        title: 'Overview',
         Path: '/dashboard',
         Icon: <MdIcons.MdDashboard/>,
         cName: 'sidebar-text'

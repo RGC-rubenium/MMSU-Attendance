@@ -10,7 +10,7 @@ students_bp = Blueprint('students', __name__)
 
 
 @students_bp.route('/student', methods=['GET'])
-#@jwt_utils.token_required  # Uncomment this line to require authentication
+@jwt_utils.token_required
 def list_students():
     """
     Get list of students with optional search, sort, and pagination
