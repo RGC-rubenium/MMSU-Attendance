@@ -41,8 +41,8 @@ def add_student():
         # Get form data
         data = request.form.to_dict()
         
-        # Required fields validation
-        required_fields = ['uid', 'id', 'first_name', 'last_name', 'department', 'year_level', 'gender', 'section', 'parent_contact']
+            # Required fields validation (parent_contact is now optional)
+            required_fields = ['uid', 'id', 'first_name', 'last_name', 'department', 'year_level', 'gender', 'section']
         for field in required_fields:
             if not data.get(field):
                 return jsonify({
@@ -120,7 +120,7 @@ def add_student():
             section=data.get('section', '').strip() or None,
             gender=data.get('gender', '').upper() if data.get('gender') else None,
             profile_path=profile_path,
-            parent_contact=data.get('parent_contact', '').strip() or None,
+               parent_contact=(data.get('parent_contact', '').strip() or None) if 'parent_contact' in data else None,
             contact_number=data.get('contact_number', '').strip() or None,
             created_at=datetime.utcnow(),
             updated_at=datetime.utcnow()
@@ -204,8 +204,8 @@ def bulk_import_students():
             print(f"DEBUG: First few rows:")
             print(df.head())
             
-            # Validate required columns
-            required_columns = ['uid', 'id', 'first_name', 'last_name', 'department', 'year_level', 'gender', 'section', 'parent_contact']
+            # Validate required columns (parent_contact is now optional)
+            required_columns = ['uid', 'id', 'first_name', 'last_name', 'department', 'year_level', 'gender', 'section']
             missing_columns = [col for col in required_columns if col not in df.columns]
             
             if missing_columns:
@@ -278,7 +278,7 @@ def bulk_import_students():
                     clean_name = sanitize_filename(full_name)
                     profile_path = f"/images/members/student/{clean_name}.jpg"
                     
-                    # Create student record
+                    # Create student record (parent_contact is optional)
                     new_student = Student(
                         uid=uid,
                         id=student_id,
@@ -289,7 +289,7 @@ def bulk_import_students():
                         year_level=year_level,
                         section=str(row['section']).strip(),
                         gender=str(row['gender']).upper().strip(),
-                        parent_contact=str(row['parent_contact']).strip() if pd.notna(row.get('parent_contact')) else None,
+                        parent_contact=str(row['parent_contact']).strip() if 'parent_contact' in row and pd.notna(row.get('parent_contact')) and str(row['parent_contact']).strip() != '' else None,
                         contact_number=str(row.get('contact_number', '')).strip() if pd.notna(row.get('contact_number')) else None,
                         profile_path=profile_path,
                         created_at=datetime.utcnow(),
