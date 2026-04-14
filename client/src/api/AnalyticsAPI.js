@@ -4,7 +4,8 @@ const API_BASE_URL = '/api';
 class AnalyticsAPI {
     static async getDashboardStats() {
         try {
-            const response = await fetch(`${API_BASE_URL}/dashboard-stats`);
+            const url = `${API_BASE_URL}/dashboard-stats?_cb=${Date.now()}`;
+            const response = await fetch(url, { cache: 'no-store' });
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
@@ -18,7 +19,8 @@ class AnalyticsAPI {
 
     static async getRecentAttendance(limit = 5) {
         try {
-            const response = await fetch(`${API_BASE_URL}/recent-attendance?limit=${limit}`);
+            const url = `${API_BASE_URL}/recent-attendance?limit=${limit}&_cb=${Date.now()}`;
+            const response = await fetch(url, { cache: 'no-store' });
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
@@ -32,7 +34,8 @@ class AnalyticsAPI {
 
     static async getAttendanceTrends(days = 7) {
         try {
-            const response = await fetch(`${API_BASE_URL}/attendance-trends?days=${days}`);
+            const url = `${API_BASE_URL}/attendance-trends?days=${days}&_cb=${Date.now()}`;
+            const response = await fetch(url, { cache: 'no-store' });
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
@@ -46,7 +49,8 @@ class AnalyticsAPI {
 
     static async getLiveStats() {
         try {
-            const response = await fetch(`${API_BASE_URL}/live-stats`);
+            const url = `${API_BASE_URL}/live-stats?_cb=${Date.now()}`;
+            const response = await fetch(url, { cache: 'no-store' });
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }

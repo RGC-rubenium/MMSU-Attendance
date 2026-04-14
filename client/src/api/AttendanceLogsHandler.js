@@ -12,9 +12,12 @@ const AttendanceLogsHandler = {
         if (status)     params.set('status', status);
         params.set('page', page);
         params.set('per_page', perPage);
+        // Add cache-busting parameter
+        params.set('_cb', Date.now().toString());
 
         const res = await fetch(`${BASE}?${params.toString()}`, {
             headers: { Authorization: `Bearer ${AuthToken.getToken()}` },
+            cache: 'no-store',
         });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         return res.json();
