@@ -71,7 +71,6 @@ def update_student(student_id):
             if profile_image.filename == '':
                 profile_image = None
 
-        # Update fields if provided
         if 'first_name' in data and data['first_name']:
             student.first_name = data['first_name'].strip()
         
@@ -110,6 +109,16 @@ def update_student(student_id):
                     'message': 'Student ID already exists'
                 }), 400
             student.id = data['id'].strip()
+
+        # Allow admin to update UID (with uniqueness check)
+        if 'uid' in data and data['uid'] and data['uid'] != student.uid:
+            existing_uid = Student.query.filter_by(uid=data['uid']).first()
+            if existing_uid:
+                return jsonify({
+                    'success': False,
+                    'message': 'UID already exists'
+                }), 400
+            student.uid = data['uid'].strip()
 
         # Handle profile image
         if profile_image and allowed_file(profile_image.filename):

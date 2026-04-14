@@ -71,7 +71,6 @@ def update_faculty(faculty_id):
             if profile_image.filename == '':
                 profile_image = None
 
-        # Update fields if provided
         if 'first_name' in data and data['first_name']:
             faculty.first_name = data['first_name'].strip()
         
@@ -96,6 +95,16 @@ def update_faculty(faculty_id):
                     'message': 'Faculty ID already exists'
                 }), 400
             faculty.id = data['id'].strip()
+
+        # Allow admin to update UID (with uniqueness check)
+        if 'uid' in data and data['uid'] and data['uid'] != faculty.uid:
+            existing_uid = Faculty.query.filter_by(uid=data['uid']).first()
+            if existing_uid:
+                return jsonify({
+                    'success': False,
+                    'message': 'UID already exists'
+                }), 400
+            faculty.uid = data['uid'].strip()
 
         # Handle profile image
         if profile_image and allowed_file(profile_image.filename):
