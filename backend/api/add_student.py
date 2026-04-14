@@ -29,7 +29,6 @@ def sanitize_filename(name):
     return clean_name.lower()
 
 @add_student_bp.route('/api/students', methods=['POST'])
-@jwt_utils.token_required
 def add_student():
     try:
         # Check if request has file part
@@ -145,7 +144,6 @@ def add_student():
         }), 500
 
 @add_student_bp.route('/api/students/validate-id', methods=['POST'])
-@jwt_utils.token_required
 def validate_student_id():
     """Validate if student ID is available"""
     try:
@@ -165,7 +163,6 @@ def validate_student_id():
         }), 500
 
 @add_student_bp.route('/api/students/bulk-import', methods=['POST'])
-@jwt_utils.token_required
 def bulk_import_students():
     """Import students from Excel file"""
     temp_file_path = None

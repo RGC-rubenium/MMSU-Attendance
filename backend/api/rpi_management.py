@@ -1089,7 +1089,6 @@ def sync_device_time(device_id):
 # ==================== Bulk SSH Operations ====================
 
 @rpi_management_bp.route('/api/admin/rpi/bulk/reboot', methods=['POST'])
-@Login_required
 def bulk_reboot_devices():
     """Reboot multiple devices via SSH"""
     try:

@@ -28,7 +28,6 @@ def _delete_profile_image(profile_path):
 students_delete_bp = Blueprint('students_delete', __name__)
 
 @students_delete_bp.route('/student/<string:student_id>', methods=['DELETE'])
-@jwt_utils.token_required
 def delete_student(student_id):
     """
     Delete a single student by UID
@@ -64,7 +63,6 @@ def delete_student(student_id):
         }), 500
 
 @students_delete_bp.route('/students/bulk-delete', methods=['DELETE'])
-@jwt_utils.token_required
 def bulk_delete_students():
     """
     Delete multiple students by their UIDs
