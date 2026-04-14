@@ -1,0 +1,10 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "alembic revision for uid update",
+			"type": "shell",
+			"command": "alembic revision --autogenerate -m \"Make uid updatable for Student and Faculty\""
+		}
+	]
+}

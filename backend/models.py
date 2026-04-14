@@ -37,9 +37,10 @@ class User(db.Model):
 class Student(db.Model):
     __tablename__ = "students"
     __table_args__ = {'schema': 'attendance'}
-
-    uid = db.Column(db.String(36), primary_key=True) 
-    id = db.Column(db.String(50), unique=True, nullable=True)
+    indx = db.Column(db.Integer, primary_key=True, unique=True, autoincrement=True)
+    id = db.Column(db.Integer)
+    uid = db.Column(db.String(36), unique=True, nullable=False)
+    student_id = db.Column(db.String(50), unique=True, nullable=True)  # If you want to keep a separate student_id
     first_name = db.Column(db.String(100)) 
     middle_name = db.Column(db.String(100), nullable=True)
     last_name = db.Column(db.String(100))
@@ -60,8 +61,9 @@ class Student(db.Model):
 
     def to_dict(self):
         return {
-            'uid': self.uid,
             'id': self.id,
+            'uid': self.uid,
+            'student_id': self.student_id,
             'first_name': self.first_name,
             'middle_name': self.middle_name,
             'last_name': self.last_name,
@@ -80,9 +82,10 @@ class Student(db.Model):
 class Faculty(db.Model):
     __tablename__ = "faculty"
     __table_args__ = {'schema': 'attendance'}
-
-    uid = db.Column(db.String(20), primary_key=True)
-    id = db.Column(db.String(50), unique=True, nullable=True)
+    indx = db.Column(db.Integer, primary_key=True, unique=True, autoincrement=True)
+    id = db.Column(db.Integer)
+    uid = db.Column(db.String(20), unique=True, nullable=False)
+    employee_id = db.Column(db.String(50), unique=True, nullable=True)  # If you want to keep a separate employee_id
     first_name = db.Column(db.String(50))
     middle_name = db.Column(db.String(50), nullable=True)
     last_name = db.Column(db.String(50))
@@ -97,8 +100,9 @@ class Faculty(db.Model):
 
     def to_dict(self):
         return {
-            'uid': self.uid,
             'id': self.id,
+            'uid': self.uid,
+            'employee_id': self.employee_id,
             'first_name': self.first_name,
             'middle_name': self.middle_name,
             'last_name': self.last_name,
