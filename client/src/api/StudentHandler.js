@@ -9,7 +9,8 @@ export default class StudentHandler {
         const baseUrl = `${StudentHandler.getBase()}/student`
         const usp = new URLSearchParams()
 
-        // Add all valid params to query string
+        // Add all valid params to query string (including uid if provided)
+        // Supported params: q, department, yearlevel, section, gender, page, per_page, sort, uid, etc.
         Object.entries(params).forEach(([key, value]) => {
             if (value !== null && value !== undefined && value !== '') {
                 usp.set(key, value.toString())
