@@ -85,15 +85,12 @@ class AddStudentHandler {
     validateStudentData(studentData) {
         const errors = {};
         const requiredFields = {
-            uid: 'UID (RFID)',
             id: 'Student ID',
             first_name: 'First Name',
             last_name: 'Last Name', 
             department: 'Department',
-            year_level: 'Year Level',
-            gender: 'Gender',
-            section: 'Section'
-            // parent_contact is now optional
+            year_level: 'Year Level'
+            // uid, gender, section are now optional
         };
         
         // Check required fields

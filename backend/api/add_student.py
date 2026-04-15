@@ -204,8 +204,9 @@ def bulk_import_students():
             print(f"DEBUG: First few rows:")
             print(df.head())
             
-            # Validate required columns (parent_contact is now optional)
-            required_columns = ['uid', 'id', 'first_name', 'last_name', 'department', 'year_level', 'gender', 'section']
+            # Validate required columns (uid, gender, section now optional)
+            required_columns = ['id', 'first_name', 'last_name', 'department', 'year_level']
+            optional_columns = ['uid', 'gender', 'section']
             missing_columns = [col for col in required_columns if col not in df.columns]
             
             if missing_columns:
@@ -225,12 +226,11 @@ def bulk_import_students():
                 try:
                     print(f"DEBUG: Processing row {index + 2}: {dict(row)}")
                     
-                    # Validate required fields
+                    # Validate required fields (uid, gender, section now optional)
                     missing_fields = []
                     for field in required_columns:
                         if pd.isna(row[field]) or str(row[field]).strip() == '':
                             missing_fields.append(field.replace("_", " ").title())
-                    
                     if missing_fields:
                         error_msg = f'Row {index + 2}: Missing required fields: {", ".join(missing_fields)}'
                         errors.append(error_msg)
