@@ -40,7 +40,6 @@ class Student(db.Model):
     indx = db.Column(db.Integer, primary_key=True, unique=True, autoincrement=True)
     id = db.Column(db.Integer)
     uid = db.Column(db.String(36), unique=True, nullable=False)
-    student_id = db.Column(db.String(50), unique=True, nullable=True)  # If you want to keep a separate student_id
     first_name = db.Column(db.String(100)) 
     middle_name = db.Column(db.String(100), nullable=True)
     last_name = db.Column(db.String(100))
@@ -63,7 +62,7 @@ class Student(db.Model):
         return {
             'id': self.id,
             'uid': self.uid,
-            'student_id': self.student_id,
+            'student_id': self.id,
             'first_name': self.first_name,
             'middle_name': self.middle_name,
             'last_name': self.last_name,
@@ -85,7 +84,6 @@ class Faculty(db.Model):
     indx = db.Column(db.Integer, primary_key=True, unique=True, autoincrement=True)
     id = db.Column(db.Integer)
     uid = db.Column(db.String(20), unique=True, nullable=False)
-    employee_id = db.Column(db.String(50), unique=True, nullable=True)  # If you want to keep a separate employee_id
     first_name = db.Column(db.String(50))
     middle_name = db.Column(db.String(50), nullable=True)
     last_name = db.Column(db.String(50))
@@ -102,7 +100,7 @@ class Faculty(db.Model):
         return {
             'id': self.id,
             'uid': self.uid,
-            'employee_id': self.employee_id,
+            'employee_id': self.id,
             'first_name': self.first_name,
             'middle_name': self.middle_name,
             'last_name': self.last_name,
