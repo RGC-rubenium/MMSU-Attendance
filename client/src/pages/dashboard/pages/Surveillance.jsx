@@ -27,6 +27,7 @@ const Surveillance = () => {
         location: '',
         description: ''
     });
+
     const [testingConnection, setTestingConnection] = useState(false);
     const [testResult, setTestResult] = useState(null);
     const [submitting, setSubmitting] = useState(false);
@@ -55,6 +56,7 @@ const Surveillance = () => {
     const showToast = (message, type = 'success') => {
         setToast({ message, type });
         setTimeout(() => setToast(null), 3000);
+                                key={imgKey}
     };
 
     // Form handlers
@@ -213,8 +215,20 @@ const Surveillance = () => {
     const CameraCard = ({ camera, isFullscreen = false }) => {
         const [streamError, setStreamError] = useState(false);
         const [streamLoading, setStreamLoading] = useState(true);
+        const [imgKey, setImgKey] = useState(Date.now());
 
         const streamUrl = SurveillanceAPI.getStreamUrl(camera.id);
+
+        // Determine online status: backend + frontend
+        const isOnline = camera.is_online && !streamError;
+
+        // Reload handler for the refresh button
+        const handleReload = () => {
+            setStreamError(false);
+            setStreamLoading(true);
+            setImgKey(Date.now());
+            handleTestCamera(camera);
+        };
 
         return (
             <div className={`camera-card ${isFullscreen ? 'expanded' : ''}`}>
@@ -222,6 +236,7 @@ const Surveillance = () => {
                     {camera.is_active ? (
                         <>
                             <img
+                                key={imgKey}
                                 src={streamUrl}
                                 alt={camera.name}
                                 onLoad={() => setStreamLoading(false)}
@@ -244,13 +259,11 @@ const Surveillance = () => {
                             <span>Camera disabled</span>
                         </div>
                     )}
-                    
                     {/* Status indicator */}
-                    <div className={`camera-status ${camera.is_online ? 'online' : 'offline'}`}>
+                    <div className={`camera-status ${isOnline ? 'online' : 'offline'}`}>
                         <span className="status-dot"></span>
-                        {camera.is_online ? 'Live' : 'Offline'}
+                        {isOnline ? 'Live' : 'Offline'}
                     </div>
-                    
                     {/* Action buttons overlay */}
                     <div className="camera-actions-overlay">
                         <button 
@@ -262,8 +275,8 @@ const Surveillance = () => {
                         </button>
                         <button 
                             className="camera-action-btn" 
-                            onClick={() => handleTestCamera(camera)}
-                            title="Test Connection"
+                            onClick={handleReload}
+                            title="Reload Stream & Test Connection"
                         >
                             <MdIcons.MdRefresh />
                         </button>
