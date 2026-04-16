@@ -10,6 +10,7 @@ import {
     MdArrowBack
 } from 'react-icons/md';
 import ScannerAPI from '../../api/ScannerAPI';
+import { queueSMS } from '../../api/SmsAPI';
 import './Scanner.css';
 
 // Detect low-end device based on screen size or navigator hints
@@ -222,23 +223,33 @@ const TimeOutScanner = () => {
                 if (displayTimeoutRef.current) {
                     clearTimeout(displayTimeoutRef.current);
                 }
-                
                 // Debug: Log the avatar URL
                 console.log('🖼️ Debug - Received user data:', data.user);
                 console.log('🖼️ Debug - Avatar URL:', data.user?.avatar);
-                
+
                 setLastScanResult({
                     ...data,
                     action: 'time_out',
                     timestamp: new Date().toISOString()
                 });
-                
+
+                // --- SMS queueing if parent/guardian contact exists ---
+                if (data.user && data.user.parent_contact) {
+                    queueSMS({
+                        mobile_num: data.user.parent_contact,
+                        student_name: data.user.name,
+                        attendance_type: 'timed-out',
+                        attendance_time: new Date().toISOString()
+                    });
+                }
+                // --- End SMS queueing ---
+
                 playSound('success');
-                
+
                 displayTimeoutRef.current = setTimeout(() => {
                     setLastScanResult(null);
                 }, 5000);
-                
+
             } else {
                 if (displayTimeoutRef.current) {
                     clearTimeout(displayTimeoutRef.current);

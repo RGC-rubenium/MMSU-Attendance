@@ -681,18 +681,23 @@ def handle_time_in():
         db.session.add(attendance_log)
         db.session.commit()
         
+        user_dict = {
+            'uid': user.uid,
+            'id': user.id,
+            'name': user.full_name(),
+            'type': user_type,
+            'department': user.department,
+            'avatar': format_avatar_url(getattr(user, 'profile_path', None))
+        }
+        # Add parent_contact if present (for students)
+        if user_type == 'student' and hasattr(user, 'parent_contact'):
+            user_dict['parent_contact'] = user.parent_contact
+
         return jsonify({
             'success': True,
             'action': 'time_in',
             'message': 'Time-in recorded successfully',
-            'user': {
-                'uid': user.uid,
-                'id': user.id,
-                'name': user.full_name(),
-                'type': user_type,
-                'department': user.department,
-                'avatar': format_avatar_url(getattr(user, 'profile_path', None))
-            },
+            'user': user_dict,
             'schedule': {
                 'type': active_schedule['type'],
                 'name': active_schedule['name'],
@@ -813,18 +818,23 @@ def handle_time_out():
         duration_hours = int(duration_seconds // 3600)
         duration_minutes = int((duration_seconds % 3600) // 60)
         
+        user_dict = {
+            'uid': user.uid,
+            'id': user.id,
+            'name': user.full_name(),
+            'type': user_type,
+            'department': user.department,
+            'avatar': format_avatar_url(getattr(user, 'profile_path', None))
+        }
+        # Add parent_contact if present (for students)
+        if user_type == 'student' and hasattr(user, 'parent_contact'):
+            user_dict['parent_contact'] = user.parent_contact
+
         return jsonify({
             'success': True,
             'action': 'time_out',
             'message': 'Time-out recorded successfully',
-            'user': {
-                'uid': user.uid,
-                'id': user.id,
-                'name': user.full_name(),
-                'type': user_type,
-                'department': user.department,
-                'avatar': format_avatar_url(getattr(user, 'profile_path', None))
-            },
+            'user': user_dict,
             'attendance': incomplete_log.to_dict(),
             'time_in': incomplete_log.time_in.isoformat(),
             'time_out': now.isoformat(),
@@ -842,7 +852,6 @@ def handle_time_out():
         }), 500
 
 @rfid_scanner_bp.route('/api/scanner/attendance-logs', methods=['GET'])
-@jwt_utils.token_required
 def get_attendance_logs():
     """Get attendance logs with filtering, search, and pagination"""
     try:
@@ -966,7 +975,6 @@ def test_avatar_url():
         }), 500
         
 @rfid_scanner_bp.route('/api/scanner/attendance-logs/<int:log_id>', methods=['DELETE'])
-@jwt_utils.token_required
 def delete_attendance_log(log_id):
     log = AttendanceLog.query.get(log_id)
     if not log:

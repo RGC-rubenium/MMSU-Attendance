@@ -1,7 +1,7 @@
 // SmsAPI.js
 // API utility for queueing SMS via backend
 
-const API_BASE = '/send_sms'; // Adjust if backend is on a different port or path
+const API_BASE = '/api/send_sms'; // Adjust if backend is on a different port or path
 
 export async function queueSMS({ mobile_num, student_name, attendance_type, attendance_time }) {
   try {

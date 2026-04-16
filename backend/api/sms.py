@@ -12,9 +12,9 @@ sms_bp = Blueprint('sms', __name__)
 # Function to send SMS using the external API
 def send_sms(mobile_num, msg):
     country_code = "+63"  # Philippine country code
-    api_url = "http://192.168.1.191:8080/message"  # Replace with your actual API endpoint
+    api_url = "http://192.168.1.191:8080/message" 
     user = "sms"
-    pswrd = "rgc#2004"  # Replace with your actual password
+    pswrd = "rgc#2004"
     payload = {
         "textMessage": {
             "text": msg,
