@@ -21,6 +21,8 @@ from api.analytics import analytics_bp
 from api.surveillance import surveillance_bp
 from api.student_update import student_update_bp
 from api.faculty_update import faculty_update_bp
+from api.sms import sms_bp
+
 
 app = Flask(__name__)
 app.config.from_object(config)
@@ -54,6 +56,7 @@ app.register_blueprint(analytics_bp, url_prefix='/api')
 app.register_blueprint(surveillance_bp)
 app.register_blueprint(student_update_bp, url_prefix='/api')
 app.register_blueprint(faculty_update_bp, url_prefix='/api')
+app.register_blueprint(sms_bp, url_prefix='/api')
 
 # Static file route for serving images
 @app.route('/images/<path:filename>')
