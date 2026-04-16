@@ -382,3 +382,43 @@ class Camera(db.Model):
             'created_at': self.created_at.isoformat() if self.created_at else None,
             'updated_at': self.updated_at.isoformat() if self.updated_at else None,
         }
+        
+class SMSLog(db.Model):
+    __tablename__ = "sms_logs"
+    __table_args__ = {'schema': 'attendance'}
+
+    id = db.Column(db.Integer, primary_key=True)
+    mobile_num = db.Column(db.String(20), nullable=False)
+    message = db.Column(db.Text, nullable=False)
+    status = db.Column(db.String(20), default='queued')  # 'queued', 'sent', 'failed'
+    sent_at = db.Column(db.DateTime, nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'mobile_num': self.mobile_num,
+            'message': self.message,
+            'status': self.status,
+            'sent_at': self.sent_at.isoformat() if self.sent_at else None,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+        }
+
+class sms_queue(db.Model):
+    __tablename__ = "sms_queue"
+    __table_args__ = {'schema': 'attendance'}
+
+    id = db.Column(db.Integer, primary_key=True)
+    mobile_num = db.Column(db.String(20), nullable=False)
+    message = db.Column(db.Text, nullable=False)
+    status = db.Column(db.String(20), default='queued')  # 'queued', 'sent', 'failed'
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'mobile_num': self.mobile_num,
+            'message': self.message,
+            'status': self.status,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+        }
