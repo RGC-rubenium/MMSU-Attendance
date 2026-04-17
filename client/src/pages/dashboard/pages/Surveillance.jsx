@@ -216,6 +216,17 @@ const Surveillance = () => {
         const [streamError, setStreamError] = useState(false);
         const [streamLoading, setStreamLoading] = useState(true);
         const [imgKey, setImgKey] = useState(Date.now());
+        const loadTimeoutRef = React.useRef();
+        // Start a manual timeout for faster offline detection
+        useEffect(() => {
+            if (streamLoading) {
+                loadTimeoutRef.current = setTimeout(() => {
+                    setStreamError(true);
+                    setStreamLoading(false);
+                }, 5000); // 5 seconds
+            }
+            return () => clearTimeout(loadTimeoutRef.current);
+        }, [imgKey, streamLoading]);
 
         const streamUrl = SurveillanceAPI.getStreamUrl(camera.id);
 
@@ -239,10 +250,15 @@ const Surveillance = () => {
                                 key={imgKey}
                                 src={streamUrl}
                                 alt={camera.name}
-                                onLoad={() => setStreamLoading(false)}
+                                onLoad={() => {
+                                    setStreamLoading(false);
+                                    setStreamError(false);
+                                    clearTimeout(loadTimeoutRef.current);
+                                }}
                                 onError={() => {
                                     setStreamLoading(false);
                                     setStreamError(true);
+                                    clearTimeout(loadTimeoutRef.current);
                                 }}
                                 style={{ display: streamError ? 'none' : 'block' }}
                             />
