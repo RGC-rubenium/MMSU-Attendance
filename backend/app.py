@@ -80,19 +80,19 @@ def serve_images(filename):
         print(f"❌ Error serving image: {e}")
         return f"Error serving image: {e}", 404
 
-
 if __name__ == '__main__':
-	# when running directly, create tables if using sqlite dev and start server
-	# initialize app context to ensure extensions are bound
-	with app.app_context():
-		try:
-			from extensions import db
-			db.create_all()
-		except Exception:
-			pass
-	
-	# Start the auto-shutdown scheduler
-	from api.rpi_management import start_auto_shutdown_scheduler
-	start_auto_shutdown_scheduler(app)
-	
-	app.run(host='0.0.0.0', port=5000, debug=False)
+    # when running directly, create tables if using sqlite dev and start server
+    # initialize app context to ensure extensions are bound
+    with app.app_context():
+        try:
+            from extensions import db
+            db.create_all()
+        except Exception:
+            pass
+
+    # Start the auto-shutdown scheduler
+    from api.rpi_management import start_auto_shutdown_scheduler
+    start_auto_shutdown_scheduler(app)
+
+    # Start Flask app
+    app.run(host='0.0.0.0', port=5000, debug=False)

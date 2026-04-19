@@ -7,6 +7,7 @@ from models import Camera
 from extensions import db
 import utils.jwt_utils as jwt_utils
 import cv2
+import numpy as np
 import threading
 import time
 
@@ -43,21 +44,17 @@ def release_camera_stream(camera_id):
 
 
 def generate_frames(camera_id, rtsp_url):
-    """Generator function for streaming MJPEG frames"""
+    """Generator function for streaming MJPEG frames from RTSP."""
     cap = None
     try:
         cap = cv2.VideoCapture(rtsp_url)
         cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
-        
         if not cap.isOpened():
-            # Return a placeholder frame if camera is unavailable
             yield b'--frame\r\nContent-Type: image/jpeg\r\n\r\n' + create_error_frame("Camera Unavailable") + b'\r\n'
             return
-        
         while True:
             ret, frame = cap.read()
             if not ret:
-                # If frame read fails, try to reconnect
                 cap.release()
                 time.sleep(1)
                 cap = cv2.VideoCapture(rtsp_url)
@@ -66,21 +63,13 @@ def generate_frames(camera_id, rtsp_url):
                     yield b'--frame\r\nContent-Type: image/jpeg\r\n\r\n' + create_error_frame("Reconnecting...") + b'\r\n'
                     time.sleep(2)
                 continue
-            
-            # Resize frame for web streaming (adjust as needed)
             frame = cv2.resize(frame, (640, 480))
-            
-            # Encode frame as JPEG
             ret, buffer = cv2.imencode('.jpg', frame, [cv2.IMWRITE_JPEG_QUALITY, 70])
             if not ret:
                 continue
-                
             frame_bytes = buffer.tobytes()
             yield b'--frame\r\nContent-Type: image/jpeg\r\n\r\n' + frame_bytes + b'\r\n'
-            
-            # Small delay to control frame rate
             time.sleep(0.033)  # ~30 FPS
-            
     except Exception as e:
         print(f"Stream error for camera {camera_id}: {e}")
         yield b'--frame\r\nContent-Type: image/jpeg\r\n\r\n' + create_error_frame(f"Error: {str(e)[:30]}") + b'\r\n'
@@ -104,9 +93,20 @@ def create_error_frame(message):
 
 @surveillance_bp.route('/api/surveillance/cameras', methods=['GET'])
 def get_cameras():
-    """Get all cameras"""
+    """Get all cameras and update their online status (quick check)"""
     try:
         cameras = Camera.query.order_by(Camera.grid_position.asc().nullslast(), Camera.created_at.desc()).all()
+        # Quick online check for each camera (may slow down if many cameras)
+        for cam in cameras:
+            cap = cv2.VideoCapture(cam.rtsp_url, cv2.CAP_FFMPEG)
+            cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
+            is_online = False
+            if cap.isOpened():
+                ret, frame = cap.read()
+                if ret and frame is not None and frame.size > 0:
+                    is_online = True
+            cap.release()
+            cam.is_online = is_online
         return jsonify({
             'success': True,
             'cameras': [cam.to_dict() for cam in cameras],

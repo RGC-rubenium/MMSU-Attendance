@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import './Surveillance.css';
 import SurveillanceAPI from '../../../api/SurveillanceAPI';
 import * as MdIcons from "react-icons/md";
@@ -56,7 +56,6 @@ const Surveillance = () => {
     const showToast = (message, type = 'success') => {
         setToast({ message, type });
         setTimeout(() => setToast(null), 3000);
-                                key={imgKey}
     };
 
     // Form handlers
@@ -191,55 +190,14 @@ const Surveillance = () => {
         }
     };
 
-    // Toggle fullscreen
-    const toggleFullscreen = (camera) => {
-        setFullscreenCamera(fullscreenCamera?.id === camera.id ? null : camera);
-    };
-
-    // Test specific camera connection
-    const handleTestCamera = async (camera) => {
-        try {
-            const response = await SurveillanceAPI.testCamera(camera.id);
-            setCameras(prev => prev.map(cam => 
-                cam.id === camera.id 
-                    ? { ...cam, is_online: response.is_online, last_check: new Date().toISOString() }
-                    : cam
-            ));
-            showToast(response.message, response.is_online ? 'success' : 'error');
-        } catch (err) {
-            showToast(err.message || 'Connection test failed', 'error');
-        }
-    };
-
-    // Camera Card Component
+    // Camera Card Component for MJPEG streaming
     const CameraCard = ({ camera, isFullscreen = false }) => {
+        const [imgKey, setImgKey] = useState(0);
         const [streamError, setStreamError] = useState(false);
         const [streamLoading, setStreamLoading] = useState(true);
-        const [imgKey, setImgKey] = useState(Date.now());
-        const loadTimeoutRef = React.useRef();
-        // Start a manual timeout for faster offline detection
-        useEffect(() => {
-            if (streamLoading) {
-                loadTimeoutRef.current = setTimeout(() => {
-                    setStreamError(true);
-                    setStreamLoading(false);
-                }, 5000); // 5 seconds
-            }
-            return () => clearTimeout(loadTimeoutRef.current);
-        }, [imgKey, streamLoading]);
 
-        const streamUrl = SurveillanceAPI.getStreamUrl(camera.id);
-
-        // Determine online status: backend + frontend
-        const isOnline = camera.is_online && !streamError;
-
-        // Reload handler for the refresh button
-        const handleReload = () => {
-            setStreamError(false);
-            setStreamLoading(true);
-            setImgKey(Date.now());
-            handleTestCamera(camera);
-        };
+        // Use the API helper for stream URL
+        const streamUrl = SurveillanceAPI.getStreamUrl(camera.id) + `?t=${Date.now()}&key=${imgKey}`;
 
         return (
             <div className={`camera-card ${isFullscreen ? 'expanded' : ''}`}>
@@ -247,20 +205,18 @@ const Surveillance = () => {
                     {camera.is_active ? (
                         <>
                             <img
-                                key={imgKey}
                                 src={streamUrl}
                                 alt={camera.name}
                                 onLoad={() => {
                                     setStreamLoading(false);
                                     setStreamError(false);
-                                    clearTimeout(loadTimeoutRef.current);
                                 }}
                                 onError={() => {
                                     setStreamLoading(false);
                                     setStreamError(true);
-                                    clearTimeout(loadTimeoutRef.current);
                                 }}
-                                style={{ display: streamError ? 'none' : 'block' }}
+                                style={{ display: streamError ? 'none' : 'block', width: '100%', height: '100%', objectFit: 'cover' }}
+                                draggable={false}
                             />
                             {streamError && (
                                 <div className="camera-placeholder">
@@ -275,36 +231,36 @@ const Surveillance = () => {
                             <span>Camera disabled</span>
                         </div>
                     )}
-                    {/* Status indicator */}
-                    <div className={`camera-status ${isOnline ? 'online' : 'offline'}`}>
+
+                    <div className={`camera-status ${camera.is_online ? 'online' : 'offline'}`}>
                         <span className="status-dot"></span>
-                        {isOnline ? 'Live' : 'Offline'}
+                        {camera.is_online ? 'Live' : 'Offline'}
                     </div>
-                    {/* Action buttons overlay */}
+
                     <div className="camera-actions-overlay">
-                        <button 
-                            className="camera-action-btn" 
-                            onClick={() => toggleFullscreen(camera)}
+                        <button
+                            className="camera-action-btn"
+                            onClick={() => setImgKey(k => k + 1)}
+                            title="Reload Stream"
+                        >
+                            <MdIcons.MdRefresh />
+                        </button>
+                        <button
+                            className="camera-action-btn"
+                            onClick={() => setFullscreenCamera(isFullscreen ? null : camera)}
                             title={isFullscreen ? "Exit Fullscreen" : "Fullscreen"}
                         >
                             {isFullscreen ? <MdIcons.MdFullscreenExit /> : <MdIcons.MdFullscreen />}
                         </button>
-                        <button 
-                            className="camera-action-btn" 
-                            onClick={handleReload}
-                            title="Reload Stream & Test Connection"
-                        >
-                            <MdIcons.MdRefresh />
-                        </button>
-                        <button 
-                            className="camera-action-btn" 
+                        <button
+                            className="camera-action-btn"
                             onClick={() => openEditModal(camera)}
                             title="Edit Camera"
                         >
                             <MdIcons.MdEdit />
                         </button>
-                        <button 
-                            className="camera-action-btn delete" 
+                        <button
+                            className="camera-action-btn delete"
                             onClick={() => openDeleteModal(camera)}
                             title="Delete Camera"
                         >
@@ -312,7 +268,6 @@ const Surveillance = () => {
                         </button>
                     </div>
                 </div>
-                
                 <div className="camera-info">
                     <h3>{camera.name}</h3>
                     <p>{camera.location || 'No location specified'}</p>
