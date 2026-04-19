@@ -192,12 +192,31 @@ const Surveillance = () => {
 
     // Camera Card Component for MJPEG streaming
     const CameraCard = ({ camera, isFullscreen = false }) => {
+        // Use imgKey only inside the CameraCard component
         const [imgKey, setImgKey] = useState(0);
         const [streamError, setStreamError] = useState(false);
         const [streamLoading, setStreamLoading] = useState(true);
 
         // Use the API helper for stream URL
         const streamUrl = SurveillanceAPI.getStreamUrl(camera.id) + `?t=${Date.now()}&key=${imgKey}`;
+
+        // Reload handler: resets loading and error, bumps imgKey to force reload
+        const handleReloadStream = () => {
+            setStreamLoading(true);
+            setStreamError(false);
+            setImgKey(k => k + 1);
+        };
+
+        // Auto-reload stream every 10 seconds to prevent sticking
+        useEffect(() => {
+            if (!camera.is_active) return;
+            const interval = setInterval(() => {
+                setStreamLoading(true);
+                setStreamError(false);
+                setImgKey(k => k + 1);
+            }, 10000); // 10 seconds
+            return () => clearInterval(interval);
+        }, [camera.is_active]);
 
         return (
             <div className={`camera-card ${isFullscreen ? 'expanded' : ''}`}>
@@ -240,7 +259,7 @@ const Surveillance = () => {
                     <div className="camera-actions-overlay">
                         <button
                             className="camera-action-btn"
-                            onClick={() => setImgKey(k => k + 1)}
+                            onClick={handleReloadStream}
                             title="Reload Stream"
                         >
                             <MdIcons.MdRefresh />

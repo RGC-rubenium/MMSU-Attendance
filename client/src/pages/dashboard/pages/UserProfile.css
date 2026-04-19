@@ -29,19 +29,47 @@
     background: rgba(255,255,255,0.3);
 }
 
-.user-profile-card{
-    background: rgba(255,255,255,0.04);
-    padding: 16px;
-    border-radius: 8px;
+.user-profile-wrapper {
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    min-height: 80vh;
+    background: var(--background, #f4f6fa);
+    padding: 40px 0;
 }
 
-/* Avatar */
+.user-profile-card {
+    background: #fff;
+    border-radius: 18px;
+    box-shadow: 0 4px 24px rgba(60, 72, 88, 0.10);
+    padding: 32px 36px 28px 36px;
+    max-width: 420px;
+    width: 100%;
+    margin: 0 auto;
+    transition: box-shadow 0.2s;
+}
+
+.user-profile-card:hover {
+    box-shadow: 0 8px 32px rgba(60, 72, 88, 0.16);
+}
+
+.profile-header {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    margin-bottom: 24px;
+}
+
 .profile-avatar{
     width: 120px;
     height: 120px;
     object-fit: cover;
     border-radius: 50%;
     margin-bottom: 12px;
+    font-size: 64px;
+    color: var(--primary, #1976d2);
+    background: #e3eafc;
+    padding: 12px;
 }
 
 /* Grid layout for left (avatar/meta) and right (details) */
@@ -67,6 +95,8 @@
     display:flex;
     align-items:center;
     justify-content:center;
+    /* Prevent children from stretching */
+    flex-direction: column;
 }
 
 /* Placeholder avatar */
@@ -80,6 +110,17 @@
     justify-content:center;
     font-weight:700;
     font-size:28px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    line-height: 1;
+    aspect-ratio: 1/1;
+    max-width: 100%;
+    /* Prevent stretching */
+    flex-shrink: 0;
+    flex-grow: 0;
+    /* If using img/svg inside */
+    object-fit: contain;
 }
 
 /* Name styling */
@@ -89,6 +130,13 @@
     margin: 10px 0 6px;
     line-height:1.2;
     color: #fff;
+}
+
+.profile-header h2 {
+    margin: 0 0 4px 0;
+    font-size: 1.7rem;
+    font-weight: 600;
+    color: #222b45;
 }
 
 /* Meta area: arrange as label/value rows */
@@ -156,7 +204,20 @@
         align-items:center;
     }
     .profile-avatar{ width:84px; height:84px; margin-bottom:0; }
-    .profile-avatar.placeholder{ width:84px; height:84px; font-size:18px; }
+    .profile-avatar.placeholder{ 
+        width:84px; 
+        height:84px; 
+        font-size:18px; 
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        line-height: 1;
+        aspect-ratio: 1/1;
+        max-width: 100%;
+        flex-shrink: 0;
+        flex-grow: 0;
+        object-fit: contain;
+    }
     .profile-name{ margin:0; font-size:18px; }
     /* left-align meta on mobile and allow values to wrap */
     .profile-meta{ align-items: flex-start; }
