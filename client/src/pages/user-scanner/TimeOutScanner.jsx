@@ -26,6 +26,12 @@ const isLowEndDevice = () => {
     return false;
 };
 
+// Return a naive local ISO-like string (no timezone offset), e.g. "2026-04-21T03:33:00"
+const naiveLocalIso = (d = new Date()) => {
+    const p = (n) => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
+};
+
 const TimeOutScanner = () => {
     const [scanInput, setScanInput] = useState('');
     const [lastScanResult, setLastScanResult] = useState(null);
@@ -236,8 +242,8 @@ const TimeOutScanner = () => {
         setIsLoading(true);
 
         try {
-            // Call specific time-out API, pass client time
-            const clientTime = new Date().toISOString();
+            // Call specific time-out API, pass client time (naive local, no timezone)
+            const clientTime = naiveLocalIso();
             const data = await ScannerAPI.scanTimeOut(formattedUID, clientTime);
 
             if (data.success) {
