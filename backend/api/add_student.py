@@ -196,8 +196,9 @@ def bulk_import_students():
             # Save uploaded file to temporary location
             file.save(temp_file_path)
             
-            # Read Excel file
-            df = pd.read_excel(temp_file_path)
+            # Read Excel file as strings to avoid pandas coercing numeric-looking UIDs
+            # keep_default_na=False prevents empty strings becoming NaN
+            df = pd.read_excel(temp_file_path, dtype=str, keep_default_na=False)
             
             print(f"DEBUG: Excel file read successfully. Shape: {df.shape}")
             print(f"DEBUG: Columns: {list(df.columns)}")
@@ -221,6 +222,49 @@ def bulk_import_students():
             
             print(f"DEBUG: Starting to process {len(df)} rows")
             
+            def _cell_to_str(val):
+                """Convert a pandas cell value to a clean string while preserving text-like values.
+                Handles floats coming from Excel (removes trailing .0), and strips leading
+                Excel text markers like an initial apostrophe or formula wrappers like ="...".
+                """
+                try:
+                    if pd.isna(val):
+                        return ''
+                except Exception:
+                    # If val isn't a pandas NA-aware type
+                    if val is None:
+                        return ''
+
+                # If it's a float that represents an integer, convert to int first
+                if isinstance(val, float):
+                    if val.is_integer():
+                        s = str(int(val))
+                    else:
+                        # Keep the float representation but avoid trailing .0
+                        s = str(val)
+                else:
+                    s = str(val)
+
+                s = s.strip()
+
+                # Remove Excel-style leading apostrophe used to force text (appears in CSV as a leading single quote)
+                if s.startswith("'"):
+                    s = s[1:]
+
+                # Handle values that were exported as formulas like ="000123" -> remove =" and trailing "
+                if s.startswith('=') and '"' in s:
+                    # remove leading = and surrounding quotes
+                    s = s.lstrip('=')
+                    if s.startswith('"') and s.endswith('"'):
+                        s = s[1:-1]
+
+                # Remove trailing .0 from values that became strings like '123.0'
+                if s.endswith('.0') and s[:-2].isdigit():
+                    s = s[:-2]
+
+                return s
+
+
             for index, row in df.iterrows():
                 print(f"DEBUG: Starting processing of row {index + 2} (index {index})")
                 try:
@@ -238,9 +282,9 @@ def bulk_import_students():
                         continue
                         
                     # Check for duplicates
-                    uid = str(row['uid']).strip()
-                    student_id = str(row['id']).strip()
-                    
+                    uid = _cell_to_str(row.get('uid', ''))
+                    student_id = _cell_to_str(row.get('id', ''))
+
                     print(f"DEBUG: Checking duplicates for UID: {uid}, ID: {student_id}")
                     
                     if Student.query.filter_by(uid=uid).first():
@@ -270,9 +314,9 @@ def bulk_import_students():
                         continue
                     
                     # Generate profile path based on name (even if photo doesn't exist)
-                    first_name = str(row['first_name']).strip()
-                    middle_name = str(row.get('middle_name', '')).strip() if pd.notna(row.get('middle_name')) else ''
-                    last_name = str(row['last_name']).strip()
+                    first_name = _cell_to_str(row['first_name'])
+                    middle_name = _cell_to_str(row.get('middle_name', '')) if 'middle_name' in row else ''
+                    last_name = _cell_to_str(row['last_name'])
                     
                     full_name = f"{first_name} {middle_name} {last_name}".strip()
                     clean_name = sanitize_filename(full_name)
@@ -285,12 +329,12 @@ def bulk_import_students():
                         first_name=first_name,
                         middle_name=middle_name if middle_name else None,
                         last_name=last_name,
-                        department=str(row['department']).strip(),
+                        department=_cell_to_str(row['department']),
                         year_level=year_level,
-                        section=str(row['section']).strip(),
-                        gender=str(row['gender']).upper().strip(),
-                        parent_contact=str(row['parent_contact']).strip() if 'parent_contact' in row and pd.notna(row.get('parent_contact')) and str(row['parent_contact']).strip() != '' else None,
-                        contact_number=str(row.get('contact_number', '')).strip() if pd.notna(row.get('contact_number')) else None,
+                        section=_cell_to_str(row.get('section', '')) or None,
+                        gender=_cell_to_str(row.get('gender', '')).upper() or None,
+                        parent_contact=_cell_to_str(row.get('parent_contact', '')) or None,
+                        contact_number=_cell_to_str(row.get('contact_number', '')) or None,
                         profile_path=profile_path,
                         created_at=datetime.utcnow(),
                         updated_at=datetime.utcnow()

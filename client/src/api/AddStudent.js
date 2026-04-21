@@ -234,7 +234,7 @@ AddStudentHandler.prototype.downloadTemplate = function() {
     
     const sampleData = [
         [
-            'SAMPLE001',
+            "'00001234",
             '2024-1001',
             'John',
             'Middle',
@@ -247,7 +247,7 @@ AddStudentHandler.prototype.downloadTemplate = function() {
             '09987654321'
         ],
         [
-            'SAMPLE002',
+            "'00005678",
             '2024-1002',
             'Jane',
             '',

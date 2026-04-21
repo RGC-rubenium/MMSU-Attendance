@@ -200,8 +200,9 @@ def bulk_import_faculty():
             # Save uploaded file to temporary location
             file.save(temp_file_path)
             
-            # Read Excel file
-            df = pd.read_excel(temp_file_path)
+            # Read Excel file as strings to avoid pandas coercing numeric-looking UIDs
+            # keep_default_na=False prevents empty strings becoming NaN
+            df = pd.read_excel(temp_file_path, dtype=str, keep_default_na=False)
             
             print(f"DEBUG: Excel file read successfully. Shape: {df.shape}")
             print(f"DEBUG: Columns: {list(df.columns)}")
@@ -223,48 +224,81 @@ def bulk_import_faculty():
             errors = []
             
             print(f"DEBUG: Starting to process {len(df)} rows")
-            
+
+            def _cell_to_str(val):
+                """Normalize a pandas cell to string while preserving leading zeros and common Excel artifacts.
+                - Converts NaN/None to empty string
+                - Converts floats that are integer-like to integer strings (avoids '123.0')
+                - Strips leading apostrophe used by Excel to force text
+                - Unwraps values like ="000123"
+                """
+                try:
+                    if pd.isna(val):
+                        return ''
+                except Exception:
+                    if val is None:
+                        return ''
+
+                if isinstance(val, float):
+                    if val.is_integer():
+                        s = str(int(val))
+                    else:
+                        s = str(val)
+                else:
+                    s = str(val)
+
+                s = s.strip()
+
+                if s.startswith("'"):
+                    s = s[1:]
+
+                if s.startswith('=') and '"' in s:
+                    s = s.lstrip('=')
+                    if s.startswith('"') and s.endswith('"'):
+                        s = s[1:-1]
+
+                if s.endswith('.0') and s[:-2].isdigit():
+                    s = s[:-2]
+
+                return s
+
             for index, row in df.iterrows():
                 try:
                     print(f"DEBUG: Processing row {index + 1}: {dict(row)}")
-                    
-                    # Skip rows with missing required data
-                    if pd.isna(row['uid']) or pd.isna(row['id']) or pd.isna(row['first_name']) or pd.isna(row['last_name']) or pd.isna(row['department']) or pd.isna(row['gender']):
+
+                    uid = _cell_to_str(row.get('uid', ''))
+                    faculty_id = _cell_to_str(row.get('id', ''))
+                    first_name = _cell_to_str(row.get('first_name', ''))
+                    last_name = _cell_to_str(row.get('last_name', ''))
+                    department = _cell_to_str(row.get('department', ''))
+                    gender = _cell_to_str(row.get('gender', '')).upper()
+
+                    # Validate required fields
+                    if not uid or not faculty_id or not first_name or not last_name or not department or not gender:
                         errors.append(f"Row {index + 2}: Missing required data")
+                        print(f"DEBUG: Missing required data in row {index + 2}")
                         continue
-                    
-                    # Convert values to strings and clean them
-                    uid = str(row['uid']).strip()
-                    faculty_id = str(row['id']).strip()
-                    first_name = str(row['first_name']).strip()
-                    last_name = str(row['last_name']).strip()
-                    department = str(row['department']).strip()
-                    gender = str(row['gender']).strip().upper()
-                    
-                    # Handle optional middle name
-                    middle_name = None
-                    if not pd.isna(row.get('middle_name', '')):
-                        middle_name = str(row['middle_name']).strip()
-                        if middle_name == '':
-                            middle_name = None
-                    
+
+                    # Optional middle name
+                    middle_name = _cell_to_str(row.get('middle_name', '')) or None
+
                     print(f"DEBUG: Cleaned data - UID: {uid}, ID: {faculty_id}, Name: {first_name} {last_name}")
-                    
+
                     # Validate UID uniqueness
                     if Faculty.query.filter_by(uid=uid).first():
                         errors.append(f"Row {index + 2}: UID '{uid}' already exists")
                         continue
-                    
+
                     # Validate faculty ID uniqueness
                     if Faculty.query.filter_by(id=faculty_id).first():
                         errors.append(f"Row {index + 2}: Faculty ID '{faculty_id}' already exists")
                         continue
-                    
+
                     # Validate gender
                     if gender not in ['MALE', 'FEMALE']:
                         errors.append(f"Row {index + 2}: Invalid gender '{gender}'. Must be 'MALE' or 'FEMALE'")
                         continue
-                    
+
                     # Create new faculty
                     new_faculty = Faculty(
                         uid=uid,
@@ -278,7 +312,7 @@ def bulk_import_faculty():
                         created_at=datetime.utcnow(),
                         updated_at=datetime.utcnow()
                     )
-                    
+
                     # Add to session (don't commit yet)
                     db.session.add(new_faculty)
                     faculty_added.append({
@@ -290,9 +324,9 @@ def bulk_import_faculty():
                         'department': department,
                         'gender': gender
                     })
-                    
+
                     print(f"DEBUG: Successfully processed row {index + 1}")
-                    
+
                 except Exception as row_error:
                     print(f"DEBUG: Error processing row {index + 1}: {row_error}")
                     errors.append(f"Row {index + 2}: {str(row_error)}")

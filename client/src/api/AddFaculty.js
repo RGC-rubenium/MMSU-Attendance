@@ -143,7 +143,7 @@ export default class AddFaculty {
         
         const sampleData = [
             [
-                'FACULTY001',
+                "'00001234",
                 'FAC-2024-001',
                 'John',
                 'Middle',
@@ -152,7 +152,7 @@ export default class AddFaculty {
                 'MALE'
             ],
             [
-                'FACULTY002',
+                "'00005678",
                 'FAC-2024-002',
                 'Jane',
                 '',
