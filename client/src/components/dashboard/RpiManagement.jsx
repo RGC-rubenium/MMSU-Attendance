@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
     MdDevices, 
     MdWifiOff, 
@@ -356,8 +356,40 @@ const RpiManagement = () => {
         }
     };
 
-    // ==================== Selection Functions ====================
-    
+    // Detect devices transitioning from offline -> online and auto-sync time
+    const _prevOnlineRef = useRef(new Map());
+    const _initialDevicesRef = useRef(true);
+
+    useEffect(() => {
+        // Skip auto-sync on initial load to avoid syncing all devices at startup
+        if (_initialDevicesRef.current) {
+            devices.forEach(d => _prevOnlineRef.current.set(d.device_id, !!d.is_online));
+            _initialDevicesRef.current = false;
+            return;
+        }
+
+        devices.forEach(device => {
+            const id = device.device_id;
+            const wasOnline = _prevOnlineRef.current.get(id) || false;
+            const isNowOnline = !!device.is_online;
+
+            if (!wasOnline && isNowOnline) {
+                // Device just came online — only attempt sync if SSH is configured and device has IP
+                if (device.is_enabled && device.has_ssh_credentials && device.ip_address) {
+                    // small delay to allow device services to be ready
+                    setTimeout(() => {
+                        syncDeviceTime(device.device_id, device.device_name);
+                    }, 1200);
+                } else {
+                    // Optionally log or notify if device cannot be synced automatically
+                    console.debug(`Device ${device.device_name} came online but missing SSH/IP or disabled; skipping auto-sync.`);
+                }
+            }
+
+            _prevOnlineRef.current.set(id, isNowOnline);
+        });
+    }, [devices]);
+
     const toggleDeviceSelection = (deviceId) => {
         setSelectedDevices(prev => {
             const newSet = new Set(prev);
@@ -383,7 +415,7 @@ const RpiManagement = () => {
         setSelectedDevices(new Set(sshDevices));
     };
 
-    // ==================== Bulk Actions ====================
+    //==================== Bulk Actions ====================//
     
     const bulkReboot = () => {
         const selectedCount = selectedDevices.size;
