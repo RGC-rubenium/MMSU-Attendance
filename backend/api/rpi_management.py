@@ -801,6 +801,10 @@ def device_heartbeat():
         
         db.session.commit()
         
+        # --- Add server time for client sync ---
+        server_time_utc = datetime.utcnow().isoformat()
+        server_time_local = datetime.now().isoformat()
+        
         return jsonify({
             'success': True,
             'message': 'Heartbeat received',
@@ -810,7 +814,9 @@ def device_heartbeat():
             'scanner_mode': device.scanner_mode,
             'auto_shutdown_enabled': device.auto_shutdown_enabled,
             'auto_shutdown_time': device.auto_shutdown_time,
-            'server_time': datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S'),
+            'server_time_utc': server_time_utc,
+            'server_time_local': server_time_local,
+            'server_time': server_time_local,  # for compatibility
             'server_timezone': 'UTC'
         }), 200
         

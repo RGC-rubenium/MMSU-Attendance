@@ -477,7 +477,7 @@ def handle_rfid_scan():
                 'current_slot': active_schedule.get('current_slot') or {}
             },
             'attendance': attendance_log.to_dict()
-        }), 200
+        }, 200)
         
     except Exception as e:
         db.session.rollback()
@@ -733,6 +733,14 @@ def handle_time_out():
         client_time_str = data.get('client_time')
         if client_time_str:
             try:
+                # Remove timezone info if present (e.g., '2024-04-21T13:23:03.123456+08:00' or 'Z')
+                if client_time_str.endswith('Z'):
+                    client_time_str = client_time_str[:-1]
+                if '+' in client_time_str:
+                    client_time_str = client_time_str.split('+')[0]
+                if '-' in client_time_str[10:]:
+                    # Handles negative offsets like 2024-04-21T13:23:03.123456-08:00
+                    client_time_str = client_time_str[:client_time_str.find('-', 11)]
                 now = datetime.fromisoformat(client_time_str)
             except Exception:
                 now = datetime.now()
@@ -830,6 +838,9 @@ def handle_time_out():
         db.session.commit()
         
         # Calculate duration for response
+        duration_seconds = (now - incomplete_log.time_in).total_seconds()
+        # When calculating duration, ensure both are naive or both are aware
+        # incomplete_log.time_in is likely naive, so now must be naive too
         duration_seconds = (now - incomplete_log.time_in).total_seconds()
         duration_hours = int(duration_seconds // 3600)
         duration_minutes = int((duration_seconds % 3600) // 60)

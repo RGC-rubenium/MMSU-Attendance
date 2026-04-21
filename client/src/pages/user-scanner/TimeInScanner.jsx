@@ -52,6 +52,27 @@ const TimeInScanner = () => {
         return () => clearInterval(timer);
     }, [lowEndMode]);
 
+    // Sync with server time when device comes online
+    useEffect(() => {
+        const syncWithServerTime = async () => {
+            try {
+                // Call the heartbeat endpoint (or a dedicated endpoint if you have one)
+                const res = await fetch('/api/rpi/heartbeat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ device_id: window.DEVICE_ID || 'web-client' })
+                });
+                const data = await res.json();
+                if (data.success && data.server_time) {
+                    setCurrentTime(new Date(data.server_time));
+                }
+            } catch (e) {
+                // fallback: do nothing, use local time
+            }
+        };
+        syncWithServerTime();
+    }, []);
+
     // Global keyboard capture for kiosk mode - captures input even without focus
     useEffect(() => {
         const handleGlobalKeyDown = (e) => {

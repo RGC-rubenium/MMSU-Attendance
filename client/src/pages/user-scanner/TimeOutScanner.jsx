@@ -44,13 +44,33 @@ const TimeOutScanner = () => {
 
     // Live clock update - slower interval on low-end devices
     useEffect(() => {
-        const clockInterval = lowEndMode ? 5000 : 1000; // 5s for Pi Zero, 1s for normal
+        const clockInterval = lowEndMode ? 1000 : 1000; // 1s for both low-end and normal devices
         const timer = setInterval(() => {
             setCurrentTime(new Date());
         }, clockInterval);
         
         return () => clearInterval(timer);
     }, [lowEndMode]);
+
+    // Sync with server time when device comes online
+    useEffect(() => {
+        const syncWithServerTime = async () => {
+            try {
+                const res = await fetch('/api/rpi/heartbeat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ device_id: window.DEVICE_ID || 'web-client' })
+                });
+                const data = await res.json();
+                if (data.success && data.server_time) {
+                    setCurrentTime(new Date(data.server_time));
+                }
+            } catch (e) {
+                // fallback: do nothing, use local time
+            }
+        };
+        syncWithServerTime();
+    }, []);
 
     // Global keyboard capture for kiosk mode - captures input even without focus
     useEffect(() => {
@@ -123,7 +143,7 @@ const TimeOutScanner = () => {
         const secondFocusTimeout = setTimeout(focusInput, 500);
         
         // Keep input focused - less frequent on low-end devices
-        const focusIntervalTime = lowEndMode ? 500 : 100;
+        const focusIntervalTime = lowEndMode ? 100 : 100;
         const focusInterval = setInterval(focusInput, focusIntervalTime);
         
         // Handle window focus events (when user clicks on browser window)
