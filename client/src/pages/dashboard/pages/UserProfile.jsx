@@ -104,6 +104,24 @@ export default function UserProfile() {
         })
     }, [attendanceLogs, filterDateFrom, filterDateTo, filterTimeFrom, filterTimeTo])
 
+    // Pagination state for attendance records
+    const [currentPage, setCurrentPage] = useState(1);
+    const [pageSize, setPageSize] = useState(10);
+    const pageSizeOptions = [5, 10, 25, 50];
+    const [totalRecords, setTotalRecords] = useState(0);
+    const [totalPages, setTotalPages] = useState(1);
+
+    // With server-side pagination we fetch just the page we need. Keep client-side filters
+    // (time-of-day and range) applied to the returned page, but do not re-slice the page.
+    const paginatedAttendanceLogs = useMemo(() => {
+        return filteredAttendanceLogs || [];
+    }, [filteredAttendanceLogs]);
+
+    // Reset page when filters, user, or page size change
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [user, filterDateFrom, filterDateTo, filterTimeFrom, filterTimeTo, pageSize]);
+
     const toggleExpand = (id) => setExpanded(prev => prev === id ? null : id);
 
     const statusBadge = (s) => {
@@ -281,10 +299,19 @@ export default function UserProfile() {
             try {
                 // Prefer searching by uid if available, otherwise use id or full name
                 const searchTerm = user.uid || user.id || (user.full_name || user.fullName || '')
-                const resp = await AttendanceLogsHandler.getLogs({ search: searchTerm, userType: userType, perPage: 200 })
-                // API returns { success, logs, count, total, ... }
+
+                // If a single date filter is applied, pass it to the backend (backend supports a single date param YYYY-MM-DD).
+                // For more complex date ranges/time filters we currently apply client-side filtering on the returned page.
+                let dateParam = '';
+                if (filterDateFrom && !filterDateTo) dateParam = filterDateFrom;
+                else if (filterDateFrom && filterDateTo && filterDateFrom === filterDateTo) dateParam = filterDateFrom;
+
+                const resp = await AttendanceLogsHandler.getLogs({ search: searchTerm, userType: userType, page: currentPage, perPage: pageSize, date: dateParam })
+                // API returns { success, logs, total, total_pages, page, per_page }
                 const logs = resp && (resp.logs || resp.items || [])
                 setAttendanceLogs(logs || [])
+                setTotalRecords(resp && (resp.total || 0))
+                setTotalPages(resp && (resp.total_pages || 1))
             } catch (err) {
                 setAttendanceError(err.message || 'Failed to load attendance')
             } finally {
@@ -293,7 +320,7 @@ export default function UserProfile() {
         }
 
         fetchAttendance()
-    }, [user, userType])
+    }, [user, userType, currentPage, pageSize, filterDateFrom, filterDateTo])
 
     if (error) {
         return <div className="user-profile-page">{error}</div>
@@ -749,6 +776,7 @@ export default function UserProfile() {
                                                     <p>No records match the current filters.</p>
                                                 </div>
                                             ) : (
+                                                <>
                                                 <div className="alog-table-wrap">
                                                     <table className="alog-table">
                                                         <thead>
@@ -765,14 +793,14 @@ export default function UserProfile() {
                                                             </tr>
                                                         </thead>
                                                         <tbody>
-                                                            {filteredAttendanceLogs.map((log, idx) => (
+                                                            {paginatedAttendanceLogs.map((log, idx) => (
                                                                 <React.Fragment key={log.id}>
                                                                     <tr 
                                                                         className={expanded === log.id ? 'row-expanded' : ''}
                                                                         onClick={() => toggleExpand(log.id)}
                                                                         style={{ cursor: 'pointer' }}
                                                                     >
-                                                                        <td className="col-num">{idx + 1}</td>
+                                                                        <td className="col-num">{(currentPage - 1) * pageSize + idx + 1}</td>
                                                                         <td>{fmtDate(log.time_in)}</td>
                                                                         <td>{fmt(log.time_in)}</td>
                                                                         <td>{fmt(log.time_out)}</td>
@@ -826,6 +854,22 @@ export default function UserProfile() {
                                                         </tbody>
                                                     </table>
                                                 </div>
+                                                {/* Pagination Controls */}
+                                                <div className="pagination-controls" style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginTop:12}}>
+                                                    <div className="pagination-info">
+                                                        Showing {totalRecords === 0 ? 0 : Math.min((currentPage - 1) * pageSize + 1, totalRecords)}
+                                                        -{Math.min(currentPage * pageSize, totalRecords)} of {totalRecords}
+                                                    </div>
+                                                    <div style={{display:'flex',alignItems:'center',gap:8}}>
+                                                        <select className="pagination-select" value={pageSize} onChange={e=>setPageSize(Number(e.target.value))}>
+                                                            {pageSizeOptions.map(s => <option key={s} value={s}>{s} / page</option>)}
+                                                        </select>
+                                                        <button className="pagination-btn" onClick={()=>setCurrentPage(p=>Math.max(1,p-1))} disabled={currentPage<=1}>&lt; Prev</button>
+                                                        <span className="pagination-pages">Page {currentPage} / {Math.max(1, totalPages)}</span>
+                                                        <button className="pagination-btn" onClick={()=>setCurrentPage(p=>Math.min(Math.max(1, totalPages), p+1))} disabled={currentPage>=totalPages}>Next &gt;</button>
+                                                    </div>
+                                                </div>
+                                                </>
                                             )}
                                         </>
                                     )}

@@ -807,3 +807,29 @@
         justify-content: center;
     }
 }
+
+/* Pagination controls for attendance table */
+.pagination-controls { 
+    margin-top: 10px;
+}
+.pagination-info {
+    color: rgba(255,255,255,0.75);
+    font-size: 0.9rem;
+}
+.pagination-select {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    color: rgba(255,255,255,0.95);
+    padding: 6px 8px;
+    border-radius: 6px;
+}
+.pagination-btn {
+    background: rgba(255,255,255,0.03);
+    color: rgba(255,255,255,0.9);
+    border: 1px solid rgba(255,255,255,0.06);
+    padding: 6px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+}
+.pagination-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.pagination-pages { color: rgba(255,255,255,0.75); font-size: 0.9rem; margin: 0 6px }
