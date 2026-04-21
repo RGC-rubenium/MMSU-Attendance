@@ -822,7 +822,20 @@
     color: rgba(255,255,255,0.95);
     padding: 6px 8px;
     border-radius: 6px;
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    /* ensure the select shows correctly on dark backgrounds */
+    background-clip: padding-box;
 }
+.pagination-select option {
+    /* dropdown option background for dark theme */
+    background: #0b1220;
+    color: rgba(255,255,255,0.95);
+}
+
+/* For Edge/IE: style the dropdown arrow area if visible */
+.pagination-select::-ms-expand { display: inline-block; }
 .pagination-btn {
     background: rgba(255,255,255,0.03);
     color: rgba(255,255,255,0.9);
