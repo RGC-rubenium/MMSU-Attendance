@@ -216,8 +216,9 @@ const TimeOutScanner = () => {
         setIsLoading(true);
 
         try {
-            // Call specific time-out API
-            const data = await ScannerAPI.scanTimeOut(formattedUID);
+            // Call specific time-out API, pass client time
+            const clientTime = new Date().toISOString();
+            const data = await ScannerAPI.scanTimeOut(formattedUID, clientTime);
 
             if (data.success) {
                 if (displayTimeoutRef.current) {

@@ -32,15 +32,17 @@ class ScannerAPI {
         }
     }
 
-    static async scanTimeIn(uid) {
+    static async scanTimeIn(uid, client_time = null) {
         try {
+            const body = { uid };
+            if (client_time) body.client_time = client_time;
             const response = await fetch('/api/scanner/time-in', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${AuthToken.getToken()}`
                 },
-                body: JSON.stringify({ uid })
+                body: JSON.stringify(body)
             });
 
             // Check if response is actually JSON
@@ -63,15 +65,17 @@ class ScannerAPI {
         }
     }
 
-    static async scanTimeOut(uid) {
+    static async scanTimeOut(uid, client_time = null) {
         try {
+            const body = { uid };
+            if (client_time) body.client_time = client_time;
             const response = await fetch('/api/scanner/time-out', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${AuthToken.getToken()}`
                 },
-                body: JSON.stringify({ uid })
+                body: JSON.stringify(body)
             });
 
             // Check if response is actually JSON

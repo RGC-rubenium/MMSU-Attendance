@@ -566,6 +566,14 @@ def handle_time_in():
     try:
         data = request.get_json()
         uid = data.get('uid', '').strip()
+        client_time_str = data.get('client_time')
+        if client_time_str:
+            try:
+                now = datetime.fromisoformat(client_time_str)
+            except Exception:
+                now = datetime.now()
+        else:
+            now = datetime.now()
         
         if not uid:
             return jsonify({
@@ -573,7 +581,7 @@ def handle_time_in():
                 'message': 'UID is required'
             }), 400
         
-        current_day, current_time, current_date, now = get_current_day_time()
+        current_day, current_time, current_date, _ = get_current_day_time()
         
         # Find user by UID
         user = None
@@ -722,6 +730,14 @@ def handle_time_out():
     try:
         data = request.get_json()
         uid = data.get('uid', '').strip()
+        client_time_str = data.get('client_time')
+        if client_time_str:
+            try:
+                now = datetime.fromisoformat(client_time_str)
+            except Exception:
+                now = datetime.now()
+        else:
+            now = datetime.now()
         
         if not uid:
             return jsonify({
@@ -729,7 +745,7 @@ def handle_time_out():
                 'message': 'UID is required'
             }), 400
         
-        current_day, current_time, current_date, now = get_current_day_time()
+        current_day, current_time, current_date, _ = get_current_day_time()
         
         # Find user by UID
         user = None

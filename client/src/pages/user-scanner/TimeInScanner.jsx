@@ -44,7 +44,7 @@ const TimeInScanner = () => {
 
     // Live clock update - slower interval on low-end devices
     useEffect(() => {
-        const clockInterval = lowEndMode ? 5000 : 1000; // 5s for Pi Zero, 1s for normal
+        const clockInterval = lowEndMode ? 1000 : 1000; // 1s for Pi Zero, 1s for normal
         const timer = setInterval(() => {
             setCurrentTime(new Date());
         }, clockInterval);
@@ -123,7 +123,7 @@ const TimeInScanner = () => {
         const secondFocusTimeout = setTimeout(focusInput, 500);
         
         // Keep input focused - less frequent on low-end devices
-        const focusIntervalTime = lowEndMode ? 500 : 100;
+        const focusIntervalTime = lowEndMode ? 100 : 100;
         const focusInterval = setInterval(focusInput, focusIntervalTime);
         
         // Handle window focus events (when user clicks on browser window)
@@ -216,8 +216,9 @@ const TimeInScanner = () => {
         setIsLoading(true);
 
         try {
-            // Call specific time-in API
-            const data = await ScannerAPI.scanTimeIn(formattedUID);
+            // Call specific time-in API, pass client time
+            const clientTime = new Date().toISOString();
+            const data = await ScannerAPI.scanTimeIn(formattedUID, clientTime);
 
             if (data.success) {
                 if (displayTimeoutRef.current) {
