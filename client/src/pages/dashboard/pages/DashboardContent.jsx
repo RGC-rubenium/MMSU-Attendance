@@ -97,14 +97,14 @@ export default function Dashboard() {
             color: 'info',
             description: 'Registered faculty members'
         },
-        {
-            id: 4,
-            title: 'Present Today',
-            value: dashboardStats.present_today.toLocaleString(),
-            icon: <MdOutlineCalendarToday size={28} />,
-            color: 'warning',
-            description: `${dashboardStats.attendance_rate}% attendance rate`
-        },
+        // {
+        //     id: 4,
+        //     title: 'Present Today',
+        //     value: dashboardStats.present_today.toLocaleString(),
+        //     icon: <MdOutlineCalendarToday size={28} />,
+        //     color: 'warning',
+        //     description: `${dashboardStats.attendance_rate}% attendance rate`
+        // },
         {
             id: 5,
             title: "Today's Logs",
