@@ -328,10 +328,6 @@ export default function AttendanceLogs() {
                                                                 <span className="detail-label">Notes</span>
                                                                 <span className="detail-value">{log.notes || '—'}</span>
                                                             </div>
-                                                            <div className="detail-item">
-                                                                <span className="detail-label">IP Address</span>
-                                                                <span className="detail-value">{log.ip_address || '—'}</span>
-                                                            </div>
                                                         </div>
 
                                                         {log.subjects_attended && log.subjects_attended.length > 0 && (
