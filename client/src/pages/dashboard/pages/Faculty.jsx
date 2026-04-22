@@ -405,8 +405,17 @@ export default function Faculty() {
     }, []);
     
     const handleBulkImportSuccess = useCallback(async (result) => {
-        setState(prev => ({ ...prev, showBulkImport: false }));
-        await fetchFaculty(apiParams);
+        // If the import returned errors (partial failures), keep the modal open
+        // so the user can review the `importResults` displayed in the modal.
+        // Still refresh the list to show any successfully imported faculty.
+        // Refresh the list to show any successfully imported faculty, but keep
+        // the modal open so the user can review the `importResults` shown inside
+        // the `BulkImportFaculty` modal. The user may close the modal manually.
+        try {
+            await fetchFaculty(apiParams);
+        } catch (err) {
+            console.error('Failed to refresh after bulk import:', err);
+        }
     }, [apiParams, fetchFaculty]);
 
     return (

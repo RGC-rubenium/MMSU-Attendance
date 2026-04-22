@@ -102,12 +102,8 @@ const BulkImportFaculty = ({ isOpen, onClose, onSuccess }) => {
                     onSuccess(result);
                 }
                 
-                // Auto-close after delay if fully successful
-                if (result.failed_imports === 0) {
-                    setTimeout(() => {
-                        handleClose();
-                    }, 3000);
-                }
+                // Keep the modal open even on full success so the user can review results.
+                // The parent (`onSuccess`) may refresh the list; user can close manually.
             } else {
                 setMessage('Import completed with errors. Please review the results below.');
                 setMessageType('error');
