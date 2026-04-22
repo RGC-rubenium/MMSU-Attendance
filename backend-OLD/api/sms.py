@@ -4,6 +4,7 @@ from flask import Blueprint, request, jsonify
 import requests
 import threading
 import time
+import os
 from models import sms_queue, SMSLog
 from extensions import db
 
@@ -30,28 +31,58 @@ def send_sms(mobile_num, msg):
     return True
 
 # Background worker to process queued SMS
-def process_sms_queue():
-    from app import app
+def process_sms_queue(app):
+    # Accept the Flask `app` object so the worker runs inside its context.
     with app.app_context():
         while True:
             sms = sms_queue.query.filter_by(status='queued').first()
             time.sleep(1)  # Sleep briefly to prevent tight loop
             if sms:
-                success = send_sms(sms.mobile_num, sms.message)
-                sms.status = 'sent' if success else 'failed'
+                # Mark as 'sending' immediately to avoid races across workers
+                try:
+                    sms.status = 'sending'
+                    db.session.add(sms)
+                    db.session.commit()
+                except Exception:
+                    db.session.rollback()
+
+                # Attempt to send
+                try:
+                    success = send_sms(sms.mobile_num, sms.message)
+                    sms.status = 'sent' if success else 'failed'
+                except Exception:
+                    sms.status = 'failed'
+
+                # Log the attempt
                 log = SMSLog(
                     mobile_num=sms.mobile_num,
                     message=sms.message,
                     status=sms.status
                 )
-                db.session.add(log)
-                db.session.commit()
+                try:
+                    db.session.add(log)
+                    db.session.add(sms)
+                    db.session.commit()
+                except Exception:
+                    db.session.rollback()
             else:
                 time.sleep(2)
 
-# Start the worker thread when the app starts
-worker_thread = threading.Thread(target=process_sms_queue, daemon=True)
-worker_thread.start()
+
+# Register a startup hook when the blueprint is registered on an app.
+def _register_worker(state):
+    app = state.app
+    # When running with the Flask dev server and the reloader enabled, the
+    # process may import modules twice (master and child). Only start the
+    # background thread in the actual serving process (WERKZEUG_RUN_MAIN == 'true').
+    if app.debug and os.environ.get('WERKZEUG_RUN_MAIN') != 'true':
+        return
+
+    thread = threading.Thread(target=lambda: process_sms_queue(app), daemon=True)
+    thread.start()
+
+
+sms_bp.record(_register_worker)
 
 @sms_bp.route('/send_sms', methods=['POST'])
 def queue_sms():
@@ -67,12 +98,22 @@ def queue_sms():
     # Format the message
     msg = f"{student_name} has {attendance_type} at {attendance_time}"
 
-    # Add to sms_queue table
-    sms_entry = sms_queue(mobile_num=mobile_num, message=msg, status='queued')
-    db.session.add(sms_entry)
-    db.session.commit()
+    # Send immediately (bypass local queue) and log the attempt
+    try:
+        success = send_sms(mobile_num, msg)
+    except Exception as e:
+        success = False
+
+    status = 'sent' if success else 'failed'
+    log = SMSLog(mobile_num=mobile_num, message=msg, status=status)
+    try:
+        db.session.add(log)
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
 
     return jsonify({
-        "success": True,
-        "message": "SMS has been queued for sending."
+        "success": success,
+        "status": status,
+        "message": "SMS sent" if success else "SMS failed to send"
     })
