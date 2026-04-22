@@ -334,6 +334,36 @@
     justify-content: center;
 }
 
+/* Warning State (yellow) */
+.scan-result.warning {
+    border-left-color: #ffca28;
+    background: linear-gradient(135deg, #fffdf5 0%, #fff8e1 100%);
+    border: 2px solid rgba(255, 193, 7, 0.08);
+    padding: 35px;
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.scan-result.warning.time-in {
+    box-shadow: 0 8px 32px rgba(255, 193, 7, 0.12);
+}
+
+.scan-result.warning.time-out {
+    box-shadow: 0 8px 32px rgba(255, 160, 0, 0.12);
+}
+
+.scan-result.warning h2 {
+    color: #856404;
+}
+
+.result-icon.warning {
+    background: #fff3cd;
+    color: #856404;
+    border: 2px solid #ffecb5;
+}
+
 .scan-result-content {
     display: flex;
     align-items: center;

@@ -6,6 +6,7 @@ import {
     MdAccessTime,
     MdCheckCircle,
     MdError,
+    MdWarning,
     MdLogin,
     MdArrowForward
 } from 'react-icons/md';
@@ -46,6 +47,16 @@ const formatTimeForSMS = (timestamp) => {
 }
 
 const TimeInScanner = () => {
+    // Configurable set of messages that should be treated as warnings
+    const WARNING_MESSAGES = useMemo(() => new Set([
+        'You already have an active time-in session',
+        'No active time-in session found'
+    ]), []);
+
+    const isWarningMessage = (msg) => {
+        if (!msg) return false;
+        return WARNING_MESSAGES.has(msg);
+    };
     const [scanInput, setScanInput] = useState('');
     const [lastScanResult, setLastScanResult] = useState(null);
     const [currentTime, setCurrentTime] = useState(new Date());
@@ -433,6 +444,9 @@ const TimeInScanner = () => {
         window.location.href = '/scanner/time-out';
     };
 
+    // Compute result level for rendering: 'success' | 'warning' | 'error' | null
+    const resultLevel = lastScanResult ? (lastScanResult.error ? (isWarningMessage(lastScanResult.error) ? 'warning' : 'error') : 'success') : null;
+
     return (
         <div className="scanner-container time-in-scanner">
             {/* Header with School Name and Live Clock */}
@@ -493,12 +507,16 @@ const TimeInScanner = () => {
 
             {/* Last Scan Result */}
             {lastScanResult && (
-                <div className={`scan-result ${lastScanResult.error ? 'error' : 'success time-in'}`}>
-                    {lastScanResult.error ? (
+                <div className={resultLevel === 'success' ? 'scan-result success time-in' : `scan-result ${resultLevel} time-in`}>
+                    {resultLevel !== 'success' ? (
                         <div className="scan-result-content">
-                            <MdError className="result-icon error-icon" />
+                            {resultLevel === 'warning' ? (
+                                <MdWarning className="result-icon warning" />
+                            ) : (
+                                <MdError className="result-icon error-icon" />
+                            )}
                             <div className="result-info">
-                                <h2>⚠️ Time-In Failed</h2>
+                                <h2>{resultLevel === 'warning' ? '⚠️ Warning' : '⚠️ Time-In Failed'}</h2>
                                 <div className="error-message">
                                     <div className="main-error-container">
                                         <p className="main-error">{lastScanResult.error}</p>
