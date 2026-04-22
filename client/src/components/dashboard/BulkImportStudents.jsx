@@ -179,6 +179,25 @@ const BulkImportStudents = ({ isOpen, onClose, onSuccess }) => {
                                     <h3>Step 1: Download Template</h3>
                                 </div>
                                 <p>Download the Excel template with the required columns and sample data.</p>
+                                <div className="template-header">
+                                    <h3>Step 2: Input Data</h3>
+                                </div>
+                                <p>
+                                    Fill in folowing data in the template:
+                                    <ul>
+                                        <li><strong>uid</strong> (required): Input: ('uid)</li>
+                                        <li><strong>id</strong> (required): Input: (id)</li>
+                                        <li><strong>first_name</strong> (required): Input: (first_name)</li>
+                                        <li><strong>middle_name</strong> (required): Input: (middle_name)</li>
+                                        <li><strong>last_name</strong> (required): Input: (last_name)</li>
+                                        <li><strong>department</strong> (required): Input: (department)</li>
+                                        <li><strong>year_level</strong> (optional): Input: (year_level)</li>
+                                        <li><strong>course</strong> (optional): Input: (course)</li>
+                                        <li><strong>gender</strong> (optional): Input: (gender)</li>
+                                        <li><strong>parent_contact</strong> (optional): Input: (parent_contact)</li>
+                                        <li><strong>contact_number</strong> (optional): Input: (contact_number)</li>
+                                    </ul>
+                                </p>
                                 <button 
                                     type="button" 
                                     className="template-download-btn"
