@@ -176,6 +176,30 @@ const BulkImportFaculty = ({ isOpen, onClose, onSuccess }) => {
                                     <h3>Step 1: Download Template</h3>
                                 </div>
                                 <p>Download the Excel template and fill in your faculty data:</p>
+                                <div className="template-header">
+                                    <MdIcons.MdEdit className="icon" />
+                                    <h3>Step 2: Input Data</h3>
+                                </div>
+                                <p>Fill in the following columns in the template (required fields shown):</p>
+                                <ul>
+                                    <li><strong>uid</strong> (required): Unique identifier for the user</li>
+                                    <li><strong>id</strong> (required): Employee or faculty ID</li>
+                                    <li><strong>first_name</strong> (required)</li>
+                                    <li><strong>middle_name</strong> (optional)</li>
+                                    <li><strong>last_name</strong> (required)</li>
+                                    <li><strong>department</strong> (required): BSCpE, BSME, BSEE, BSECE, BSCE, BSChE, BSCerE, BSABE</li>
+                                    <li><strong>gender</strong> (optional)</li>
+                                </ul>
+                                <div className="template-header" style={{ marginTop: 12 }}>
+                                    <MdIcons.MdCloudUpload className="icon" />
+                                    <h3>Step 3: Import</h3>
+                                </div>
+                                <p>
+                                    After filling the template, ensure the file is saved/exported as <strong>.xlsx</strong> or
+                                    <strong> .xls</strong>. If you have a different format (e.g., CSV), open it in Excel or a
+                                    compatible editor and save as one of the supported formats before uploading. Then upload
+                                    the file below and click <strong>Import Faculty</strong>.
+                                </p>
                                 <button 
                                     type="button" 
                                     className="template-download-btn"

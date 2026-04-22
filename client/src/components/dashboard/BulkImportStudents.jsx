@@ -180,23 +180,32 @@ const BulkImportStudents = ({ isOpen, onClose, onSuccess }) => {
                                 </div>
                                 <p>Download the Excel template with the required columns and sample data.</p>
                                 <div className="template-header">
+                                    <MdIcons.MdEdit className="icon" />
                                     <h3>Step 2: Input Data</h3>
                                 </div>
+                                <p>Fill in following data in the template:</p>
+                                <ul>
+                                    <li><strong>uid</strong> (required)</li>
+                                    <li><strong>id</strong> (required)</li>
+                                    <li><strong>first_name</strong> (required)</li>
+                                    <li><strong>middle_name</strong> (optional)</li>
+                                    <li><strong>last_name</strong> (required)</li>
+                                    <li><strong>department</strong> (required): BSCpE, BSME, BSEE, BSECE, BSCE, BSChE, BSCerE, BSABE</li>
+                                    <li><strong>year_level</strong> (optional)</li>
+                                    <li><strong>gender</strong> (optional)</li>
+                                    <li><strong>parent_contact</strong> (optional)</li>
+                                    <li><strong>contact_number</strong> (optional)</li>
+                                </ul>
+                                <div className="template-header" style={{ marginTop: 12 }}>
+                                    <MdIcons.MdCloudUpload className="icon" />
+                                    <h3>Step 3: Import</h3>
+                                </div>
                                 <p>
-                                    Fill in folowing data in the template:
-                                    <ul>
-                                        <li><strong>uid</strong> (required): Input: ('uid)</li>
-                                        <li><strong>id</strong> (required): Input: (id)</li>
-                                        <li><strong>first_name</strong> (required): Input: (first_name)</li>
-                                        <li><strong>middle_name</strong> (required): Input: (middle_name)</li>
-                                        <li><strong>last_name</strong> (required): Input: (last_name)</li>
-                                        <li><strong>department</strong> (required): Input: (department)</li>
-                                        <li><strong>year_level</strong> (optional): Input: (year_level)</li>
-                                        <li><strong>course</strong> (optional): Input: (course)</li>
-                                        <li><strong>gender</strong> (optional): Input: (gender)</li>
-                                        <li><strong>parent_contact</strong> (optional): Input: (parent_contact)</li>
-                                        <li><strong>contact_number</strong> (optional): Input: (contact_number)</li>
-                                    </ul>
+                                    After filling out the template, make sure the file is in a supported format before uploading.
+                                    If your spreadsheet editor exported a different format (for example, CSV), open the file in
+                                    Excel or a compatible editor and save/export it as <strong>.xlsx</strong> or <strong>.xls</strong>.
+                                    Then upload it using the "Upload Excel File" section below and click the <strong>Import Students</strong>
+                                    button to start the import process.
                                 </p>
                                 <button 
                                     type="button" 

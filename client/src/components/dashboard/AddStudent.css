@@ -390,6 +390,11 @@
     margin-bottom: 20px;
 }
 
+/* Ensure template content is left-aligned and list is readable */
+.template-section {
+    text-align: left;
+}
+
 .template-header {
     display: flex;
     align-items: center;
@@ -411,8 +416,30 @@
 
 .template-section p {
     color: #ccc;
-    margin: 0 0 16px 0;
+    margin: 0 0 12px 0;
     font-size: 14px;
+}
+
+/* Remove default list bullets and left padding inside the template section */
+.template-section ul {
+    list-style: none;
+    margin: 8px 0 16px 0;
+    padding-left: 22px; /* indent list items relative to the section */
+    max-width: none;
+    width: 100%;
+}
+
+.template-section ul li {
+    color: #ccc;
+    font-size: 14px;
+    margin-bottom: 8px;
+    text-align: left;
+}
+
+/* Add small left padding to the paragraph and headers inside template section */
+.template-section p,
+.template-section .template-header {
+    padding-left: 6px;
 }
 
 .template-download-btn {
