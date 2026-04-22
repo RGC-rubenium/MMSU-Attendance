@@ -35,6 +35,7 @@ def process_sms_queue():
     with app.app_context():
         while True:
             sms = sms_queue.query.filter_by(status='queued').first()
+            time.sleep(1)  # Sleep briefly to prevent tight loop
             if sms:
                 success = send_sms(sms.mobile_num, sms.message)
                 sms.status = 'sent' if success else 'failed'

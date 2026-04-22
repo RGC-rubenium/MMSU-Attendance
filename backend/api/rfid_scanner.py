@@ -271,222 +271,222 @@ def check_student_personal_schedule(student):
     
     return False, None
 
-@rfid_scanner_bp.route('/api/scanner/rfid-scan', methods=['POST'])
-def handle_rfid_scan():
-    try:
-        data = request.get_json()
-        uid = data.get('uid', '').strip()
+# @rfid_scanner_bp.route('/api/scanner/rfid-scan', methods=['POST'])
+# def handle_rfid_scan():
+#     try:
+#         data = request.get_json()
+#         uid = data.get('uid', '').strip()
         
-        if not uid:
-            return jsonify({
-                'success': False,
-                'message': 'UID is required'
-            }), 400
+#         if not uid:
+#             return jsonify({
+#                 'success': False,
+#                 'message': 'UID is required'
+#             }), 400
         
-        current_day, current_time, current_date, now = get_current_day_time()
+#         current_day, current_time, current_date, now = get_current_day_time()
         
-        # Find user by UID (check both students and faculty)
-        user = None
-        user_type = None
+#         # Find user by UID (check both students and faculty)
+#         user = None
+#         user_type = None
         
-        # Check students first
-        student = Student.query.filter_by(uid=uid).first()
-        if student:
-            user = student
-            user_type = 'student'
-        else:
-            # Check faculty
-            faculty = Faculty.query.filter_by(uid=uid).first()
-            if faculty:
-                user = faculty
-                user_type = 'faculty'
+#         # Check students first
+#         student = Student.query.filter_by(uid=uid).first()
+#         if student:
+#             user = student
+#             user_type = 'student'
+#         else:
+#             # Check faculty
+#             faculty = Faculty.query.filter_by(uid=uid).first()
+#             if faculty:
+#                 user = faculty
+#                 user_type = 'faculty'
         
-        if not user:
-            return jsonify({
-                'success': False,
-                'message': 'RFID card not registered',
-                'uid': uid
-            }), 404
+#         if not user:
+#             return jsonify({
+#                 'success': False,
+#                 'message': 'RFID card not registered',
+#                 'uid': uid
+#             }), 404
         
-        # ===== CRITICAL: CHECK FOR EXISTING INCOMPLETE LOG FIRST =====
-        today_start = datetime.combine(current_date, datetime_time.min)
-        today_end = datetime.combine(current_date, datetime_time.max)
+#         # ===== CRITICAL: CHECK FOR EXISTING INCOMPLETE LOG FIRST =====
+#         today_start = datetime.combine(current_date, datetime_time.min)
+#         today_end = datetime.combine(current_date, datetime_time.max)
         
-        print(f"🔍 Debug - Checking for incomplete logs for UID: {uid}")
+#         print(f"🔍 Debug - Checking for incomplete logs for UID: {uid}")
         
-        # Look for ANY incomplete log today - this is the most important check
-        # Use time_in field instead of created_at to handle timezone issues
-        incomplete_log = AttendanceLog.query.filter(
-            and_(
-                AttendanceLog.uid == uid,
-                AttendanceLog.time_in >= today_start,
-                AttendanceLog.time_in <= today_end,
-                AttendanceLog.time_out.is_(None)
-            )
-        ).order_by(AttendanceLog.time_in.desc()).first()
+#         # Look for ANY incomplete log today - this is the most important check
+#         # Use time_in field instead of created_at to handle timezone issues
+#         incomplete_log = AttendanceLog.query.filter(
+#             and_(
+#                 AttendanceLog.uid == uid,
+#                 AttendanceLog.time_in >= today_start,
+#                 AttendanceLog.time_in <= today_end,
+#                 AttendanceLog.time_out.is_(None)
+#             )
+#         ).order_by(AttendanceLog.time_in.desc()).first()
         
-        print(f"🔍 Debug - Incomplete log found: {incomplete_log is not None}")
-        if incomplete_log:
-            print(f"🔍 Debug - Incomplete log details: ID={incomplete_log.id}, time_in={incomplete_log.time_in}")
+#         print(f"🔍 Debug - Incomplete log found: {incomplete_log is not None}")
+#         if incomplete_log:
+#             print(f"🔍 Debug - Incomplete log details: ID={incomplete_log.id}, time_in={incomplete_log.time_in}")
         
-        # ===== IF INCOMPLETE LOG EXISTS: THIS IS DEFINITELY A TIMEOUT =====
-        if incomplete_log:
-            print(f"🔍 Debug - PROCESSING TIMEOUT (bypassing all other checks)")
+#         # ===== IF INCOMPLETE LOG EXISTS: THIS IS DEFINITELY A TIMEOUT =====
+#         if incomplete_log:
+#             print(f"🔍 Debug - PROCESSING TIMEOUT (bypassing all other checks)")
             
-            # Set timeout immediately
-            incomplete_log.time_out = now
-            incomplete_log.updated_at = now
+#             # Set timeout immediately
+#             incomplete_log.time_out = now
+#             incomplete_log.updated_at = now
             
-            # Calculate attendance details based on user type
-            if user_type == 'student':
-                try:
-                    subjects_attended = calculate_subjects_attended(user, incomplete_log.time_in, now)
-                    incomplete_log.subjects_attended = subjects_attended
+#             # Calculate attendance details based on user type
+#             if user_type == 'student':
+#                 try:
+#                     subjects_attended = calculate_subjects_attended(user, incomplete_log.time_in, now)
+#                     incomplete_log.subjects_attended = subjects_attended
                     
-                    # Update notes with subject summary
-                    if subjects_attended:
-                        subject_names = [s['subject'] for s in subjects_attended if s.get('subject')]
-                        incomplete_log.notes = f"Attended: {', '.join(subject_names)}"
-                    else:
-                        incomplete_log.notes = "No subjects during attendance period"
-                except Exception as e:
-                    print(f"Error calculating subjects attended: {e}")
-                    incomplete_log.subjects_attended = []
-                    incomplete_log.notes = "Attendance recorded (subject calculation failed)"
+#                     # Update notes with subject summary
+#                     if subjects_attended:
+#                         subject_names = [s['subject'] for s in subjects_attended if s.get('subject')]
+#                         incomplete_log.notes = f"Attended: {', '.join(subject_names)}"
+#                     else:
+#                         incomplete_log.notes = "No subjects during attendance period"
+#                 except Exception as e:
+#                     print(f"Error calculating subjects attended: {e}")
+#                     incomplete_log.subjects_attended = []
+#                     incomplete_log.notes = "Attendance recorded (subject calculation failed)"
             
-            elif user_type == 'faculty':
-                # Faculty attendance - calculate work hours
-                work_duration = now - incomplete_log.time_in
-                hours = work_duration.total_seconds() / 3600
-                incomplete_log.notes = f"Work duration: {hours:.1f} hours"
-                incomplete_log.subjects_attended = []
+#             elif user_type == 'faculty':
+#                 # Faculty attendance - calculate work hours
+#                 work_duration = now - incomplete_log.time_in
+#                 hours = work_duration.total_seconds() / 3600
+#                 incomplete_log.notes = f"Work duration: {hours:.1f} hours"
+#                 incomplete_log.subjects_attended = []
             
-            # Commit the timeout
-            db.session.commit()
-            print(f"🔍 Debug - TIMEOUT COMPLETED successfully")
+#             # Commit the timeout
+#             db.session.commit()
+#             print(f"🔍 Debug - TIMEOUT COMPLETED successfully")
             
-            return jsonify({
-                'success': True,
-                'action': 'time_out',
-                'user': {
-                    'uid': user.uid,
-                    'id': user.id,
-                    'name': user.full_name(),
-                    'type': user_type,
-                    'department': user.department,
-                    'avatar': format_avatar_url(getattr(user, 'profile_path', None))
-                },
-                'schedule': {
-                    'type': incomplete_log.schedule_type,
-                    'name': incomplete_log.schedule_name,
-                    'current_slot': {}
-                },
-                'attendance': incomplete_log.to_dict()
-            }), 200
+#             return jsonify({
+#                 'success': True,
+#                 'action': 'time_out',
+#                 'user': {
+#                     'uid': user.uid,
+#                     'id': user.id,
+#                     'name': user.full_name(),
+#                     'type': user_type,
+#                     'department': user.department,
+#                     'avatar': format_avatar_url(getattr(user, 'profile_path', None))
+#                 },
+#                 'schedule': {
+#                     'type': incomplete_log.schedule_type,
+#                     'name': incomplete_log.schedule_name,
+#                     'current_slot': {}
+#                 },
+#                 'attendance': incomplete_log.to_dict()
+#             }), 200
         
-        # ===== NO INCOMPLETE LOG: PROCEED WITH NEW TIME-IN =====
-        # Multiple attendances per day are now allowed
-        print(f"🔍 Debug - No incomplete log found, proceeding with new time-in")
+#         # ===== NO INCOMPLETE LOG: PROCEED WITH NEW TIME-IN =====
+#         # Multiple attendances per day are now allowed
+#         print(f"🔍 Debug - No incomplete log found, proceeding with new time-in")
         
-        # ===== THIS IS A NEW TIME-IN OPERATION =====
-        print(f"🔍 Debug - Processing NEW TIME-IN operation")
+#         # ===== THIS IS A NEW TIME-IN OPERATION =====
+#         print(f"🔍 Debug - Processing NEW TIME-IN operation")
         
-        # Check scanner availability for new time-in
-        if not is_scanner_available(user_type):
-            # Get the allowed hours for this user type
-            config = SCANNER_CONFIG[f'{user_type}_scanner_hours']
+#         # Check scanner availability for new time-in
+#         if not is_scanner_available(user_type):
+#             # Get the allowed hours for this user type
+#             config = SCANNER_CONFIG[f'{user_type}_scanner_hours']
             
-            if current_day in ['monday', 'tuesday', 'wednesday', 'thursday', 'friday']:
-                allowed_hours = config['weekdays']
-                day_type = 'weekdays'
-            else:
-                allowed_hours = config['weekends']
-                day_type = 'weekends'
+#             if current_day in ['monday', 'tuesday', 'wednesday', 'thursday', 'friday']:
+#                 allowed_hours = config['weekdays']
+#                 day_type = 'weekdays'
+#             else:
+#                 allowed_hours = config['weekends']
+#                 day_type = 'weekends'
             
-            return jsonify({
-                'success': False,
-                'message': f'Scanner not available for {user_type}s at this time',
-                'allowed_hours': {
-                    'day_type': day_type,
-                    'start_time': allowed_hours['start_time'],
-                    'end_time': allowed_hours['end_time']
-                },
-                'current_time': current_time.strftime('%H:%M'),
-                'user': {
-                    'name': user.full_name(),
-                    'type': user_type,
-                    'department': user.department,
-                    'uid': uid
-                }
-            }), 403
+#             return jsonify({
+#                 'success': False,
+#                 'message': f'Scanner not available for {user_type}s at this time',
+#                 'allowed_hours': {
+#                     'day_type': day_type,
+#                     'start_time': allowed_hours['start_time'],
+#                     'end_time': allowed_hours['end_time']
+#                 },
+#                 'current_time': current_time.strftime('%H:%M'),
+#                 'user': {
+#                     'name': user.full_name(),
+#                     'type': user_type,
+#                     'department': user.department,
+#                     'uid': uid
+#                 }
+#             }), 403
         
-        # Find active schedule for time-in operations
-        if user_type == 'student':
-            active_schedule = find_active_schedule_for_student(user)
-        elif user_type == 'faculty':
-            active_schedule = find_active_schedule_for_faculty(user)
-        else:
-            active_schedule = find_active_schedule()
+#         # Find active schedule for time-in operations
+#         if user_type == 'student':
+#             active_schedule = find_active_schedule_for_student(user)
+#         elif user_type == 'faculty':
+#             active_schedule = find_active_schedule_for_faculty(user)
+#         else:
+#             active_schedule = find_active_schedule()
         
-        if not active_schedule:
-            return jsonify({
-                'success': False,
-                'message': 'No active schedule found for current time',
-                'user': {
-                    'name': user.full_name(),
-                    'type': user_type,
-                    'department': user.department,
-                    'uid': uid
-                }
-            }), 400
+#         if not active_schedule:
+#             return jsonify({
+#                 'success': False,
+#                 'message': 'No active schedule found for current time',
+#                 'user': {
+#                     'name': user.full_name(),
+#                     'type': user_type,
+#                     'department': user.department,
+#                     'uid': uid
+#                 }
+#             }), 400
         
-        # Create new time-in entry
-        attendance_log = AttendanceLog(
-            uid=uid,
-            user_type=user_type,
-            user_id=user.id,
-            full_name=user.full_name(),
-            department=user.department,
-            schedule_type=active_schedule['type'],
-            schedule_name=active_schedule['name'],
-            time_in=now,
-            status='incomplete',
-            subjects_attended=None,  # Will be calculated on time-out
-            notes=None
-        )
+#         # Create new time-in entry
+#         attendance_log = AttendanceLog(
+#             uid=uid,
+#             user_type=user_type,
+#             user_id=user.id,
+#             full_name=user.full_name(),
+#             department=user.department,
+#             schedule_type=active_schedule['type'],
+#             schedule_name=active_schedule['name'],
+#             time_in=now,
+#             status='incomplete',
+#             subjects_attended=None,  # Will be calculated on time-out
+#             notes=None
+#         )
         
-        db.session.add(attendance_log)
-        db.session.commit()
-        #debuger
-        print(f"🔍 Debug - NEW TIME-IN created: ID={attendance_log.id}")
+#         db.session.add(attendance_log)
+#         db.session.commit()
+#         #debuger
+#         print(f"🔍 Debug - NEW TIME-IN created: ID={attendance_log.id}")
         
-        return jsonify({
-            'success': True,
-            'action': 'time_in',
-            'user': {
-                'uid': user.uid,
-                'id': user.id,
-                'name': user.full_name(),
-                'type': user_type,
-                'department': user.department,
-                'avatar': format_avatar_url(getattr(user, 'profile_path', None))
-            },
-            'schedule': {
-                'type': active_schedule['type'],
-                'name': active_schedule['name'],
-                'current_slot': active_schedule.get('current_slot') or {}
-            },
-            'attendance': attendance_log.to_dict()
-        }, 200)
+#         return jsonify({
+#             'success': True,
+#             'action': 'time_in',
+#             'user': {
+#                 'uid': user.uid,
+#                 'id': user.id,
+#                 'name': user.full_name(),
+#                 'type': user_type,
+#                 'department': user.department,
+#                 'avatar': format_avatar_url(getattr(user, 'profile_path', None))
+#             },
+#             'schedule': {
+#                 'type': active_schedule['type'],
+#                 'name': active_schedule['name'],
+#                 'current_slot': active_schedule.get('current_slot') or {}
+#             },
+#             'attendance': attendance_log.to_dict()
+#         }, 200)
         
-    except Exception as e:
-        db.session.rollback()
-        print(f"Error handling RFID scan: {e}")
-        return jsonify({
-            'success': False,
-            'message': 'Failed to process RFID scan',
-            'error': str(e)
-        }), 500
+#     except Exception as e:
+#         db.session.rollback()
+#         print(f"Error handling RFID scan: {e}")
+#         return jsonify({
+#             'success': False,
+#             'message': 'Failed to process RFID scan',
+#             'error': str(e)
+#         }), 500
 
 @rfid_scanner_bp.route('/api/scanner/current-schedule', methods=['GET'])
 def get_current_schedule():
