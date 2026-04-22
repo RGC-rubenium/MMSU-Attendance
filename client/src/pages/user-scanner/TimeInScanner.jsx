@@ -32,6 +32,19 @@ const naiveLocalIso = (d = new Date()) => {
     return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
 };
 
+//SMS Time formatting helper - returns "April 21, 2026 at 3:33 PM"
+const formatTimeForSMS = (timestamp) => {
+    const d = new Date(timestamp);
+    return d.toLocaleString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true
+    });
+}
+
 const TimeInScanner = () => {
     const [scanInput, setScanInput] = useState('');
     const [lastScanResult, setLastScanResult] = useState(null);
@@ -59,25 +72,25 @@ const TimeInScanner = () => {
     }, [lowEndMode]);
 
     // Sync with server time when device comes online
-    useEffect(() => {
-        const syncWithServerTime = async () => {
-            try {
-                // Call the heartbeat endpoint (or a dedicated endpoint if you have one)
-                const res = await fetch('/api/rpi/heartbeat', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ device_id: window.DEVICE_ID || 'web-client' })
-                });
-                const data = await res.json();
-                if (data.success && data.server_time) {
-                    setCurrentTime(new Date(data.server_time));
-                }
-            } catch (e) {
-                // fallback: do nothing, use local time
-            }
-        };
-        syncWithServerTime();
-    }, []);
+    // useEffect(() => {
+    //     const syncWithServerTime = async () => {
+    //         try {
+    //             // Call the heartbeat endpoint (or a dedicated endpoint if you have one)
+    //             const res = await fetch('/api/rpi/heartbeat', {
+    //                 method: 'POST',
+    //                 headers: { 'Content-Type': 'application/json' },
+    //                 body: JSON.stringify({ device_id: window.DEVICE_ID || 'web-client' })
+    //             });
+    //             const data = await res.json();
+    //             if (data.success && data.server_time) {
+    //                 setCurrentTime(new Date(data.server_time));
+    //             }
+    //         } catch (e) {
+    //             // fallback: do nothing, use local time
+    //         }
+    //     };
+    //     syncWithServerTime();
+    // }, []);
 
     // Global keyboard capture for kiosk mode - captures input even without focus
     useEffect(() => {
@@ -230,7 +243,7 @@ const TimeInScanner = () => {
             
             setLastScanResult({
                 error: 'Invalid RFID card format. Please try scanning again.',
-                timestamp: new Date().toISOString()
+                timestamp: naiveLocalIso()
             });
             playSound('error');
             
@@ -258,7 +271,7 @@ const TimeInScanner = () => {
                 setLastScanResult({
                     ...data,
                     action: 'time_in',
-                    timestamp: new Date().toISOString()
+                    timestamp: naiveLocalIso()
                 });
 
                 // --- SMS queueing if parent/guardian contact exists ---
@@ -267,14 +280,15 @@ const TimeInScanner = () => {
                         mobile_num: data.user.parent_contact,
                         student_name: data.user.name,
                         attendance_type: 'timed-in',
-                        attendance_time: new Date().toISOString()
+                        attendance_time: formatTimeForSMS(naiveLocalIso())
                     });
                     queueSMS({
                         mobile_num: data.user.parent_contact,
                         student_name: data.user.name,
                         attendance_type: 'timed-in',
-                        attendance_time: new Date().toISOString()
+                        attendance_time: formatTimeForSMS(naiveLocalIso())
                     }).then(res => {
+                        console.log('[DEBUG] time:', formatTimeForSMS(naiveLocalIso()));
                         console.log('[DEBUG] queueSMS response:', res);
                     }).catch(err => {
                         console.error('[DEBUG] queueSMS error:', err);
@@ -298,7 +312,7 @@ const TimeInScanner = () => {
                     error: errorMessage,
                     user: data.user || null,
                     details: data.details || null,
-                    timestamp: new Date().toISOString()
+                    timestamp: naiveLocalIso()
                 });
                 playSound('error');
                 
@@ -327,7 +341,7 @@ const TimeInScanner = () => {
             
             setLastScanResult({
                 error: errorMessage,
-                timestamp: new Date().toISOString()
+                timestamp: naiveLocalIso()
             });
             playSound('error');
             
@@ -393,7 +407,7 @@ const TimeInScanner = () => {
         return new Date(timestamp).toLocaleTimeString('en-US', {
             hour: '2-digit',
             minute: '2-digit',
-            second: '2-digit'
+            // second: '2-digit'
         });
     };
 
@@ -401,7 +415,7 @@ const TimeInScanner = () => {
         return currentTime.toLocaleTimeString('en-US', {
             hour: '2-digit',
             minute: '2-digit',
-            second: '2-digit',
+            // second: '2-digit',
             hour12: true
         });
     };

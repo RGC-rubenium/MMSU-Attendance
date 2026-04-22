@@ -32,6 +32,19 @@ const naiveLocalIso = (d = new Date()) => {
     return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
 };
 
+const formatTimeForSMS = (timestamp) => {
+    const d = new Date(timestamp);
+    return d.toLocaleString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true
+    });
+}
+
+
 const TimeOutScanner = () => {
     const [scanInput, setScanInput] = useState('');
     const [lastScanResult, setLastScanResult] = useState(null);
@@ -59,24 +72,24 @@ const TimeOutScanner = () => {
     }, [lowEndMode]);
 
     // Sync with server time when device comes online
-    useEffect(() => {
-        const syncWithServerTime = async () => {
-            try {
-                const res = await fetch('/api/rpi/heartbeat', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ device_id: window.DEVICE_ID || 'web-client' })
-                });
-                const data = await res.json();
-                if (data.success && data.server_time) {
-                    setCurrentTime(new Date(data.server_time));
-                }
-            } catch (e) {
-                // fallback: do nothing, use local time
-            }
-        };
-        syncWithServerTime();
-    }, []);
+    // useEffect(() => {
+    //     const syncWithServerTime = async () => {
+    //         try {
+    //             const res = await fetch('/api/rpi/heartbeat', {
+    //                 method: 'POST',
+    //                 headers: { 'Content-Type': 'application/json' },
+    //                 body: JSON.stringify({ device_id: window.DEVICE_ID || 'web-client' })
+    //             });
+    //             const data = await res.json();
+    //             if (data.success && data.server_time) {
+    //                 setCurrentTime(new Date(data.server_time));
+    //             }
+    //         } catch (e) {
+    //             // fallback: do nothing, use local time
+    //         }
+    //     };
+    //     syncWithServerTime();
+    // }, []);
 
     // Global keyboard capture for kiosk mode - captures input even without focus
     useEffect(() => {
@@ -229,7 +242,7 @@ const TimeOutScanner = () => {
             
             setLastScanResult({
                 error: 'Invalid RFID card format. Please try scanning again.',
-                timestamp: new Date().toISOString()
+                timestamp: naiveLocalIso()
             });
             playSound('error');
             
@@ -257,7 +270,7 @@ const TimeOutScanner = () => {
                 setLastScanResult({
                     ...data,
                     action: 'time_out',
-                    timestamp: new Date().toISOString()
+                    timestamp: naiveLocalIso()
                 });
 
                 // --- SMS queueing if parent/guardian contact exists ---
@@ -266,9 +279,15 @@ const TimeOutScanner = () => {
                         mobile_num: data.user.parent_contact,
                         student_name: data.user.name,
                         attendance_type: 'timed-out',
-                        attendance_time: new Date().toISOString()
+                        attendance_time: formatTimeForSMS(naiveLocalIso())
                     });
                 }
+                console.log('📱 SMS queued for time-out (if applicable) with data:', {
+                    mobile_num: data.user.parent_contact,
+                    student_name: data.user.name,
+                    attendance_type: 'timed-out',
+                    attendance_time: formatTimeForSMS(naiveLocalIso())
+                });
                 // --- End SMS queueing ---
 
                 playSound('success');
@@ -287,7 +306,7 @@ const TimeOutScanner = () => {
                     error: errorMessage,
                     user: data.user || null,
                     details: data.details || null,
-                    timestamp: new Date().toISOString()
+                    timestamp: naiveLocalIso()
                 });
                 playSound('error');
                 
@@ -316,7 +335,7 @@ const TimeOutScanner = () => {
             
             setLastScanResult({
                 error: errorMessage,
-                timestamp: new Date().toISOString()
+                timestamp: naiveLocalIso()
             });
             playSound('error');
             
@@ -382,7 +401,7 @@ const TimeOutScanner = () => {
         return new Date(timestamp).toLocaleTimeString('en-US', {
             hour: '2-digit',
             minute: '2-digit',
-            second: '2-digit'
+            // second: '2-digit'
         });
     };
 
@@ -390,7 +409,7 @@ const TimeOutScanner = () => {
         return currentTime.toLocaleTimeString('en-US', {
             hour: '2-digit',
             minute: '2-digit',
-            second: '2-digit',
+            // second: '2-digit',
             hour12: true
         });
     };
