@@ -20,16 +20,12 @@ export default function Login({ onModeChange }) {
 
   useEffect(() => {
     if (auth && auth.isAuthenticated) {
-      // user already logged in — redirect based on role
-      if (auth.hasRole && auth.hasRole('admin')) {
-        navigate('/dashboard', { replace: true })
-      } else if (auth.hasRole && auth.hasRole('faculty')) {
-        navigate('/dashboard/faculty', { replace: true })
-      } else if (auth.hasRole && auth.hasRole('student')) {
-        navigate('/dashboard/students', { replace: true })
-      } else {
-        navigate('/dashboard', { replace: true })
-      }
+      navigate('/dashboard', { replace: true })
+      // Only redirect to admin dashboard automatically when the user has 'admin' or 'administrator' role
+      // if (auth.hasRole || (auth.hasRole('admin') || auth.hasRole('administrator'))) {
+      //   navigate('/dashboard', { replace: true })
+      // }
+      // otherwise stay on login (user may not have access to admin area)
     }
   }, [auth, navigate])
 
@@ -80,13 +76,18 @@ export default function Login({ onModeChange }) {
       // update AuthContext state from stored token
       if (auth && auth.loginComplete) auth.loginComplete()
       setSuccess(data?.message || 'Login successful')
-      // redirect to dashboard after successful login
-      // prefer admin dashboard if role present
-      const roles = auth?.roles || []
-      if (roles.includes('admin')) navigate('/dashboard', { replace: true })
-      else if (roles.includes('faculty')) navigate('/dashboard/faculty', { replace: true })
-      else if (roles.includes('student')) navigate('/dashboard/students', { replace: true })
-      else navigate('/dashboard', { replace: true })
+      // redirect based on roles returned by the login response (avoid race with auth state update)
+      const respRoles = (data && data.roles) || []
+      const normalized = Array.isArray(respRoles)
+        ? respRoles.map(r => (r || '').toString().trim().toLowerCase())
+        : String(respRoles).split(',').map(r => r.trim().toLowerCase()).filter(Boolean)
+
+      if (normalized.includes('admin')) {
+        navigate('/dashboard', { replace: true })
+      } else {
+        // user has no admin access — stay on landing/login or show message
+        navigate('/', { replace: true })
+      }
     } catch (err) {
       setError('Invalid username or password')
     } finally {

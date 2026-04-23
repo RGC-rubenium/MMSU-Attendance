@@ -10,7 +10,9 @@ class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(120), unique=True, nullable=False)
     password = db.Column(db.Text, nullable=False)
-    role = db.Column(db.String(100), nullable=True)
+    # single string column storing comma-separated roles (e.g. 'admin,superadmin')
+    # default to 'admin' for created users
+    role = db.Column(db.String(200), nullable=True, default='admin')
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     def set_password(self, raw: str):
@@ -24,6 +26,22 @@ class User(db.Model):
             return []
         # support comma-separated roles
         return [r.strip() for r in self.role.split(',') if r.strip()]
+
+    @property
+    def roles(self):
+        return self.get_roles_list()
+
+    @roles.setter
+    def roles(self, value):
+        """Accept list or comma/string and store as comma-separated string in `role` column."""
+        if value is None:
+            self.role = None
+            return
+        if isinstance(value, list):
+            self.role = ','.join([str(v).strip() for v in value if v])
+            return
+        # otherwise coerce to string
+        self.role = str(value)
 
     def to_dict(self):
         return {

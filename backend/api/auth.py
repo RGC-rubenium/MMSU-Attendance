@@ -36,8 +36,20 @@ def register():
         return jsonify({'message': 'user already exists'}), 409
     u = User(username=username)
     u.set_password(password)
-    # default to 'student' role unless client provided another
-    u.roles = data.get('roles') or 'student'
+    # Only allow admin role by default for self-registration.
+    # Disallow creating or assigning 'superadmin' or any non-admin roles via this endpoint.
+    roles = data.get('roles') or data.get('role') or 'admin'
+    # normalize
+    if isinstance(roles, list):
+        roles_list = [r.strip() for r in roles if r]
+    else:
+        roles_list = [r.strip() for r in str(roles).split(',') if r.strip()]
+
+    # allowed roles for this endpoint (users can only self-create admin accounts)
+    allowed = {'admin'}
+    if any(r not in allowed for r in roles_list):
+        return jsonify({'message': 'Invalid role(s) provided'}), 400
+    u.role = ','.join(roles_list)
     db.session.add(u)
     db.session.commit()
     return jsonify({'message': 'user created'}), 201

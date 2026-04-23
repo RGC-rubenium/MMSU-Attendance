@@ -30,6 +30,13 @@ export const SideBarData = [
             }
         ]
     },
+    {
+        title: 'Manage Admins',
+        Path: '/dashboard/users',
+        Icon: <FaIcons.FaUserShield/>,
+        cName: 'sidebar-text',
+        roles: ['superadmin']
+    },
     // {
     //     title: 'Schedule',
     //     Path: '/dashboard/schedule',

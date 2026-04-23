@@ -16,6 +16,7 @@ import {BrowserRouter as Router, Routes, Route} from 'react-router-dom'
 import ProtectedRoute from './components/auth/ProtectedRoute'
 import Event_scheduler from './pages/dashboard/pages/Event_scheduler'
 import ClassSchedule from './pages/dashboard/pages/ClassSchedule'
+import UserManagement from './pages/dashboard/UserManagement'
 import RpiManagement from './components/dashboard/RpiManagement'
 import DeviceCheck from './pages/device/DeviceCheck'
 import DevicePending from './pages/device/DevicePending'
@@ -51,7 +52,7 @@ function App() {
             <Route path="/register" element={<Register />} />
             
             {/* Dashboard Routes */}
-            <Route path="/dashboard/*" element={<ProtectedRoute allowedRoles={["admin"]}><AdminDashboard /></ProtectedRoute>}>
+            <Route path="/dashboard/*" element={<ProtectedRoute allowedRoles={["admin","superadmin"]}><AdminDashboard /></ProtectedRoute>}>
               <Route index element={<Dashboard />} />
               <Route path="students" element={<Student />} />
               <Route path="faculty" element={<Faculty />} />
@@ -64,6 +65,7 @@ function App() {
               <Route path="logs/attendance" element={<AttendanceLogs />} />
               <Route path="rpi/management" element={<RpiManagement />} />
               <Route path="settings" element={<Settings />} />
+              <Route path="users" element={<ProtectedRoute allowedRoles={["superadmin"]}><UserManagement /></ProtectedRoute>} />
             </Route>
           </Routes>
         </AuthProvider>

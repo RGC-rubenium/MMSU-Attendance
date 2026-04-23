@@ -38,6 +38,11 @@ export default function NavBar({ SideBarData }) {
                 <ul className="sidebar-list">
                     {SideBarData.map((item, index) => {
                         const hasSub = Array.isArray(item.subNav) && item.subNav.length > 0
+                        // if item specifies roles, hide it when the user lacks them
+                        if (item.roles && Array.isArray(item.roles)) {
+                            const hasRole = auth && auth.roles && item.roles.some(r => auth.roles.includes(r))
+                            if (!hasRole) return null
+                        }
                         return (
                             <li key={index} className={item.cName}>
                                 {hasSub ? (
