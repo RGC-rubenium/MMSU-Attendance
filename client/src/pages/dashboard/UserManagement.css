@@ -1,0 +1,128 @@
+/* Styles for User Management page to fill available dashboard space
+   Improved layout, spacing, sticky table header, and button sizing */
+.user-mgmt-main {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  box-sizing: border-box;
+  padding: 28px 32px;
+  gap: 12px;
+}
+
+.user-mgmt-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+#user-management-title {
+  margin: 0;
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--text-light, #e6eef8);
+}
+
+.user-mgmt-header .dashboard-sub {
+  margin: 4px 0 0 0;
+  color: var(--muted, rgba(255,255,255,0.55));
+  font-size: 13px;
+}
+
+.user-mgmt-actions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.user-mgmt-actions .btn {
+  padding: 10px 18px;
+  border-radius: 12px;
+  font-size: 14px;
+}
+
+.user-mgmt-content {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  min-height: 0; /* allow children to shrink for overflow */
+}
+
+.user-mgmt-table-wrap {
+  flex: 1 1 auto;
+  overflow: auto;
+  border-radius: 10px;
+  background: linear-gradient(180deg, rgba(12,18,30,0.45), rgba(16,24,40,0.35));
+  padding: 18px;
+  box-sizing: border-box;
+  border: 1px solid rgba(255,255,255,0.03);
+  height: 100%;
+}
+
+.user-mgmt-table {
+  width: 100%;
+  max-width: 100%;
+}
+
+.recent-table.enhanced {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.recent-table.enhanced thead th {
+  background: rgba(255,255,255,0.02);
+  padding: 12px 16px;
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--muted, rgba(255,255,255,0.7));
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  text-align: left;
+}
+
+.recent-table.enhanced tbody td {
+  padding: 16px 16px;
+  vertical-align: middle;
+  color: var(--text-light, rgba(255,255,255,0.85));
+  font-size: 14px;
+}
+
+.recent-table.enhanced tbody tr {
+  border-bottom: 1px solid rgba(255,255,255,0.03);
+}
+
+.recent-table.enhanced tbody tr:last-child { border-bottom: none; }
+
+.user-mgmt-table .btn { margin-right: 8px }
+
+.btn.btn-secondary { padding: 8px 14px; border-radius: 8px; }
+.btn.btn-danger { padding: 10px 14px; border-radius: 8px; }
+
+/* Force actions cell to layout buttons horizontally and compactly */
+.recent-table.enhanced tbody td:last-child {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  align-items: center;
+  white-space: nowrap;
+}
+
+.recent-table.enhanced tbody td:last-child .btn { margin: 0; }
+
+.recent-table.enhanced tbody td:last-child .btn + .btn { margin-left: 8px; }
+
+/* Make action buttons stack nicely on small widths */
+@media (max-width: 720px) {
+  .recent-table.enhanced thead { display: none; }
+  .recent-table.enhanced tbody td { display: block; width: 100%; box-sizing: border-box; }
+  .recent-table.enhanced tbody tr { display: block; margin-bottom: 12px; }
+  .user-mgmt-actions { justify-content: flex-end; }
+}
+
+/* small visual polish for scrollbar within the table wrapper */
+.user-mgmt-table-wrap::-webkit-scrollbar { width: 10px; }
+.user-mgmt-table-wrap::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.05); border-radius: 8px; }
+.user-mgmt-table-wrap::-webkit-scrollbar-track { background: transparent; }

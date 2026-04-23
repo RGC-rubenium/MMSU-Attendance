@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react'
 import AuthToken from '../../Utils/AuthToken'
 import { useAuth } from '../../contexts/AuthContext'
+import UserFormModal from '../../components/common/UserFormModal'
+import './UserManagement.css'
 
 export default function UserManagement() {
   const auth = useAuth()
@@ -102,28 +104,35 @@ export default function UserManagement() {
   }
 
   return (
-    <div style={{padding: 20}}>
-      <h2>User Management</h2>
-      <div style={{marginBottom: 12}}>
-        <button onClick={openCreate}>Add User</button>
-      </div>
+    <main className="dashboard-main user-mgmt-main">
+      <header className="user-mgmt-header">
+        <div>
+          <h1 id="user-management-title">User Management</h1>
+          <p className="dashboard-sub">Create and manage admin accounts</p>
+        </div>
+        <div className="user-mgmt-actions">
+          <button className="btn btn-primary" onClick={openCreate}>Add User</button>
+        </div>
+      </header>
+
       {loading && <div>Loading...</div>}
-      {error && <div style={{color: 'red'}}>{error}</div>}
-      {showForm && (
-        <form onSubmit={submitForm} style={{marginBottom: 12, border: '1px solid #ddd', padding: 12}}>
-          <div style={{marginBottom: 8}}>
-            <label>Username: <input value={formUsername} onChange={e => setFormUsername(e.target.value)} /></label>
-          </div>
-          <div style={{marginBottom: 8}}>
-            <label>Password: <input type="password" value={formPassword} onChange={e => setFormPassword(e.target.value)} placeholder={editingUser ? 'Leave blank to keep current password' : ''} /></label>
-          </div>
-          <div>
-            <button type="submit" disabled={loading || !formUsername || (!editingUser && !formPassword)}>{editingUser ? 'Save' : 'Create'}</button>
-            <button type="button" onClick={() => setShowForm(false)} style={{marginLeft: 8}}>Cancel</button>
-          </div>
-        </form>
-      )}
-      <table style={{width: '100%', borderCollapse: 'collapse'}}>
+      {error && <div style={{color: 'var(--danger-color, #ef4444)'}}>{error}</div>}
+
+      <UserFormModal
+        show={showForm}
+        editingUser={editingUser}
+        username={formUsername}
+        password={formPassword}
+        setUsername={setFormUsername}
+        setPassword={setFormPassword}
+        onConfirm={submitForm}
+        onCancel={() => setShowForm(false)}
+        loading={loading}
+      />
+
+      <div className="user-mgmt-content">
+        <div className="user-mgmt-table-wrap user-mgmt-table">
+          <table className="recent-table enhanced" style={{width: '100%'}}>
         <thead>
           <tr>
             <th style={{textAlign: 'left', padding: 8}}>Username</th>
@@ -134,18 +143,20 @@ export default function UserManagement() {
         </thead>
         <tbody>
           {users.map(u => (
-            <tr key={u.id} style={{borderTop: '1px solid #eee'}}>
-              <td style={{padding: 8}}>{u.username}</td>
-              <td style={{padding: 8}}>{(u.roles || []).join(', ')}</td>
-              <td style={{padding: 8}}>{u.created_at || ''}</td>
-              <td style={{padding: 8}}>
-                <button onClick={() => openEdit(u)} style={{marginRight: 8}}>Edit</button>
-                <button onClick={() => handleDelete(u.id, u.roles)} disabled={(u.roles || []).includes('superadmin')}>Delete</button>
+            <tr key={u.id} className="" style={{borderTop: '1px solid rgba(255,255,255,0.06)'}}>
+              <td style={{padding: 12}}>{u.username}</td>
+              <td style={{padding: 12}}>{(u.roles || []).join(', ')}</td>
+              <td style={{padding: 12}}>{u.created_at || ''}</td>
+              <td style={{padding: 12}}>
+                <button className="btn btn-secondary" onClick={() => openEdit(u)} style={{marginRight: 8}}>Edit</button>
+                <button className="btn btn-danger" onClick={() => handleDelete(u.id, u.roles)} disabled={(u.roles || []).includes('superadmin')}>Delete</button>
               </td>
             </tr>
           ))}
         </tbody>
-      </table>
+        </table>
+      </div>
     </div>
+    </main>
   )
 }
