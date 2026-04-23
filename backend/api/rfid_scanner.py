@@ -45,9 +45,16 @@ def check_time_in_range(current_time, start_time_str, end_time_str):
     except:
         return False
 
-def is_scanner_available(user_type):
-    """Check if scanner is available for the given user type at current time"""
-    current_day, current_time, current_date, now = get_current_day_time()
+def is_scanner_available(user_type, now_dt=None):
+    """Check if scanner is available for the given user type at the given time.
+
+    If `now_dt` is provided, use it (useful for client-provided timestamps).
+    Otherwise fallback to server current time.
+    """
+    # Use provided datetime if available to allow client-time checks
+    now = now_dt if now_dt is not None else datetime.now()
+    current_day = now.strftime('%A').lower()
+    current_time = now.time()
     
     # Get configuration based on user type
     if user_type == 'student':
@@ -56,13 +63,13 @@ def is_scanner_available(user_type):
         config = SCANNER_CONFIG['faculty_scanner_hours']
     else:
         return False
-    
+
     # Check if it's weekday or weekend
     if current_day in ['monday', 'tuesday', 'wednesday', 'thursday', 'friday']:
         hours = config['weekdays']
     else:
         hours = config['weekends']
-    
+
     # Check if current time is within allowed scanner hours
     return check_time_in_range(current_time, hours['start_time'], hours['end_time'])
 
@@ -581,7 +588,10 @@ def handle_time_in():
                 'message': 'UID is required'
             }), 400
         
-        current_day, current_time, current_date, _ = get_current_day_time()
+        # Use the resolved `now` (which may come from client_time) to determine current day/time
+        current_day = now.strftime('%A').lower()
+        current_time = now.time()
+        current_date = now.date()
         
         # Find user by UID
         user = None
@@ -753,7 +763,10 @@ def handle_time_out():
                 'message': 'UID is required'
             }), 400
         
-        current_day, current_time, current_date, _ = get_current_day_time()
+        # Use the resolved `now` (which may come from client_time) to determine current day/time
+        current_day = now.strftime('%A').lower()
+        current_time = now.time()
+        current_date = now.date()
         
         # Find user by UID
         user = None
@@ -777,10 +790,38 @@ def handle_time_out():
                 'uid': uid
             }), 404
         
+        # Check scanner availability for time-out BEFORE querying/processing logs
+        if not is_scanner_available(user_type, now):
+            config = SCANNER_CONFIG[f'{user_type}_scanner_hours']
+            if current_day in ['monday', 'tuesday', 'wednesday', 'thursday', 'friday']:
+                allowed_hours = config['weekdays']
+                day_type = 'weekdays'
+            else:
+                allowed_hours = config['weekends']
+                day_type = 'weekends'
+
+            return jsonify({
+                'success': False,
+                'message': f'Time-out not available for {user_type}s at this time',
+                'details': f'Scanner hours: {allowed_hours["start_time"]} - {allowed_hours["end_time"]} on {day_type}',
+                'allowed_hours': {
+                    'day_type': day_type,
+                    'start_time': allowed_hours['start_time'],
+                    'end_time': allowed_hours['end_time']
+                },
+                'current_time': current_time.strftime('%H:%M'),
+                'user': {
+                    'name': user.full_name(),
+                    'type': user_type,
+                    'department': user.department,
+                    'uid': uid
+                }
+            }), 403
+
         # Look for incomplete log today
         today_start = datetime.combine(current_date, datetime_time.min)
         today_end = datetime.combine(current_date, datetime_time.max)
-        
+
         incomplete_log = AttendanceLog.query.filter(
             and_(
                 AttendanceLog.uid == uid,
@@ -789,7 +830,7 @@ def handle_time_out():
                 AttendanceLog.time_out.is_(None)
             )
         ).order_by(AttendanceLog.time_in.desc()).first()
-        
+
         if not incomplete_log:
             return jsonify({
                 'success': False,
@@ -804,7 +845,7 @@ def handle_time_out():
                     'avatar': format_avatar_url(getattr(user, 'profile_path', None))
                 }
             }), 400
-        
+
         # Process time-out
         incomplete_log.time_out = now
         incomplete_log.status = 'complete'
