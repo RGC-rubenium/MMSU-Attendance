@@ -81,8 +81,8 @@ def update_account_settings():
     if not current_username:
         return jsonify({'message': 'Invalid token payload'}), 401
 
-    if 'admin' not in current_roles:
-        return jsonify({'message': 'Only admins can update account settings'}), 403
+    if 'superadmin' not in current_roles:
+        return jsonify({'message': 'Only superadmins can update account settings'}), 403
 
     user = User.query.filter_by(username=current_username).first()
     if not user:

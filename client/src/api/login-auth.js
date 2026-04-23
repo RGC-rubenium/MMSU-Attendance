@@ -18,8 +18,16 @@ export async function login({ email, password }) {
 	})
 
 	if (!res.ok) {
-		const text = await res.text()
-		throw new Error(text || res.statusText || 'Login failed')
+		// Read the body once as text, then try to parse JSON from it.
+		const bodyText = await res.text()
+		try {
+			const data = JSON.parse(bodyText)
+			// throw an object similar to axios error shape: { response: { data } }
+			throw { response: { data } }
+		} catch (e) {
+			const message = bodyText || res.statusText || 'Login failed'
+			throw new Error(message)
+		}
 	}
 
 	const data = await res.json()
@@ -46,12 +54,12 @@ export async function register({ username, password }) {
 
 	if (!res.ok) {
 		let message = 'Registration failed'
+		const bodyText = await res.text()
 		try {
-			const data = await res.json()
+			const data = JSON.parse(bodyText)
 			message = data?.message || message
 		} catch {
-			const text = await res.text()
-			message = text || res.statusText || message
+			message = bodyText || res.statusText || message
 		}
 		throw new Error(message)
 	}

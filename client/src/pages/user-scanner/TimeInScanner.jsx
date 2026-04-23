@@ -516,7 +516,7 @@ const TimeInScanner = () => {
                                 <MdError className="result-icon error-icon" />
                             )}
                             <div className="result-info">
-                                <h2>{resultLevel === 'notice' ? 'ℹ️ Notice' : '⚠️ Time-In Failed'}</h2>
+                                <h2>{resultLevel === 'notice' ? '⚠️ Notice' : '❌ Time-In Failed'}</h2>
                                 <div className="error-message">
                                     <div className="main-error-container">
                                         <p className="main-error">{lastScanResult.error}</p>

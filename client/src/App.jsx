@@ -64,7 +64,7 @@ function App() {
               <Route path="schedule/class-schedule" element={<ClassSchedule />} />
               <Route path="logs/attendance" element={<AttendanceLogs />} />
               <Route path="rpi/management" element={<RpiManagement />} />
-              <Route path="settings" element={<Settings />} />
+              <Route path="settings" element={<ProtectedRoute allowedRoles={["superadmin"]}><Settings /></ProtectedRoute>} />
               <Route path="users" element={<ProtectedRoute allowedRoles={["superadmin"]}><UserManagement /></ProtectedRoute>} />
               <Route path="*" element={<NotFound />} />
             </Route>

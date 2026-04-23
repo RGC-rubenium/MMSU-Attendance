@@ -65,6 +65,9 @@ export default function Login({ onModeChange }) {
     e.preventDefault()
     setError('')
     setSuccess('')
+    // clear any previous field errors
+    setEmailError('')
+    setPasswordError('')
 
     if (!validateFields()) {
       return
@@ -89,12 +92,61 @@ export default function Login({ onModeChange }) {
         navigate('/', { replace: true })
       }
     } catch (err) {
-      setError('Invalid username or password')
+      // Prefer backend validation/auth messages; if there's no backend response treat as network error
+      let backendMsg = null
+      let backendErrors = null
+      let isNetworkError = false
+
+      if (err && typeof err === 'object') {
+        // Axios-style errors expose `response` with `data`
+        if (err.response) {
+          const data = err.response.data || {}
+          backendMsg = data.message || data.error || null
+          backendErrors = data.errors || null
+        } else {
+          // Generic Error object (fetch, axios without response, etc.)
+          backendMsg = err.error || err.message || null
+        }
+      } else if (typeof err === 'string') {
+        backendMsg = err
+      }
+
+      // Detect common network error messages
+      const errMsg = (err && (err.message || err.error)) || (typeof err === 'string' ? err : '')
+      if (errMsg && (errMsg.toLowerCase().includes('network') || errMsg.toLowerCase().includes('failed to fetch') || errMsg.toLowerCase().includes('networkerror'))) {
+        isNetworkError = true
+      }
+
+      // If backend returned a stringified JSON (e.g. '{"message":"Invalid credentials"}'),
+      // try to parse it so we can show the inner message and field errors.
+      if (!backendErrors && typeof backendMsg === 'string' && backendMsg.trim().startsWith('{')) {
+        try {
+          const parsed = JSON.parse(backendMsg)
+          if (parsed) {
+            backendErrors = (parsed.errors !== undefined) ? parsed.errors : backendErrors
+            backendMsg = parsed.message || parsed.error || backendMsg
+          }
+        } catch (parseErr) {
+          // ignore parse error and fall back to raw message
+        }
+      }
+
+      if (isNetworkError) {
+        setError('Network error: Cannot reach authentication server. Please check your connection.')
+      } else if (backendErrors) {
+        // Show per-field validation errors from backend when available
+        setEmailError(backendErrors.email || '')
+        setPasswordError(backendErrors.password || '')
+        setError(backendMsg || 'Invalid username or password.')
+      } else if (backendMsg) {
+        setError(backendMsg)
+      } else {
+        setError('An unexpected error occurred during login. Please try again.')
+      }
     } finally {
       setLoading(false)
     }
   }
-
   // Accept either a username (non-empty) or a valid email address
   const emailValid = email && (email.includes('@') ? /\S+@\S+\.\S+/.test(email) : email.trim().length > 0)
   const passwordValid = password.length >= 6

@@ -78,6 +78,7 @@ export const SideBarData = [
         title: 'Settings',
         Path: '/dashboard/settings',
         Icon: <AiIcons.AiOutlineSetting/>,
-        cName: 'sidebar-text'
+        cName: 'sidebar-text',
+        roles: ['superadmin']
     },
 ]
