@@ -29,8 +29,8 @@ const BulkImportStudents = ({ isOpen, onClose, onSuccess }) => {
     // Process selected file
     const processFile = (file) => {
         // Validate file type
-        if (!file.name.toLowerCase().endsWith('.xlsx') && !file.name.toLowerCase().endsWith('.xls')) {
-            setMessage('Please select a valid Excel file (.xlsx or .xls)');
+        if (!file.name.toLowerCase().endsWith('.xlsx')) {
+            setMessage('Please select a valid Excel file (.xlsx)');
             setMessageType('error');
             return;
         }
@@ -203,7 +203,7 @@ const BulkImportStudents = ({ isOpen, onClose, onSuccess }) => {
                                 <p>
                                     After filling out the template, make sure the file is in a supported format before uploading.
                                     If your spreadsheet editor exported a different format (for example, CSV), open the file in
-                                    Excel or a compatible editor and save/export it as <strong>.xlsx</strong> or <strong>.xls</strong>.
+                                    Excel or a compatible editor and save/export it as <strong>.xlsx</strong>.
                                     Then upload it using the "Upload Excel File" section below and click the <strong>Import Students</strong>
                                     button to start the import process.
                                 </p>
@@ -261,7 +261,7 @@ const BulkImportStudents = ({ isOpen, onClose, onSuccess }) => {
                                             ref={fileInputRef}
                                             type="file"
                                             className="file-input"
-                                            accept=".xlsx,.xls"
+                                            accept=".xlsx,"
                                             onChange={handleFileChange}
                                         />
                                         <button
@@ -274,7 +274,7 @@ const BulkImportStudents = ({ isOpen, onClose, onSuccess }) => {
                                     </div>
                                     
                                     <div className="file-info">
-                                        Supported formats: XLSX, XLS (Max: 10MB)
+                                        Supported format: XLSX (Max: 10MB)
                                     </div>
                                 </div>
                             </div>

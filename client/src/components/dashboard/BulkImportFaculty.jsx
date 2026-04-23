@@ -27,11 +27,10 @@ const BulkImportFaculty = ({ isOpen, onClose, onSuccess }) => {
         // Validate file type
         const allowedTypes = [
             'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', // .xlsx
-            'application/vnd.ms-excel' // .xls
         ];
         
-        if (!allowedTypes.includes(file.type) && !file.name.match(/\.(xlsx|xls)$/i)) {
-            setMessage('Please select a valid Excel file (.xlsx or .xls)');
+        if (!allowedTypes.includes(file.type) && !file.name.match(/\.(xlsx)$/i)) {
+            setMessage('Please select a valid Excel file (.xlsx)');
             setMessageType('error');
             return;
         }
@@ -196,7 +195,7 @@ const BulkImportFaculty = ({ isOpen, onClose, onSuccess }) => {
                                 </div>
                                 <p>
                                     After filling the template, ensure the file is saved/exported as <strong>.xlsx</strong> or
-                                    <strong> .xls</strong>. If you have a different format (e.g., CSV), open it in Excel or a
+                                    . If you have a different format (e.g., CSV), open it in Excel or a
                                     compatible editor and save as one of the supported formats before uploading. Then upload
                                     the file below and click <strong>Import Faculty</strong>.
                                 </p>
@@ -254,7 +253,7 @@ const BulkImportFaculty = ({ isOpen, onClose, onSuccess }) => {
                                             ref={fileInputRef}
                                             type="file"
                                             className="file-input"
-                                            accept=".xlsx,.xls"
+                                            accept=".xlsx"
                                             onChange={handleFileChange}
                                         />
                                         <button
@@ -267,7 +266,7 @@ const BulkImportFaculty = ({ isOpen, onClose, onSuccess }) => {
                                     </div>
                                     
                                     <div className="file-info">
-                                        Supported formats: XLSX, XLS (Max: 10MB)
+                                        Supported format: XLSX (Max: 10MB)
                                     </div>
                                 </div>
                             </div>
