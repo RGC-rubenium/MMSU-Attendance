@@ -1,0 +1,90 @@
+/* ...existing global variables assumed (e.g. --bg, --text-light, --muted, --accent) ... */
+
+.notfound-page {
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: linear-gradient(180deg, rgba(12,18,30,0.6), rgba(6,10,18,0.9));
+  color: var(--text-light, #e6eef8);
+}
+
+.notfound-main {
+  padding: 28px;
+}
+
+/* Card / panel */
+.notfound-card {
+  width: 100%;
+  max-width: 980px;
+  background: linear-gradient(135deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+  border: 1px solid rgba(255,255,255,0.04);
+  border-radius: 12px;
+  padding: 28px;
+  box-shadow: 0 8px 30px rgba(2,6,12,0.6);
+}
+
+/* Centered smaller card for unauthenticated view */
+.notfound-center {
+  max-width: 720px;
+  text-align: left;
+}
+
+/* Heading / description */
+.nf-title {
+  margin: 0;
+  font-size: 34px;
+  color: var(--text-light, #e6eef8);
+  font-weight: 600;
+}
+
+.nf-desc {
+  margin-top: 8px;
+  color: var(--muted, rgba(255,255,255,0.65));
+  line-height: 1.4;
+}
+
+/* Actions */
+.nf-actions {
+  margin-top: 18px;
+  display: flex;
+  gap: 12px;
+}
+
+/* Primary button accent tuned to webapp theme */
+.notfound-card .btn-primary,
+.notfound-page .btn-primary {
+  --btn-bg: linear-gradient(90deg, var(--accent, #4f9aff), #6ba6ff);
+  background: var(--btn-bg);
+  color: white;
+  border: none;
+  padding: 10px 16px;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform .08s ease, box-shadow .12s ease;
+  box-shadow: 0 6px 18px rgba(79,154,255,0.12);
+}
+
+.notfound-card .btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 28px rgba(79,154,255,0.18);
+}
+
+/* Responsive tweaks */
+@media (max-width: 640px) {
+  .notfound-card {
+    padding: 20px;
+  }
+  .nf-title {
+    font-size: 28px;
+  }
+  .nf-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .notfound-card .btn-primary {
+    width: 100%;
+  }
+}

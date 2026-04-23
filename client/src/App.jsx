@@ -22,6 +22,7 @@ import DevicePending from './pages/device/DevicePending'
 import DeviceDisabled from './pages/device/DeviceDisabled'
 import Settings from './pages/dashboard/pages/Settings'
 import './index.css'
+import NotFound from './pages/NotFound'
 
 
 
@@ -65,7 +66,10 @@ function App() {
               <Route path="rpi/management" element={<RpiManagement />} />
               <Route path="settings" element={<Settings />} />
               <Route path="users" element={<ProtectedRoute allowedRoles={["superadmin"]}><UserManagement /></ProtectedRoute>} />
+              <Route path="*" element={<NotFound />} />
             </Route>
+            {/* Catch-all for unknown routes */}
+            <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
       </Router>
