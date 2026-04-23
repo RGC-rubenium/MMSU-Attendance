@@ -272,6 +272,7 @@ def bulk_import_faculty():
                     last_name = _cell_to_str(row.get('last_name', ''))
                     department = _cell_to_str(row.get('department', ''))
                     gender = _cell_to_str(row.get('gender', '')).upper()
+                    
 
                     # Validate required fields
                     if not uid or not faculty_id or not first_name or not last_name or not department or not gender:
