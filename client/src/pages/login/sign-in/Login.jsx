@@ -159,8 +159,7 @@ export default function Login({ onModeChange }) {
         </button>
 
         <p className="login-help">
-          Don&apos;t have an account?{' '}
-          <Link to="/register" className="login-link">Create one here</Link>
+          Don&apos;t have an account? Contact your administrator to create one.
         </p>
       </form>
     </div>

@@ -1,5 +1,4 @@
 import Login from './pages/login/sign-in/Login'
-import Register from './pages/login/sign-in/Register'
 import AdminDashboard from './pages/dashboard/AdminDashboard'
 import { AuthProvider } from './contexts/AuthContext'
 import Dashboard from './pages/dashboard/pages/DashboardContent'
@@ -49,7 +48,7 @@ function App() {
             {/* Auth Routes */}
             <Route path="/" element={<Login />} />
             <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
+            {/* Registration disabled — user accounts are managed by superadmin */}
             
             {/* Dashboard Routes */}
             <Route path="/dashboard/*" element={<ProtectedRoute allowedRoles={["admin","superadmin"]}><AdminDashboard /></ProtectedRoute>}>
