@@ -129,10 +129,10 @@
   position: relative;
   grid-column: 1 / -1;
   margin-top: 8px;
+  width: 100%;
 }
-
 .password-wrapper .login-input {
-  padding-right: 76px; /* make room for the toggle */
+  width: 100%;
 }
 
 .password-toggle {
@@ -152,6 +152,27 @@
 .password-toggle:focus {
   outline: none;
   box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12);
+}
+
+/* show-password checkbox row placed on its own line */
+.show-password-row {
+  grid-column: 1 / -1;
+  margin-top: 8px;
+  display: flex;
+  align-items: center;
+}
+
+.show-password {
+  font-size: 13px;
+  color: #7b8794;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.show-password input[type="checkbox"] {
+  width: auto;
+  height: auto;
 }
 
 @media (max-width: 480px) {

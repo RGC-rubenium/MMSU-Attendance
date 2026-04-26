@@ -11,6 +11,7 @@ export default function Login({ onModeChange }) {
   const [error, setError] = useState('')
   const [success, setSuccess] = useState(location.state?.registrationSuccess || '')
   const [loading, setLoading] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
 
   // per-field errors
   const [emailError, setEmailError] = useState('')
@@ -147,6 +148,7 @@ export default function Login({ onModeChange }) {
       setLoading(false)
     }
   }
+
   // Accept either a username (non-empty) or a valid email address
   const emailValid = email && (email.includes('@') ? /\S+@\S+\.\S+/.test(email) : email.trim().length > 0)
   const passwordValid = password.length >= 6
@@ -187,18 +189,32 @@ export default function Login({ onModeChange }) {
 
         <label className="login-label">
           Password
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => {
-              setPassword(e.target.value)
-              if (passwordError) setPasswordError('')
-            }}
-            className="login-input"
-            placeholder="••••••••"
-            autoComplete="current-password"
-            aria-invalid={!!passwordError}
-          />
+          <div className="password-wrapper">
+            <input
+              type={showPassword ? 'text' : 'password'}
+              value={password}
+              onChange={(e) => {
+                setPassword(e.target.value)
+                if (passwordError) setPasswordError('')
+              }}
+              className="login-input"
+              placeholder="••••••••"
+              autoComplete="current-password"
+              aria-invalid={!!passwordError}
+            />
+          </div>
+
+          <div className="show-password-row">
+            <label className="show-password">
+              <input
+                type="checkbox"
+                checked={showPassword}
+                onChange={() => setShowPassword(!showPassword)}
+              />
+              <span>Show password</span>
+            </label>
+          </div>
+
           <div className="input-error">{passwordError}</div>
         </label>
 
