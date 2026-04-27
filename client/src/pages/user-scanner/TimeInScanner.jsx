@@ -8,7 +8,10 @@ import {
     MdError,
     MdInfo,
     MdLogin,
-    MdArrowForward
+    MdArrowForward,
+    MdPermIdentity,
+    MdBusiness,
+    MdWarningAmber
 } from 'react-icons/md';
 import ScannerAPI from '../../api/ScannerAPI';
 import { queueSMS } from '../../api/SmsAPI';
@@ -516,21 +519,21 @@ const TimeInScanner = () => {
                                 <MdError className="result-icon error-icon" />
                             )}
                             <div className="result-info">
-                                <h2>{resultLevel === 'notice' ? '⚠️ Notice' : '❌ Time-In Failed'}</h2>
+                                <h2>{resultLevel === 'notice' ? (<><MdInfo className="inline-icon notice" /> Notice</>) : (<><MdError className="inline-icon error-icon" /> Time-In Failed</>)}</h2>
                                 <div className="error-message">
                                     <div className="main-error-container">
                                         <p className="main-error">{lastScanResult.error}</p>
                                     </div>
                                     {lastScanResult.details && (
                                         <div className="error-details">
-                                            <h4>📋 Additional Information:</h4>
+                                            <h4><MdInfo /> Additional Information:</h4>
                                             <p>{lastScanResult.details}</p>
                                         </div>
                                     )}
                                 </div>
                                 {lastScanResult.user && (
                                     <div className="user-brief">
-                                        <h4>👤 Card Information:</h4>
+                                        <h4><MdPerson /> Card Information:</h4>
                                         <div className="user-info-brief">
                                             <div className="user-avatar-small">
                                                 {lastScanResult.user.avatar ? (
@@ -542,11 +545,11 @@ const TimeInScanner = () => {
                                                 )}
                                             </div>
                                             <div className="user-details-brief">
-                                                <p className="user-name">📛 {lastScanResult.user.name}</p>
-                                                <p className="user-type">🏫 {lastScanResult.user.type?.toUpperCase()}</p>
-                                                <p className="user-id">🆔 {lastScanResult.user.id}</p>
+                                                <p className="user-name"><MdPermIdentity /> {lastScanResult.user.name}</p>
+                                                <p className="user-type"><MdSchool /> {lastScanResult.user.type?.toUpperCase()}</p>
+                                                <p className="user-id"><MdPermIdentity /> {lastScanResult.user.id}</p>
                                                 {lastScanResult.user.department && (
-                                                    <p className="user-department">🏢 {lastScanResult.user.department}</p>
+                                                    <p className="user-department"><MdBusiness /> {lastScanResult.user.department}</p>
                                                 )}
                                             </div>
                                         </div>
@@ -554,7 +557,7 @@ const TimeInScanner = () => {
                                 )}
                                 <div className="scan-timestamp">
                                     <MdAccessTime />
-                                    <span>⏰ Scan attempted at: {formatTime(lastScanResult.timestamp)}</span>
+                                    <span>Scan attempted at: {formatTime(lastScanResult.timestamp)}</span>
                                 </div>
                             </div>
                         </div>
@@ -564,7 +567,7 @@ const TimeInScanner = () => {
                                 <MdLogin className="time-in-icon" />
                             </div>
                             <div className="result-info">
-                                <h2>✅ TIME IN SUCCESSFUL</h2>
+                                <h2><MdCheckCircle className="inline-icon success" /> TIME IN SUCCESSFUL</h2>
                                 <div className="user-profile enhanced">
                                     <div className="user-avatar-large">
                                         {lastScanResult.user.avatar ? (
@@ -595,16 +598,16 @@ const TimeInScanner = () => {
                                             </div>
                                         )}
                                     </div>
-                                    <div className="user-details">
+                                        <div className="user-details">
                                         <h3>{lastScanResult.user.name}</h3>
                                         <div className="user-badges">
                                             <span className={`user-type-badge ${lastScanResult.user.type}`}>
-                                                {lastScanResult.user.type === 'student' ? '🎓 STUDENT' : '👨‍🏫 FACULTY'}
+                                                {lastScanResult.user.type === 'student' ? (<><MdSchool /> STUDENT</>) : (<><MdPerson /> FACULTY</>)}
                                             </span>
                                         </div>
-                                        <p className="user-id">🆔 {lastScanResult.user.id}</p>
+                                        <p className="user-id"><MdPermIdentity /> {lastScanResult.user.id}</p>
                                         {lastScanResult.user.department && (
-                                            <p className="user-department">🏢 {lastScanResult.user.department}</p>
+                                            <p className="user-department"><MdBusiness /> {lastScanResult.user.department}</p>
                                         )}
                                     </div>
                                 </div>
@@ -614,7 +617,7 @@ const TimeInScanner = () => {
                                 </div>
                                 {lastScanResult.schedule_info && (
                                     <div className="schedule-info">
-                                        <h4>📚 Current Schedule:</h4>
+                                        <h4><MdSchool /> Current Schedule:</h4>
                                         <p>{lastScanResult.schedule_info}</p>
                                     </div>
                                 )}
@@ -631,7 +634,7 @@ const TimeInScanner = () => {
                     <h2>Ready for Time-In</h2>
                     <p>Tap your RFID card or ID to record your arrival time</p>
                     <div className="instruction-text">
-                        <p>🏃‍♂️ Starting your day? Use this scanner to check in!</p>
+                        <p><MdRadar /> Starting your day? Use this scanner to check in!</p>
                     </div>
                 </div>
             )}

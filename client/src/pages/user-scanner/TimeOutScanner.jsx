@@ -8,7 +8,10 @@ import {
     MdError,
     MdInfo,
     MdLogout,
-    MdArrowBack
+    MdArrowBack,
+    MdPermIdentity,
+    MdBusiness,
+    MdWarningAmber
 } from 'react-icons/md';
 import ScannerAPI from '../../api/ScannerAPI';
 import { queueSMS } from '../../api/SmsAPI';
@@ -533,21 +536,21 @@ const TimeOutScanner = () => {
                                 <MdError className="result-icon error-icon" />
                             )}
                             <div className="result-info">
-                                <h2>{resultLevel === 'notice' ? '⚠️ Notice' : '❌ Time-Out Failed'}</h2>
+                                <h2>{resultLevel === 'notice' ? (<><MdInfo className="inline-icon notice" /> Notice</>) : (<><MdError className="inline-icon error-icon" /> Time-Out Failed</>)}</h2>
                                 <div className="error-message">
                                     <div className="main-error-container">
                                         <p className="main-error">{lastScanResult.error}</p>
                                     </div>
                                     {lastScanResult.details && (
                                         <div className="error-details">
-                                            <h4>📋 Additional Information:</h4>
+                                            <h4><MdInfo /> Additional Information:</h4>
                                             <p>{lastScanResult.details}</p>
                                         </div>
                                     )}
                                 </div>
                                 {lastScanResult.user && (
                                     <div className="user-brief enhanced">
-                                        <h4>👤 Recognized User:</h4>
+                                        <h4><MdPerson /> Recognized User:</h4>
                                         <div className="user-info-brief">
                                             <div className="user-avatar-medium">
                                                 {lastScanResult.user.avatar ? (
@@ -566,15 +569,15 @@ const TimeOutScanner = () => {
                                                 </div>
                                             </div>
                                             <div className="user-details-brief">
-                                                <p className="user-name">📛 {lastScanResult.user.name}</p>
+                                                <p className="user-name"><MdPermIdentity /> {lastScanResult.user.name}</p>
                                                 <div className="user-badges">
                                                     <span className={`user-type-badge-small ${lastScanResult.user.type}`}>
-                                                        {lastScanResult.user.type === 'student' ? '🎓 STUDENT' : '👨‍🏫 FACULTY'}
+                                                        {lastScanResult.user.type === 'student' ? (<><MdSchool /> STUDENT</>) : (<><MdPerson /> FACULTY</>)}
                                                     </span>
                                                 </div>
-                                                <p className="user-id">🆔 {lastScanResult.user.id}</p>
+                                                <p className="user-id"><MdPermIdentity /> {lastScanResult.user.id}</p>
                                                 {lastScanResult.user.department && (
-                                                    <p className="user-department">🏢 {lastScanResult.user.department}</p>
+                                                    <p className="user-department"><MdBusiness /> {lastScanResult.user.department}</p>
                                                 )}
                                             </div>
                                         </div>
@@ -582,7 +585,7 @@ const TimeOutScanner = () => {
                                 )}
                                 <div className="scan-timestamp">
                                     <MdAccessTime />
-                                    <span>⏰ Scan attempted at: {formatTime(lastScanResult.timestamp)}</span>
+                                    <span>Scan attempted at: {formatTime(lastScanResult.timestamp)}</span>
                                 </div>
                             </div>
                         </div>
@@ -592,7 +595,7 @@ const TimeOutScanner = () => {
                                 <MdLogout className="time-out-icon" />
                             </div>
                             <div className="result-info">
-                                <h2>✅ TIME OUT SUCCESSFUL</h2>
+                                <h2><MdCheckCircle className="inline-icon success" /> TIME OUT SUCCESSFUL</h2>
                                 <div className="user-profile enhanced">
                                     <div className="user-avatar-large">
                                         {lastScanResult.user.avatar ? (
@@ -623,16 +626,16 @@ const TimeOutScanner = () => {
                                             </div>
                                         )}
                                     </div>
-                                    <div className="user-details">
+                                        <div className="user-details">
                                         <h3>{lastScanResult.user.name}</h3>
                                         <div className="user-badges">
                                             <span className={`user-type-badge ${lastScanResult.user.type}`}>
-                                                {lastScanResult.user.type === 'student' ? '🎓 STUDENT' : '👨‍🏫 FACULTY'}
+                                                {lastScanResult.user.type === 'student' ? (<><MdSchool /> STUDENT</>) : (<><MdPerson /> FACULTY</>)}
                                             </span>
                                         </div>
-                                        <p className="user-id">🆔 {lastScanResult.user.id}</p>
+                                        <p className="user-id"><MdPermIdentity /> {lastScanResult.user.id}</p>
                                         {lastScanResult.user.department && (
-                                            <p className="user-department">🏢 {lastScanResult.user.department}</p>
+                                            <p className="user-department"><MdBusiness /> {lastScanResult.user.department}</p>
                                         )}
                                     </div>
                                 </div>
@@ -642,14 +645,14 @@ const TimeOutScanner = () => {
                                 </div>
                                 {lastScanResult.time_in && (
                                     <div className="duration-info">
-                                        <h4>⏱️ Session Duration:</h4>
+                                        <h4><MdAccessTime /> Session Duration:</h4>
                                         <p>Time In: {formatTime(lastScanResult.time_in)}</p>
                                         <p>Duration: {calculateDuration(lastScanResult.time_in, lastScanResult.timestamp)}</p>
                                     </div>
                                 )}
                                 {lastScanResult.subjects_attended && lastScanResult.subjects_attended.length > 0 && (
                                     <div className="subjects-info">
-                                        <h4>📚 Subjects Attended:</h4>
+                                        <h4><MdSchool /> Subjects Attended:</h4>
                                         <ul>
                                             {lastScanResult.subjects_attended.map((subject, index) => (
                                                 <li key={index}>{subject.subject} ({subject.start_time} - {subject.end_time})</li>
@@ -670,7 +673,7 @@ const TimeOutScanner = () => {
                     <h2>Ready for Time-Out</h2>
                     <p>Tap your RFID card or ID to record your departure time</p>
                     <div className="instruction-text">
-                        <p>👋 Finished your day? Use this scanner to check out!</p>
+                        <p><MdInfo /> Finished your day? Use this scanner to check out!</p>
                     </div>
                 </div>
             )}
