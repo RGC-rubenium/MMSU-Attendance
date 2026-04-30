@@ -74,11 +74,11 @@ export const SideBarData = [
         Icon: <IoIcons.IoHardwareChip/>,
         cName: 'sidebar-text'
     },
-    {
-        title: 'Settings',
-        Path: '/dashboard/settings',
-        Icon: <AiIcons.AiOutlineSetting/>,
-        cName: 'sidebar-text',
-        roles: ['superadmin']
-    },
+    // {
+    //     title: 'Settings',
+    //     Path: '/dashboard/settings',
+    //     Icon: <AiIcons.AiOutlineSetting/>,
+    //     cName: 'sidebar-text',
+    //     roles: ['superadmin']
+    // },
 ]
