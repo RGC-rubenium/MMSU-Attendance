@@ -3,7 +3,7 @@ from datetime import datetime, date, time as datetime_time
 import json
 import utils.jwt_utils as jwt_utils
 from models import Student, Faculty, EventSchedule, ClassSchedule, AttendanceLog
-from extensions import db
+from extensions import db, cache, init_redis
 from sqlalchemy import and_, or_
 from scanner_config import SCANNER_CONFIG, DEFAULT_SCHEDULE_CONFIG
 
