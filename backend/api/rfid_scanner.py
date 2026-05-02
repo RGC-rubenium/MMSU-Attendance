@@ -597,12 +597,22 @@ def handle_time_in():
         user = None
         user_type = None
         
-        student = Student.query.filter_by(uid=uid).first()
+
+        # Use cache for student/faculty lookup
+        @cache.cached(timeout=86400, key_prefix=lambda: f"student_uid_{uid}")
+        def get_student_by_uid():
+            return Student.query.filter_by(uid=uid).first()
+
+        @cache.cached(timeout=86400, key_prefix=lambda: f"faculty_uid_{uid}")
+        def get_faculty_by_uid():
+            return Faculty.query.filter_by(uid=uid).first()
+
+        student = get_student_by_uid()
         if student:
             user = student
             user_type = 'student'
         else:
-            faculty = Faculty.query.filter_by(uid=uid).first()
+            faculty = get_faculty_by_uid()
             if faculty:
                 user = faculty
                 user_type = 'faculty'
@@ -772,12 +782,24 @@ def handle_time_out():
         user = None
         user_type = None
         
-        student = Student.query.filter_by(uid=uid).first()
+
+        # Use cache for student/faculty lookup
+        @cache.cached(timeout=86400, key_prefix=lambda: f"student_uid_{uid}")
+        def get_student_by_uid():
+            students = Student.query.filter_by(uid=uid).first()
+            return students
+
+        @cache.cached(timeout=86400, key_prefix=lambda: f"faculty_uid_{uid}")
+        def get_faculty_by_uid():
+            faculties = Faculty.query.filter_by(uid=uid).first()
+            return faculties
+
+        student = get_student_by_uid()
         if student:
             user = student
             user_type = 'student'
         else:
-            faculty = Faculty.query.filter_by(uid=uid).first()
+            faculty = get_faculty_by_uid()
             if faculty:
                 user = faculty
                 user_type = 'faculty'

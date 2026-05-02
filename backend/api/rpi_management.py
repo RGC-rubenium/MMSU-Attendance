@@ -34,18 +34,7 @@ _scheduler_running = False
 # ==================== Socket Connectivity Check ====================
 
 def is_device_online(ip_address, port=22, timeout=2):
-    """
-    Check if a device is online by attempting to open a socket connection.
-    Uses SSH port (22) by default as it's commonly open on RPi devices.
     
-    Args:
-        ip_address: The IP address of the device
-        port: The port to check (default 22 for SSH)
-        timeout: Connection timeout in seconds
-    
-    Returns:
-        bool: True if device is reachable, False otherwise
-    """
     if not ip_address:
         return False
     
@@ -57,16 +46,7 @@ def is_device_online(ip_address, port=22, timeout=2):
 
 
 def check_device_online_status(device):
-    """
-    Check and update a device's online status using socket connectivity.
-    Uses the device's configured SSH port if available.
     
-    Args:
-        device: RpiDevice model instance
-    
-    Returns:
-        bool: True if device is online, False otherwise
-    """
     port = device.ssh_port if device.ssh_port else 22
     online = is_device_online(device.ip_address, port=port, timeout=2)
     device.is_online = online

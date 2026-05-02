@@ -3,7 +3,7 @@ from flask import Flask, send_from_directory
 from flask_cors import CORS
 import config
 import os
-from extensions import db, migrate
+from extensions import db, migrate, cache
 from api.auth import auth_bp
 from api.students import students_bp
 from api.students_delete import students_delete_bp
@@ -25,8 +25,12 @@ from api.sms import sms_bp
 from api.user_management import user_mgmt_bp
 
 
+
 app = Flask(__name__)
 app.config.from_object(config)
+
+# Initialize Flask-Caching
+cache.init_app(app)
 
 # Configure CORS to allow requests from frontend and RPi devices
 CORS(app,

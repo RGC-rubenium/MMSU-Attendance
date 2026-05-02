@@ -25,3 +25,8 @@ JWT_ALGORITHM = 'HS256'
 
 # Database URL: prefer DATABASE_URL env var, fallback to sqlite
 SQLALCHEMY_DATABASE_URI = f'postgresql://{username}:{password}@{ip}/{database}'
+
+# Flask-Caching Redis configuration
+REDIS_URL = 'redis://192.168.1.200:6379/0'
+CACHE_TYPE = 'RedisCache'
+CACHE_REDIS_URL = REDIS_URL
