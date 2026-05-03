@@ -86,6 +86,30 @@ def serve_images(filename):
         print(f"❌ Error serving image: {e}")
         return f"Error serving image: {e}", 404
 
+
+def warmup_student_faculty_cache():
+    """Warm up the student and faculty cache for time-in/time-out endpoints to avoid initial lag."""
+    from api.rfid_scanner import cache, Student, Faculty
+    print("[Cache Warmup] Warming up student cache...")
+    students = Student.query.all()
+    student_count = 0
+    for student in students:
+        uid = getattr(student, 'uid', None)
+        if uid:
+            cache.set(f'student_uid_{uid}', student, timeout=172800)
+            student_count += 1
+    print(f"[Cache Warmup] Cached {student_count} students by UID.")
+
+    print("[Cache Warmup] Warming up faculty cache...")
+    faculties = Faculty.query.all()
+    faculty_count = 0
+    for faculty in faculties:
+        uid = getattr(faculty, 'uid', None)
+        if uid:
+            cache.set(f'faculty_uid_{uid}', faculty, timeout=172800)
+            faculty_count += 1
+    print(f"[Cache Warmup] Cached {faculty_count} faculty by UID.")
+
 if __name__ == '__main__':
     # when running directly, create tables if using sqlite dev and start server
     # initialize app context to ensure extensions are bound
@@ -95,6 +119,9 @@ if __name__ == '__main__':
             db.create_all()
         except Exception:
             pass
+
+        # Warm up student and faculty cache
+        warmup_student_faculty_cache()
 
     # Start the auto-shutdown scheduler
     from api.rpi_management import start_auto_shutdown_scheduler
