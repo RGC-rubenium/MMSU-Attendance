@@ -942,6 +942,7 @@ def handle_time_out():
         }), 500
 
 @rfid_scanner_bp.route('/api/scanner/attendance-logs', methods=['GET'])
+@cache.cached(timeout=300, query_string=True)  # Cache for 5 minutes based on query parameters
 def get_attendance_logs():
     """Get attendance logs with filtering, search, and pagination"""
     try:
