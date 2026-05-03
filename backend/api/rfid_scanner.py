@@ -599,11 +599,11 @@ def handle_time_in():
         
 
         # Use cache for student/faculty lookup
-        @cache.cached(timeout=86400, key_prefix=lambda: f"student_uid_{uid}")
+        @cache.cached(timeout=172800, key_prefix=lambda: f"student_uid_{uid}")
         def get_student_by_uid():
             return Student.query.filter_by(uid=uid).first()
 
-        @cache.cached(timeout=86400, key_prefix=lambda: f"faculty_uid_{uid}")
+        @cache.cached(timeout=172800, key_prefix=lambda: f"faculty_uid_{uid}")
         def get_faculty_by_uid():
             return Faculty.query.filter_by(uid=uid).first()
 
