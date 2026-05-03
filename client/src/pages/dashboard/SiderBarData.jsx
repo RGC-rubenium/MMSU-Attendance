@@ -23,11 +23,11 @@ export const SideBarData = [
                 Path: '/dashboard/students',
                 cName: 'sidebar-subtext'
             },
-            {
-                title: 'Faculty',
-                Path: '/dashboard/faculty',
-                cName: 'sidebar-subtext'
-            }
+            // {
+            //     title: 'Faculty',
+            //     Path: '/dashboard/faculty',
+            //     cName: 'sidebar-subtext'
+            // }
         ]
     },
     {

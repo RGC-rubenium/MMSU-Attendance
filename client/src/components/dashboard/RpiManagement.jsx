@@ -751,13 +751,7 @@ const RpiManagement = () => {
                                             >
                                                 <MdEdit />
                                             </button>
-                                            <button
-                                                className={`btn-icon ${device.is_enabled ? 'enabled' : 'disabled'}`}
-                                                onClick={() => toggleDevice(device.device_id, !device.is_enabled)}
-                                                title={device.is_enabled ? 'Disable Device' : 'Enable Device'}
-                                            >
-                                                <MdPowerSettingsNew />
-                                            </button>
+                                            {/* Removed disable/enable device button */}
                                             <button
                                                 className="btn-icon danger"
                                                 onClick={() => unpairDevice(device.device_id, device.device_name)}

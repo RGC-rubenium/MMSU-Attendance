@@ -787,7 +787,6 @@ export default function UserProfile() {
                                                                 <th>Time Out</th>
                                                                 <th>Duration</th>
                                                                 <th>Status</th>
-                                                                <th>Schedule</th>
                                                                 <th>Type</th>
                                                                 <th></th>
                                                             </tr>
@@ -806,7 +805,6 @@ export default function UserProfile() {
                                                                         <td>{fmt(log.time_out)}</td>
                                                                         <td>{duration(log.time_in, log.time_out)}</td>
                                                                         <td>{statusBadge(log.status)}</td>
-                                                                        <td>{log.schedule_name || log.subject_name || '—'}</td>
                                                                         <td>{typeBadge(userType)}</td>
                                                                         <td>
                                                                             {expanded === log.id ? <MdIcons.MdExpandLess /> : <MdIcons.MdExpandMore />}
@@ -814,7 +812,7 @@ export default function UserProfile() {
                                                                     </tr>
                                                                     {expanded === log.id && (
                                                                         <tr className="expanded-row">
-                                                                            <td colSpan="9">
+                                                                            <td colSpan="8">
                                                                                 <div className="expanded-content" style={{
                                                                                     padding: '12px 16px',
                                                                                     background: 'rgba(255,255,255,0.02)',
@@ -822,12 +820,6 @@ export default function UserProfile() {
                                                                                     fontSize: '0.85rem'
                                                                                 }}>
                                                                                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
-                                                                                        <div>
-                                                                                            <strong>Schedule Details:</strong><br />
-                                                                                            Type: {log.schedule_type || '—'}<br />
-                                                                                            Name: {log.schedule_name || log.subject_name || '—'}<br />
-                                                                                            Location: {log.location || log.room || '—'}
-                                                                                        </div>
                                                                                         <div>
                                                                                             <strong>Attendance Info:</strong><br />
                                                                                             Status: {log.status || 'incomplete'}<br />
@@ -837,12 +829,6 @@ export default function UserProfile() {
                                                                                         <div>
                                                                                             <strong>Additional:</strong><br />
                                                                                             Notes: {log.notes || '—'}<br />
-                                                                                            Subjects: {log.subjects_attended ? 
-                                                                                                (Array.isArray(log.subjects_attended) ? 
-                                                                                                    log.subjects_attended.join(', ') : 
-                                                                                                    log.subjects_attended
-                                                                                                ) : '—'
-                                                                                            }
                                                                                         </div>
                                                                                     </div>
                                                                                 </div>

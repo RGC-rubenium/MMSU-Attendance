@@ -248,7 +248,6 @@ export default function AttendanceLogs() {
                                     <th>Time Out</th>
                                     <th>Duration</th>
                                     <th>Status</th>
-                                    <th>Schedule</th>
                                     <th>Details</th>
                                     <th></th>
                                 </tr>
@@ -278,11 +277,6 @@ export default function AttendanceLogs() {
                                             <td className="col-time time-out">{fmt(log.time_out)}</td>
                                             <td className="col-dur">{duration(log.time_in, log.time_out)}</td>
                                             <td>{statusBadge(log.status)}</td>
-                                            <td className="col-sched">
-                                                <span className={`sched-tag sched-${log.schedule_type}`}>
-                                                    {log.schedule_type}
-                                                </span>
-                                            </td>
                                             <td>
                                                 <button
                                                     className="expand-btn"
@@ -309,7 +303,7 @@ export default function AttendanceLogs() {
                                         {/* Expanded detail row */}
                                         {expanded === log.id && (
                                             <tr className="detail-row">
-                                                <td colSpan={11}>
+                                                <td colSpan={10}>
                                                     <div className="detail-panel">
                                                         <div className="detail-grid">
                                                             <div className="detail-item">
@@ -321,29 +315,10 @@ export default function AttendanceLogs() {
                                                                 <span className="detail-value">{log.user_id || '—'}</span>
                                                             </div>
                                                             <div className="detail-item">
-                                                                <span className="detail-label">Schedule Name</span>
-                                                                <span className="detail-value">{log.schedule_name || '—'}</span>
-                                                            </div>
-                                                            <div className="detail-item">
                                                                 <span className="detail-label">Notes</span>
                                                                 <span className="detail-value">{log.notes || '—'}</span>
                                                             </div>
                                                         </div>
-
-                                                        {log.subjects_attended && log.subjects_attended.length > 0 && (
-                                                            <div className="subjects-section">
-                                                                <h4><MdIcons.MdBook /> Subjects Attended</h4>
-                                                                <div className="subjects-list">
-                                                                    {log.subjects_attended.map((s, i) => (
-                                                                        <div key={i} className="subject-chip">
-                                                                            <span className="subj-name">{s.subject}</span>
-                                                                            <span className="subj-time">{s.start_time} – {s.end_time}</span>
-                                                                            {s.room && <span className="subj-room">{s.room}</span>}
-                                                                        </div>
-                                                                    ))}
-                                                                </div>
-                                                            </div>
-                                                        )}
                                                     </div>
                                                 </td>
                                             </tr>
