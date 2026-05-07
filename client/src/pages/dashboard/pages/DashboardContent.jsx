@@ -89,14 +89,14 @@ export default function Dashboard() {
             color: 'success',
             description: 'Registered students'
         },
-        {
-            id: 3,
-            title: 'Total Faculty',
-            value: dashboardStats.total_faculty.toLocaleString(),
-            icon: <FaChalkboardTeacher size={28} />,
-            color: 'info',
-            description: 'Registered faculty members'
-        },
+        // {
+        //     id: 3,
+        //     title: 'Total Faculty',
+        //     value: dashboardStats.total_faculty.toLocaleString(),
+        //     icon: <FaChalkboardTeacher size={28} />,
+        //     color: 'info',
+        //     description: 'Registered faculty members'
+        // },
         // {
         //     id: 4,
         //     title: 'Present Today',
