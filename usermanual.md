@@ -1,16 +1,17 @@
 # MMSU Attendance System User Manual
-
 ## Table of Contents
-1. Introduction
-2. System Overview
-3. Accessing the System
-4. Dashboard Overview
-5. Device Management
-6. User Management
-7. Attendance Logs
-8. Class & Schedule Management
-9. Analytics & Reports
-10. Troubleshooting & Support
+
+1. [Introduction](#1-introduction)
+2. [System Overview](#2-system-overview)
+3. [Accessing the System](#3-accessing-the-system)
+4. [Dashboard Overview](#4-dashboard-overview)
+5. [Device Management](#5-device-management)
+6. [User Management](#6-user-management)
+7. [Attendance Logs](#7-attendance-logs)
+8. [Class & Schedule Management](#8-class--schedule-management)
+9. [Analytics & Reports](#9-analytics--reports)
+10. [Troubleshooting & Support](#10-troubleshooting--support)
+11. [Step-by-Step Guides](#step-by-step-guides)
 
 ---
 
@@ -20,11 +21,11 @@ The MMSU Attendance System is a comprehensive platform for managing student and 
 ## 2. System Overview
 - **Backend:** Python Flask API for device and user management.
 - **Frontend:** Web dashboard for administrators and authorized users.
-- **Devices:** Raspberry Pi units for attendance scanning and data collection.
+- **Devices:** Raspberry Pi Zero 2W for attendance scanning
 
 ## 3. Accessing the System
 1. Open your web browser.
-2. Navigate to the system's URL (provided by your administrator).
+2. Navigate to the system's URL.
 3. Log in using your assigned credentials.
 
 ## 4. Dashboard Overview
@@ -43,93 +44,137 @@ The MMSU Attendance System is a comprehensive platform for managing student and 
 - **Bulk Actions:** Select multiple devices for group actions (reboot, shutdown, sync time).
 
 ## 6. User Management
-- **Add Faculty/Student:** Register new users with required details.
+- **Add Student:** Register new Students with required details.
 - **Edit User:** Update user information.
 - **Delete User:** Remove users from the system.
 - **Bulk Import:** Upload CSV files to add multiple users at once.
 
 ## 7. Attendance Logs
 - **View Logs:** Browse attendance records by date, user, or class.
-- **Export Logs:** Download logs for reporting or backup.
-
-## 8. Class & Schedule Management
-- **Add/Edit Classes:** Manage class information and schedules.
-- **Assign Faculty/Students:** Link users to classes and schedules.
 
 ## 9. Analytics & Reports
 - **Dashboard Analytics:** Visualize attendance trends and statistics.
-- **Generate Reports:** Create and export attendance summaries.
 
 ## 10. Troubleshooting & Support
-- **Device Offline:** Ensure the device is powered and connected to the network.
+- **Device Offline:** Ensure the device is powered and has a stable 5v 3a source
 - **Login Issues:** Reset your password or contact the administrator.
-- **Support:** Refer to the system admin or IT support for unresolved issues.
 
 ---
-
-
 ---
+<div style="page-break-before: always;"></div>
 
-## Step-by-Step Guide
 
-### 1. Logging In
+## Step-by-Step Guides
+
+### **Login Page**
+---
+#### Logging In
 1. Open your web browser and go to the system URL.
 2. Enter your username and password.
 3. Click the **Login** button.
 4. If your credentials are correct, you will be redirected to the dashboard.
-
-### 2. Viewing Devices
-1. From the navigation bar, click on **Devices**.
+<br />
+<br />
+<br />
+### **Devices Page**
+---
+#### Viewing Devices
+1. Click on **Devices** in the navigation bar.
 2. View the list of all paired Raspberry Pi devices and their status.
-
-### 3. Approving a Pairing Request
-1. Go to the **Devices** section.
-2. Click the **Pairing Requests** tab.
-3. Review the list of pending requests.
-4. Click **Approve** on the request you want to accept.
-
-### 4. Performing Device Actions (Reboot, Shutdown, Sync Time)
+<br />
+#### Approving a Pairing Request
+1. In the **Devices** section, click the **Pairing Requests** tab.
+2. Review the list of pending requests.
+3. Click **Approve** on the request you want to accept.
+<br />
+#### Performing Device Actions (Reboot, Shutdown, Sync Time)
 1. In the **Devices** tab, locate the device you want to manage.
 2. Click the corresponding action button (Reboot, Shutdown, Sync Time) in the device's action menu.
 3. Confirm the action if prompted.
-
-### 5. Bulk Device Actions
+<br />
+#### Bulk Device Actions
 1. Select multiple devices using the checkboxes.
 2. Use the **Bulk Action Bar** to perform actions like Reboot All, Shutdown All, or Sync Time All.
-
-### 6. Adding a New User (Faculty/Student)
-1. Navigate to the **Users** section.
-2. Click **Add Faculty** or **Add Student**.
+<br />
+<br />
+<br />
+### **Users Management Page**
+---
+#### Adding a New User (Faculty/Student)
+1. Click on **Students** in the users dropdown.
+2. Click **Add Student**.
 3. Fill in the required information.
 4. Click **Save** to register the user.
-
-### 7. Editing or Deleting a User
-1. In the **Users** section, find the user you want to edit or delete.
-2. Click the **Edit** or **Delete** button next to their name.
+<br />
+#### Deleting a Student
+1. In the **Student** section of users dropdown , find the student you want to delete.
+2. Click the **Edit** or **Delete** button in the side of the search bar.
 3. For edits, update the information and save. For deletion, confirm the removal.
-
-### 8. Bulk Importing Users
-1. Go to the **Users** section.
-2. Click **Bulk Import Faculty** or **Bulk Import Students**.
-3. Upload a CSV file with the required user data.
-4. Confirm and process the import.
-
-### 9. Viewing and Exporting Attendance Logs
-1. Click on **Attendance Logs** in the navigation bar.
-2. Filter logs by date, user, or class as needed.
-3. Click **Export** to download logs.
-
-### 10. Managing Classes and Schedules
-1. Go to the **Class Schedule** section.
-2. Click **Add Class** or **Edit** to modify existing classes.
-3. Assign faculty and students as needed.
-4. Save your changes.
-
-### 11. Viewing Analytics and Reports
-1. Click on **Analytics** in the navigation bar.
-2. Review charts and statistics for attendance trends.
-3. Use the **Generate Report** feature to export summaries.
-
+<br />
+#### Bulk Importing Users
+1. In the **Users** section, click **Bulk Import Faculty** or **Bulk Import Students**.
+3. Follow instructions indicated within the panel.
+2. Upload a xslx file with the required user data.
+3. Confirm and process the import.
+<br />
+<br />
+<br />
+### **User Profile Page**
 ---
+#### Editing User Information
+1. click on **Edit Profile** button
+2. change change desired information
+3. click on **Save Changes** button to confirm
+<br />
+#### Deleting user in User Profile Page
+1. click on **Delete** button
+2. confirm by clicking on **Delete** on the popup panel.
+<br />
+<br />
+<br />
+<div style="page-break-before: always;"></div>
 
-For further assistance, contact your system administrator or refer to the official documentation.
+
+
+
+
+## Raspberry Pi Zero 2W: SSH & Automated Kiosk Setup Guide
+
+### 1. Hardware & Imaging
+- Use a Raspberry Pi Zero 2W, 8GB+ microSD card, and a 5V 2.5A power supply.
+- Download Raspberry Pi Imager and flash **Raspberry Pi OS Lite (64-bit)** to the SD card.
+- In Imager settings, enable SSH, set username/password, and configure WiFi.
+
+### 2. First Boot & Network
+1. Insert the SD card into the Pi, connect display/keyboard, and power on.
+2. Log in with your credentials.
+3. If WiFi was not set up, edit `/etc/wpa_supplicant/wpa_supplicant.conf` to add your WiFi details and reboot.
+4. (Optional) Set a static IP in `/etc/dhcpcd.conf` for easier management.
+
+### 3. Copying Setup Files
+- On your PC, copy the contents of `a-pizero-resources/` to `/home/AttendanceSys/`:
+- Or use a USB drive and copy files to `/home/AttendanceSys/`.
+
+### 4. Installation & Configuration
+1. On the Pi, run:
+  - `cd /home/AttendanceSys`
+  - `sudo bash setup.sh`
+2. Enter the server URL, device name, and location when prompted.
+3. Pick desired Screen layout
+4. Pick desired screen resolution (pick recommended)
+5. Confirm
+5. The script will install required packages, configure kiosk mode, and set up system services.
+6. Run `sudo reboot`
+
+### 6. Device Registration & Approval
+1. After reboot, click pait device, the Pi will display a pairing code and device ID.
+2. Give the pairing code to an admin for approval in the dashboard.
+3. Once approved, the device will automatically switch to scanner mode on reboot.
+
+### 7. Management & Troubleshooting
+- To check status: `mmsu-status`
+- To restart the scanner: `mmsu-restart`
+- To reset registration: `mmsu-reset`
+- To view logs: `attendance-logs`
+- For network issues: check WiFi config, IP address, and ping the server.
+- For kiosk/browser issues: check if X server is running, or start manually with `startx /opt/mmsu-attendance/launcher.sh`
